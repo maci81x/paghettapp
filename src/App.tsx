@@ -12,7 +12,7 @@ import ChildShell from "./views/child/ChildShell";
 
 export default function App() {
   const db = useSupabase();
-  const auth = useAuth(db.pins);
+  const auth = useAuth(db.verifyPin);
   const matchesApi = useMatches();
   const [toast, setToast] = useState<{ who: string; badge: string } | null>(null);
 
@@ -65,8 +65,8 @@ export default function App() {
           usersApi={db}
           actsApi={db}
           matchesApi={matchesApi}
-          pins={db.pins}
-          onChangePin={db.changePin}
+          adminPin={auth.sessionPin}
+          onSetPin={db.adminSetPin}
           onResetPin={db.resetPin}
           onLogout={auth.logout}
         />
@@ -79,8 +79,7 @@ export default function App() {
           usersApi={db}
           actsApi={db}
           matchesApi={matchesApi}
-          pin={db.pins[auth.au]}
-          onChangePin={(next) => auth.au && db.changePin(auth.au, next)}
+          onChangePin={(next, current) => db.changePin(auth.au!, next, current)}
           onLogout={auth.logout}
         />
       );

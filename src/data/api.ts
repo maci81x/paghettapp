@@ -20,7 +20,8 @@ const DB_TOD: Record<DbTod, Tod> = { morning: "mattina", afternoon: "pomeriggio"
 export interface UserRow {
   id: string;
   name: string;
-  pin: string;
+  /** Sparisce con la migrazione dei PIN: da lì in poi vive solo in `user_pins`. */
+  pin?: string;
   avatar: string;
   color: string;
   grad: string;
@@ -247,6 +248,29 @@ export const fetchUser = (id: string) => wrap<UserRow>(supabase.from("users").se
 
 export const updateUser = (id: string, fields: Partial<UserRow>) =>
   wrap<UserRow[]>(supabase.from("users").update(fields).eq("id", id).select());
+
+/* ── PIN ──
+   Dopo la migrazione i PIN non arrivano più al client: si verificano con le
+   funzioni SQL. Se le funzioni non ci sono ancora, `pinRpc` resta false e
+   l'app ricade sul confronto locale. */
+
+export const schemaPins = { rpc: false };
+
+export const probePinRpc = async () => {
+  // pin vuoto: la funzione risponde false senza contare come tentativo utile
+  const { error } = await supabase.rpc("check_pin", { p_user_id: "admin", p_pin: "" });
+  schemaPins.rpc = !error;
+  return schemaPins.rpc;
+};
+
+export const checkPin = (userId: string, pin: string) =>
+  wrap<boolean>(supabase.rpc("check_pin", { p_user_id: userId, p_pin: pin }));
+
+export const setPinRpc = (userId: string, oldPin: string, newPin: string) =>
+  wrap<boolean>(supabase.rpc("set_pin", { p_user_id: userId, p_old_pin: oldPin, p_new_pin: newPin }));
+
+export const adminSetPinRpc = (adminPin: string, userId: string, newPin: string) =>
+  wrap<boolean>(supabase.rpc("admin_set_pin", { p_admin_pin: adminPin, p_user_id: userId, p_new_pin: newPin }));
 
 /* ── attività ── */
 

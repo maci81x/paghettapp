@@ -33,17 +33,18 @@ export default function AdminShell({
   usersApi,
   actsApi,
   matchesApi,
-  pins,
-  onChangePin,
+  adminPin,
+  onSetPin,
   onResetPin,
   onLogout,
 }: {
   usersApi: UsersApi;
   actsApi: ActivitiesApi;
   matchesApi: MatchesApi;
-  pins: Record<PinKey, string>;
-  onChangePin: (k: PinKey, next: string) => void;
-  onResetPin: (k: PinKey) => void;
+  /** PIN digitato al login: le funzioni SQL lo richiedono per cambiare i PIN. */
+  adminPin: string;
+  onSetPin: (target: PinKey, next: string, adminPin: string) => Promise<boolean>;
+  onResetPin: (target: PinKey, adminPin: string) => Promise<boolean>;
   onLogout: () => void;
 }) {
   const [tab, setTab] = useState<AdminTab>("approve");
@@ -190,8 +191,10 @@ export default function AdminShell({
           return (
             <AdminPinsTab
               onChange={(k) => setPinTarget(k)}
-              onReset={(k) => {
-                if (confirm("Riportare il PIN a quello di fabbrica?")) onResetPin(k);
+              onReset={async (k) => {
+                if (!confirm("Riportare il PIN a quello di fabbrica?")) return;
+                const ok = await onResetPin(k, adminPin);
+                if (!ok) alert("Reset non riuscito: il database ha rifiutato la richiesta.");
               }}
             />
           );
@@ -268,10 +271,12 @@ export default function AdminShell({
       )}
       {pinTarget && (
         <PinChangeModal
-          currentPin={pins[pinTarget]}
-          onSave={(next) => {
-            onChangePin(pinTarget, next);
-            setPinTarget(null);
+          requireCurrent={false}
+          title={`🔑 Nuovo PIN · ${pinTarget}`}
+          onSave={async (next) => {
+            const ok = await onSetPin(pinTarget, next, adminPin);
+            if (ok) setPinTarget(null);
+            return ok;
           }}
           onClose={() => setPinTarget(null)}
         />

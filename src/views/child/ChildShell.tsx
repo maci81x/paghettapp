@@ -38,7 +38,6 @@ export default function ChildShell({
   usersApi,
   actsApi,
   matchesApi,
-  pin,
   onChangePin,
   onLogout,
 }: {
@@ -46,8 +45,7 @@ export default function ChildShell({
   usersApi: UsersApi;
   actsApi: ActivitiesApi;
   matchesApi: MatchesApi;
-  pin: string;
-  onChangePin: (next: string) => void;
+  onChangePin: (next: string, current: string) => Promise<boolean>;
   onLogout: () => void;
 }) {
   const [tab, setTab] = useState<ChildTab>("home");
@@ -225,10 +223,10 @@ export default function ChildShell({
       {wish && <WishEditModal init={wish} color={uc} onSave={saveWish} onClose={() => setWish(null)} />}
       {pinModal && (
         <PinChangeModal
-          currentPin={pin}
-          onSave={(next) => {
-            onChangePin(next);
-            setPinModal(false);
+          onSave={async (next, current) => {
+            const ok = await onChangePin(next, current);
+            if (ok) setPinModal(false);
+            return ok;
           }}
           onClose={() => setPinModal(false)}
         />

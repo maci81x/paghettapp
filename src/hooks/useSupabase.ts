@@ -205,7 +205,9 @@ function buildSnapshot(rows: {
     users[uid] = u;
   });
 
-  const pins = { ...DEFAULT_PINS };
+  // dopo la migrazione dei PIN la colonna non esiste più: la mappa resta vuota
+  // e il confronto locale non può accettare nulla
+  const pins = {} as Record<PinKey, string>;
   rows.users.forEach((r) => {
     if (r.pin) pins[r.id as PinKey] = r.pin;
   });
@@ -231,7 +233,7 @@ export function useSupabase() {
   /* ── caricamento ── */
 
   const load = useCallback(async () => {
-    await api.probeSchema();
+    await Promise.all([api.probeSchema(), api.probePinRpc()]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
@@ -462,12 +464,49 @@ export function useSupabase() {
     await send("setPiggybankNote", [uid, fund, note]);
   };
 
-  const changePin = async (k: PinKey, value: string) => {
-    setPins((p) => ({ ...p, [k]: value }));
-    await send("updateUser", [k, { pin: value }]);
+  /* ── PIN ──
+     Con le funzioni SQL attive il PIN non lascia mai il database: qui va e
+     torna solo un sì/no. Senza, si ricade sul confronto con i PIN caricati. */
+
+  const verifyPin = async (k: PinKey, pin: string) => {
+    // se la verifica sul database è attiva, un errore di rete non deve aprire
+    // la porta: meglio non entrare che entrare senza controllo
+    if (api.schemaPins.rpc) {
+      const res = await api.checkPin(k, pin);
+      return !res.error && res.data === true;
+    }
+    return !!pins[k] && pin === pins[k];
   };
 
-  const resetPin = (k: PinKey) => changePin(k, DEFAULT_PINS[k]);
+  /** Cambio del proprio PIN: serve quello attuale. */
+  const changePin = async (k: PinKey, next: string, current: string) => {
+    if (api.schemaPins.rpc) {
+      const res = await api.setPinRpc(k, current, next);
+      if (res.error || res.data !== true) return false;
+      setPins((p) => ({ ...p, [k]: next }));
+      return true;
+    }
+    if (current !== pins[k]) return false;
+    setPins((p) => ({ ...p, [k]: next }));
+    await send("updateUser", [k, { pin: next }]);
+    return true;
+  };
+
+  /** Cambio o reset fatto dall'admin: serve il PIN dell'admin. */
+  const adminSetPin = async (target: PinKey, next: string, adminPin: string) => {
+    if (api.schemaPins.rpc) {
+      const res = await api.adminSetPinRpc(adminPin, target, next);
+      if (res.error || res.data !== true) return false;
+      setPins((p) => ({ ...p, [target]: next }));
+      return true;
+    }
+    if (adminPin !== pins.admin) return false;
+    setPins((p) => ({ ...p, [target]: next }));
+    await send("updateUser", [target, { pin: next }]);
+    return true;
+  };
+
+  const resetPin = (target: PinKey, adminPin: string) => adminSetPin(target, DEFAULT_PINS[target], adminPin);
 
   /* ── investimenti ── */
 
@@ -730,7 +769,9 @@ export function useSupabase() {
     setNickname,
     setPiggyNote,
     setInvest,
+    verifyPin,
     changePin,
+    adminSetPin,
     resetPin,
     addSpesa,
     addIncome,
