@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import { FREQ_UNIT, getLvl } from "../../data/constants";
 import type { ChildTab, CompletionDraft, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
 import { Avatar, NavItem } from "../../design/components";
 import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
+import { P } from "../../design/tokens";
 import type { ActivitiesApi } from "../../hooks/useActivities";
 import type { MatchesApi } from "../../hooks/useMatches";
 import type { UsersApi } from "../../hooks/useUsers";
@@ -16,10 +17,13 @@ import { resizeImage } from "../../utils/imageResize";
 import Shell from "../Shell";
 import ActivitiesTab from "./ActivitiesTab";
 import HomeTab from "./HomeTab";
-import InvestTab from "./InvestTab";
 import MissionsTab from "./MissionsTab";
 import ProfileTab from "./ProfileTab";
-import WalletTab from "./WalletTab";
+
+// Wallet e Investi sono le uniche schede con i grafici: recharts (~450KB) resta
+// fuori dal bundle iniziale e arriva solo quando si apre una delle due.
+const WalletTab = lazy(() => import("./WalletTab"));
+const InvestTab = lazy(() => import("./InvestTab"));
 
 const TABS: { id: ChildTab; icon: string; label: string }[] = [
   { id: "home", icon: "🏠", label: "Home" },
@@ -181,7 +185,7 @@ export default function ChildShell({
           <NavItem key={t.id} icon={t.icon} label={t.label} active={tab === t.id} onClick={() => setTab(t.id)} color={uc} />
         ))}
       >
-        {content()}
+        <Suspense fallback={<p style={{ color: P.tx3, fontSize: 12, textAlign: "center", padding: 24 }}>Carico i grafici…</p>}>{content()}</Suspense>
       </Shell>
 
       {comp && (
