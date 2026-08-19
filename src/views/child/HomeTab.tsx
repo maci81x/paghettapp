@@ -1,7 +1,8 @@
 import { BONUS_ACT, CATS, FUNDS, SPLIT, TIERS, USER_IDS, YIELD_YEAR, getTier } from "../../data/constants";
 import { missionProg } from "../../data/report";
 import type { Activity, Fund, Payment, User, UserId, Users } from "../../data/types";
-import { Btn, GlassCard, InfoTip, Ring } from "../../design/components";
+import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
+import { userColor, userName } from "../../design/theme";
 import { P, gls } from "../../design/tokens";
 
 const FUND_HOME_LABEL: Record<Fund, string> = {
@@ -54,7 +55,14 @@ export default function HomeTab({
   const todoTop = todo.slice(0, 5);
 
   // classifica settimanale fra sorelle
-  const board = USER_IDS.map((uid) => ({ uid, n: users[uid].n, av: users[uid].av, c: users[uid].c, pts: weekPtsOf(uid) })).sort((a, b) => b.pts - a.pts);
+  const board = USER_IDS.map((uid) => ({
+    uid,
+    n: userName(users[uid]),
+    av: users[uid].av,
+    photo: users[uid].profilePhoto,
+    c: userColor(users[uid]),
+    pts: weekPtsOf(uid),
+  })).sort((a, b) => b.pts - a.pts);
   const tie = board[0].pts === board[1].pts;
   const me = board.find((b) => b.uid === au)!;
   const other = board.find((b) => b.uid !== au)!;
@@ -70,6 +78,25 @@ export default function HomeTab({
 
   return (
     <div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: 12,
+          borderRadius: 16,
+          marginBottom: 14,
+          background: `linear-gradient(135deg,${uc}22,transparent)`,
+          border: `1px solid ${uc}33`,
+        }}
+      >
+        <Avatar photo={u.profilePhoto} emoji={u.av} size={48} grad={grad} />
+        <div>
+          <p style={{ color: P.tx, fontSize: 15, fontWeight: 800, margin: 0, letterSpacing: -0.3 }}>Ciao, {userName(u)}! 👋</p>
+          <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>🔥 {u.streak} giorni di fila</p>
+        </div>
+      </div>
+
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
         <Ring pct={weekPct} size={156} stroke={10} color={uc} glow>
           <p style={{ fontSize: 34, fontWeight: 800, margin: 0, letterSpacing: -2, color: P.tx }}>{wp}</p>
@@ -93,7 +120,7 @@ export default function HomeTab({
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <Btn style={{ flex: 1 }} grad={P.mintG} onClick={onIncome}>
+        <Btn style={{ flex: 1 }} grad={grad} onClick={onIncome}>
           💝 Registra entrata
         </Btn>
         <Btn style={{ flex: 1 }} color={P.red} onClick={onSpesa}>
@@ -109,7 +136,7 @@ export default function HomeTab({
         {gap > 0 && (
           <>
             <div style={{ background: P.glass, borderRadius: 4, height: 6, marginBottom: 8 }}>
-              <div style={{ background: P.goldG, borderRadius: 4, height: 6, width: `${weekPct}%`, transition: "width .5s" }} />
+              <div style={{ background: grad, borderRadius: 4, height: 6, width: `${weekPct}%`, transition: "width .5s" }} />
             </div>
             <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 4px" }}>💡 Prova queste attività:</p>
             {suggestions.map((a) => {
@@ -154,11 +181,14 @@ export default function HomeTab({
       <GlassCard style={{ background: `linear-gradient(135deg,${P.mia}06,${P.sam}06)` }}>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>🏆 Classifica settimana</p>
         {board.map((b, i) => (
-          <div key={b.uid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
-            <span style={{ color: b.uid === au ? P.tx : P.tx2, fontSize: 12, fontWeight: b.uid === au ? 700 : 500 }}>
-              {!tie && i === 0 ? "👑 " : ""}
-              {b.av} {b.n}
-            </span>
+          <div key={b.uid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <Avatar photo={b.photo} emoji={b.av} size={30} grad={b.c + "33"} />
+              <span style={{ color: b.uid === au ? P.tx : P.tx2, fontSize: 12, fontWeight: b.uid === au ? 700 : 500 }}>
+                {!tie && i === 0 ? "👑 " : ""}
+                {b.n}
+              </span>
+            </div>
             <span style={{ color: b.c, fontWeight: 800, fontSize: 14 }}>{b.pts}pt</span>
           </div>
         ))}

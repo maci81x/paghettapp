@@ -140,6 +140,17 @@ export function useUsers() {
 
   const setAvatar = (uid: UserId, av: string) => patch(uid, (u) => ({ ...u, av }));
 
+  /* ── personalizzazione del profilo ── */
+
+  const setPhoto = (uid: UserId, photo?: string) => patch(uid, (u) => ({ ...u, profilePhoto: photo }));
+
+  const setTheme = (uid: UserId, themeColors: { from: string; to: string }) => patch(uid, (u) => ({ ...u, themeColors }));
+
+  const setBgPattern = (uid: UserId, bgPattern: string) => patch(uid, (u) => ({ ...u, bgPattern }));
+
+  /** Nickname: vuoto = torna al nome di battesimo. */
+  const setNickname = (uid: UserId, nickname: string) => patch(uid, (u) => ({ ...u, nickname: nickname.trim().slice(0, 15) }));
+
   const setPiggyNote = (uid: UserId, fund: Fund, note: string) => patch(uid, (u) => ({ ...u, wN: { ...u.wN, [fund]: note } }));
 
   const setInvest = (uid: UserId, key: keyof InvestCfg, value: number) =>
@@ -335,6 +346,10 @@ export function useUsers() {
     approve,
     reject,
     setAvatar,
+    setPhoto,
+    setTheme,
+    setBgPattern,
+    setNickname,
     setPiggyNote,
     setInvest,
     addSpesa,

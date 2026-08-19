@@ -1,4 +1,6 @@
 import type { PinKey, Users } from "../data/types";
+import { Avatar } from "../design/components";
+import { userColor, userGrad, userName } from "../design/theme";
 import { P, gls, screen } from "../design/tokens";
 
 const KEYS: (number | "⌫" | null)[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, "⌫"];
@@ -22,30 +24,21 @@ export default function PinEntry({
 }) {
   const tgt =
     target === "admin"
-      ? { n: "Admin", c: P.acc, av: "🔒", grad: P.accG }
-      : { n: users[target].n, c: users[target].c, av: users[target].av, grad: users[target].grad };
+      ? { n: "Admin", c: P.acc, av: "🔒", grad: P.accG, photo: undefined as string | undefined }
+      : {
+          n: userName(users[target]),
+          c: userColor(users[target]),
+          av: users[target].av,
+          grad: userGrad(users[target]),
+          photo: users[target].profilePhoto,
+        };
 
   return (
     <div style={{ ...screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, position: "relative" }}>
       <button onClick={onBack} style={{ position: "absolute", top: 16, left: 16, background: "none", border: "none", color: P.tx3, fontSize: 20, cursor: "pointer" }}>
         ‹
       </button>
-      <div
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 16,
-          background: tgt.grad,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 26,
-          marginBottom: 10,
-          boxShadow: `0 6px 20px ${tgt.c}33`,
-        }}
-      >
-        {tgt.av}
-      </div>
+      <Avatar photo={tgt.photo} emoji={tgt.av} size={52} radius={16} grad={tgt.grad} style={{ marginBottom: 10, boxShadow: `0 6px 20px ${tgt.c}33` }} />
       <h2 style={{ color: P.tx, fontSize: 16, fontWeight: 700, margin: "0 0 2px" }}>{tgt.n}</h2>
       <p style={{ color: P.tx3, fontSize: 11, marginBottom: 24 }}>Inserisci il PIN</p>
       <div style={{ display: "flex", gap: 12, marginBottom: 32 }}>

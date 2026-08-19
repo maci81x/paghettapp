@@ -1,7 +1,9 @@
+import { useRef, useState } from "react";
 import { BADGES, FUND_LABEL, LVLS, getLvl } from "../../data/constants";
 import { weeklyAvg } from "../../data/report";
 import type { User, Wish } from "../../data/types";
-import { Btn, GlassCard, InfoTip } from "../../design/components";
+import { Avatar, Btn, GlassCard, InfoTip, Input } from "../../design/components";
+import { BG_PATTERNS, COLOR_PRESETS, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
 
 const STARS = { 1: "⭐⭐⭐", 2: "⭐⭐", 3: "⭐" } as const;
@@ -13,6 +15,11 @@ export default function ProfileTab({
   wp,
   onAvatar,
   onPin,
+  onPhoto,
+  onRemovePhoto,
+  onTheme,
+  onBg,
+  onNickname,
   onAddWish,
   onEditWish,
   onDelWish,
@@ -24,59 +31,171 @@ export default function ProfileTab({
   wp: number;
   onAvatar: () => void;
   onPin: () => void;
+  onPhoto: (file: File) => Promise<void>;
+  onRemovePhoto: () => void;
+  onTheme: (c: { from: string; to: string }) => void;
+  onBg: (value: string) => void;
+  onNickname: (name: string) => void;
   onAddWish: () => void;
   onEditWish: (w: Wish) => void;
   onDelWish: (w: Wish) => void;
   onBuyWish: (w: Wish) => void;
 }) {
   const lvl = getLvl(u.totalPts);
+  const grad = userGrad(u);
   const wishes = [...(u.wishes ?? [])].sort((a, b) => Number(a.done) - Number(b.done) || a.priority - b.priority);
   const avg = weeklyAvg(u);
   const badges = u.badges ?? [];
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photoErr, setPhotoErr] = useState("");
+  const [editName, setEditName] = useState(false);
+  const [name, setName] = useState(userName(u));
+
+  const pickPhoto = async (file?: File) => {
+    if (!file) return;
+    setPhotoErr("");
+    try {
+      await onPhoto(file);
+    } catch {
+      setPhotoErr("Non riesco a leggere questa immagine, provane un'altra.");
+    }
+  };
+
+  const saveName = () => {
+    onNickname(name);
+    setEditName(false);
+  };
+
   return (
     <div>
       <div style={{ textAlign: "center", marginBottom: 14 }}>
-        <div
-          onClick={onAvatar}
-          style={{
-            width: 68,
-            height: 68,
-            borderRadius: 18,
-            background: u.grad,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 34,
-            margin: "0 auto 6px",
-            boxShadow: `0 8px 28px ${uc}33`,
-            cursor: "pointer",
-            position: "relative",
-          }}
-        >
-          {u.av}
+        <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto 8px" }}>
+          <Avatar
+            photo={u.profilePhoto}
+            emoji={u.av}
+            size={120}
+            radius={34}
+            grad={grad}
+            onClick={() => fileRef.current?.click()}
+            style={{ boxShadow: `0 10px 32px ${uc}44`, border: `3px solid ${uc}` }}
+          />
           <div
+            onClick={() => fileRef.current?.click()}
             style={{
               position: "absolute",
-              bottom: -2,
-              right: -2,
-              width: 20,
-              height: 20,
-              borderRadius: 8,
-              background: P.accG,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderBottomLeftRadius: 34,
+              borderBottomRightRadius: 34,
+              background: "rgba(0,0,0,.55)",
+              color: "#fff",
               fontSize: 10,
+              fontWeight: 700,
+              padding: "4px 0",
+              cursor: "pointer",
             }}
           >
-            ✏️
+            📷 Cambia
           </div>
         </div>
-        <p style={{ color: P.tx, fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>{u.n}</p>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            void pickPhoto(e.target.files?.[0]);
+            e.target.value = ""; // così riselezionare la stessa foto rilancia l'evento
+          }}
+        />
+        {photoErr && <p style={{ color: P.red, fontSize: 10, margin: "0 0 6px" }}>{photoErr}</p>}
+
+        <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 8 }}>
+          <Btn small outline color={P.tx3} onClick={onAvatar}>
+            😀 Emoji
+          </Btn>
+          {u.profilePhoto && (
+            <Btn small outline color={P.red} onClick={onRemovePhoto}>
+              🗑️ Rimuovi foto
+            </Btn>
+          )}
+        </div>
+
+        {editName ? (
+          <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center", maxWidth: 240, margin: "0 auto" }}>
+            <Input value={name} maxLength={15} onChange={(e) => setName(e.target.value)} style={{ textAlign: "center" }} />
+            <Btn small grad={grad} onClick={saveName}>
+              ✓
+            </Btn>
+          </div>
+        ) : (
+          <p
+            onClick={() => {
+              setName(userName(u));
+              setEditName(true);
+            }}
+            style={{ color: P.tx, fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: -0.5, cursor: "pointer" }}
+          >
+            {userName(u)} <span style={{ fontSize: 11 }}>✏️</span>
+          </p>
+        )}
         <p style={{ color: P.tx2, fontSize: 11, margin: 0 }}>
           {lvl.i} {lvl.n} · {u.totalPts}pt
         </p>
       </div>
+
+      <GlassCard>
+        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>🎨 I miei colori</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {COLOR_PRESETS.map((c) => {
+            const active = u.themeColors?.from === c.from && u.themeColors?.to === c.to;
+            return (
+              <div key={c.name} onClick={() => onTheme({ from: c.from, to: c.to })} style={{ textAlign: "center", cursor: "pointer" }}>
+                <div
+                  title={c.name}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    background: `linear-gradient(135deg,${c.from},${c.to})`,
+                    border: active ? "3px solid #fff" : `1px solid ${P.gb}`,
+                    boxShadow: active ? `0 0 12px ${c.from}88` : "none",
+                  }}
+                />
+                <p style={{ fontSize: 8, color: active ? P.tx : P.tx3, margin: "3px 0 0" }}>{c.name}</p>
+              </div>
+            );
+          })}
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>✨ Il mio sfondo</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {BG_PATTERNS.map((b) => {
+            const active = (u.bgPattern ?? "none") === b.value;
+            return (
+              <div key={b.name} onClick={() => onBg(b.value)} style={{ textAlign: "center", cursor: "pointer" }}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 40,
+                    borderRadius: 8,
+                    background: P.bg,
+                    backgroundImage: b.value === "none" ? undefined : b.value,
+                    backgroundSize: b.size,
+                    border: active ? `2px solid ${uc}` : `1px solid ${P.gb}`,
+                  }}
+                />
+                <p style={{ fontSize: 8, color: active ? P.tx : P.tx3, margin: "3px 0 0" }}>{b.name}</p>
+              </div>
+            );
+          })}
+        </div>
+      </GlassCard>
 
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
@@ -92,7 +211,7 @@ export default function ProfileTab({
               </span>
             </div>
             {u.totalPts >= l.min && u.totalPts <= l.max && (
-              <span style={{ background: l.c + "1a", color: l.c, padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>Tu sei qui</span>
+              <span style={{ background: grad, color: "#fff", padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>Tu sei qui</span>
             )}
           </div>
         ))}
@@ -133,7 +252,7 @@ export default function ProfileTab({
       <GlassCard>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>🎁 Lista Desideri</p>
-          <Btn small grad={P.mintG} onClick={onAddWish}>
+          <Btn small grad={grad} onClick={onAddWish}>
             + Aggiungi
           </Btn>
         </div>

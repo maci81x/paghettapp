@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { USER_IDS, todayISO } from "../../data/constants";
 import type { ActivityDraft, AdminTab, MatchDraft, MissionDraft, Period, PinKey, UserId } from "../../data/types";
-import { NavItem, Pill } from "../../design/components";
+import { Avatar, NavItem, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
 import type { ActivitiesApi } from "../../hooks/useActivities";
 import type { MatchesApi } from "../../hooks/useMatches";
@@ -215,7 +215,7 @@ export default function AdminShell({
   return (
     <>
       <Shell
-        avatar={view ? users[view].av : "🔒"}
+        avatar={view ? <Avatar photo={users[view].profilePhoto} emoji={users[view].av} size={30} radius={10} grad="transparent" /> : "🔒"}
         title={view ? `Admin › ${users[view].n}` : "Admin"}
         subtitle={view ? undefined : `${usersApi.allPending} in attesa`}
         tint={view ? users[view].c : P.acc}

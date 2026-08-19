@@ -1,6 +1,6 @@
 import { FUNDS, FUND_LABEL, PERIOD_MONTHS, TODS, YIELD_YEAR, getLvl, getTier } from "../../data/constants";
 import type { Activity, Period, UserId, Users } from "../../data/types";
-import { Btn, GlassCard, PeriodBar } from "../../design/components";
+import { Avatar, Btn, GlassCard, PeriodBar } from "../../design/components";
 import { P } from "../../design/tokens";
 import MonthReportCard from "../MonthReportCard";
 
@@ -39,13 +39,12 @@ export default function AdminChildView({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <div
-          style={{ width: 52, height: 52, borderRadius: 16, background: u.grad, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: `0 6px 18px ${u.c}33` }}
-        >
-          {u.av}
-        </div>
+        <Avatar photo={u.profilePhoto} emoji={u.av} size={52} radius={16} grad={u.grad} style={{ boxShadow: `0 6px 18px ${u.c}33` }} />
         <div>
-          <p style={{ color: P.tx, fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>{u.n}</p>
+          <p style={{ color: P.tx, fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>
+            {u.n}
+            {u.nickname?.trim() && <span style={{ color: P.tx3, fontSize: 12, fontWeight: 600 }}> ({u.nickname.trim()})</span>}
+          </p>
           <p style={{ color: P.tx2, fontSize: 11, margin: 0 }}>
             {lvl.i} {lvl.n} · {u.totalPts}pt totali
           </p>

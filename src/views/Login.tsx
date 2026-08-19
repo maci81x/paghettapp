@@ -1,10 +1,12 @@
 import type { PinKey, Users } from "../data/types";
+import { Avatar } from "../design/components";
+import { userColor, userGrad, userName } from "../design/theme";
 import { P, gls, screen } from "../design/tokens";
 
 export default function Login({ users, onPick }: { users: Users; onPick: (k: PinKey) => void }) {
-  const profiles: { k: PinKey; l: string; c: string; av: string; grad: string }[] = [
-    { k: "mia", l: users.mia.n, c: P.mia, av: users.mia.av, grad: P.miaG },
-    { k: "samira", l: users.samira.n, c: P.sam, av: users.samira.av, grad: P.samG },
+  const profiles: { k: PinKey; l: string; c: string; av: string; grad: string; photo?: string }[] = [
+    { k: "mia", l: userName(users.mia), c: userColor(users.mia), av: users.mia.av, grad: userGrad(users.mia), photo: users.mia.profilePhoto },
+    { k: "samira", l: userName(users.samira), c: userColor(users.samira), av: users.samira.av, grad: userGrad(users.samira), photo: users.samira.profilePhoto },
     { k: "admin", l: "Admin", c: P.acc, av: "🔒", grad: P.accG },
   ];
   return (
@@ -46,22 +48,7 @@ export default function Login({ users, onPick }: { users: Users; onPick: (k: Pin
             onClick={() => onPick(p.k)}
             style={{ display: "flex", alignItems: "center", gap: 14, ...gls, padding: "16px 20px", cursor: "pointer", width: "100%", transition: "all .2s" }}
           >
-            <div
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 14,
-                background: p.grad,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                boxShadow: `0 4px 14px ${p.c}33`,
-                flexShrink: 0,
-              }}
-            >
-              {p.av}
-            </div>
+            <Avatar photo={p.photo} emoji={p.av} size={46} radius={14} grad={p.grad} style={{ boxShadow: `0 4px 14px ${p.c}33` }} />
             <span style={{ color: P.tx, fontSize: 16, fontWeight: 700, letterSpacing: -0.3 }}>{p.l}</span>
             <span style={{ marginLeft: "auto", color: P.tx3, fontSize: 14 }}>›</span>
           </button>

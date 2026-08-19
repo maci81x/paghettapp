@@ -9,6 +9,8 @@ export default function Shell({
   title,
   subtitle,
   tint = P.acc,
+  bgPattern,
+  bgSize,
   onBack,
   onLogout,
   onAvatarClick,
@@ -19,6 +21,9 @@ export default function Shell({
   title: string;
   subtitle?: ReactNode;
   tint?: string;
+  /** Pattern CSS scelto dalla figlia, sovrapposto allo sfondo dell'app. */
+  bgPattern?: string;
+  bgSize?: string;
   onBack?: () => void;
   onLogout: () => void;
   onAvatarClick?: () => void;
@@ -26,8 +31,9 @@ export default function Shell({
   children: ReactNode;
 }) {
   const [guide, setGuide] = useState(false);
+  const bg = bgPattern && bgPattern !== "none" ? `${bgPattern},${P.bg2}` : P.bg2;
   return (
-    <div style={{ ...screen, display: "flex", flexDirection: "column", position: "relative" }}>
+    <div style={{ ...screen, backgroundImage: bg, backgroundSize: bgSize, display: "flex", flexDirection: "column", position: "relative" }}>
       <div
         style={{
           display: "flex",

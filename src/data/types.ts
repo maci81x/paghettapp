@@ -139,6 +139,14 @@ export interface User {
   badges?: string[];
   /** Badge id → giorno di sblocco (ISO). */
   badgeAt?: Record<string, string>;
+  /* ── personalizzazione (tutti facoltativi: senza valore valgono i default) ── */
+  /** Foto profilo come data URL JPEG ridimensionato. */
+  profilePhoto?: string;
+  themeColors?: { from: string; to: string };
+  /** Valore CSS per background-image. */
+  bgPattern?: string;
+  /** Nome scelto dalla figlia, max 15 caratteri. */
+  nickname?: string;
 }
 
 export type Users = Record<UserId, User>;

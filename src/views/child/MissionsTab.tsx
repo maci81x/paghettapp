@@ -2,7 +2,8 @@ import { useState } from "react";
 import { daysLeft } from "../../data/constants";
 import { missionProg } from "../../data/report";
 import type { Activity, Match, Mission, User, Users } from "../../data/types";
-import { GlassCard, InfoTip, Ring, SectionTitle } from "../../design/components";
+import { Avatar, GlassCard, InfoTip, Ring, SectionTitle } from "../../design/components";
+import { userColor, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
 
 /** Countdown alla scadenza: verde >3gg, arancio 1-3gg, rosso scaduta. */
@@ -77,12 +78,8 @@ function Side({ uid, users, pts }: { uid: "mia" | "samira"; users: Users; pts: n
   const u = users[uid];
   return (
     <div style={{ textAlign: "center" }}>
-      <div
-        style={{ width: 40, height: 40, borderRadius: 12, background: u.grad, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, margin: "0 auto 3px" }}
-      >
-        {u.av}
-      </div>
-      <p style={{ color: u.c, fontWeight: 700, fontSize: 12, margin: 0 }}>{u.n}</p>
+      <Avatar photo={u.profilePhoto} emoji={u.av} size={40} radius={12} grad={userGrad(u)} style={{ margin: "0 auto 3px" }} />
+      <p style={{ color: userColor(u), fontWeight: 700, fontSize: 12, margin: 0 }}>{userName(u)}</p>
       <p style={{ color: P.tx, fontSize: 18, fontWeight: 800, margin: 0 }}>{pts}</p>
     </div>
   );

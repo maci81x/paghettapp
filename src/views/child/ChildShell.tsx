@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { FREQ_UNIT, getLvl } from "../../data/constants";
 import type { ChildTab, CompletionDraft, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
-import { NavItem } from "../../design/components";
+import { Avatar, NavItem } from "../../design/components";
+import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
 import type { ActivitiesApi } from "../../hooks/useActivities";
 import type { MatchesApi } from "../../hooks/useMatches";
 import type { UsersApi } from "../../hooks/useUsers";
@@ -11,6 +12,7 @@ import ExtraIncomeModal from "../../modals/ExtraIncomeModal";
 import PinChangeModal from "../../modals/PinChangeModal";
 import SpesaModal from "../../modals/SpesaModal";
 import WishEditModal from "../../modals/WishEditModal";
+import { resizeImage } from "../../utils/imageResize";
 import Shell from "../Shell";
 import ActivitiesTab from "./ActivitiesTab";
 import HomeTab from "./HomeTab";
@@ -55,7 +57,9 @@ export default function ChildShell({
   const [wish, setWish] = useState<WishDraft | null>(null);
 
   const u = usersApi.users[au];
-  const uc = u.c;
+  // colori e nome mostrati alla figlia: quelli che ha scelto lei, se li ha scelti
+  const uc = userColor(u);
+  const grad = userGrad(u);
   const tp = usersApi.todayPts(au);
   const wp = usersApi.weekPts(au);
   const lvl = getLvl(u.totalPts);
@@ -94,7 +98,7 @@ export default function ChildShell({
             au={au}
             users={usersApi.users}
             uc={uc}
-            grad={u.grad}
+            grad={grad}
             tp={tp}
             wp={wp}
             acts={actsApi.acts}
@@ -110,7 +114,7 @@ export default function ChildShell({
         return (
           <ActivitiesTab
             acts={actsApi.acts}
-            grad={u.grad}
+            grad={grad}
             tp={tp}
             todayDone={todayDone}
             todayByTod={(actId) => usersApi.todayByTod(au, actId)}
@@ -144,6 +148,11 @@ export default function ChildShell({
             wp={wp}
             onAvatar={() => setAvatar(true)}
             onPin={() => setPinModal(true)}
+            onPhoto={async (file) => usersApi.setPhoto(au, await resizeImage(file))}
+            onRemovePhoto={() => usersApi.setPhoto(au, undefined)}
+            onTheme={(c) => usersApi.setTheme(au, c)}
+            onBg={(v) => usersApi.setBgPattern(au, v)}
+            onNickname={(n) => usersApi.setNickname(au, n)}
             onAddWish={() => setWish({ mode: "add", name: "", cost: "", fund: "personale", priority: 2 })}
             onEditWish={(w) => setWish({ mode: "edit", id: w.id, name: w.name, cost: String(w.cost), fund: w.fund, priority: w.priority })}
             onDelWish={(w) => {
@@ -160,10 +169,12 @@ export default function ChildShell({
   return (
     <>
       <Shell
-        avatar={u.av}
-        title={u.n}
+        avatar={<Avatar photo={u.profilePhoto} emoji={u.av} size={30} radius={10} grad={u.profilePhoto ? undefined : "transparent"} />}
+        title={userName(u)}
         subtitle={`${lvl.i} ${lvl.n}`}
         tint={uc}
+        bgPattern={u.bgPattern}
+        bgSize={bgSizeFor(u.bgPattern)}
         onLogout={onLogout}
         onAvatarClick={() => setTab("profile")}
         nav={TABS.map((t) => (
@@ -178,7 +189,7 @@ export default function ChildShell({
           draft={comp}
           setDraft={(fn) => setComp((d) => (d ? fn(d) : d))}
           color={uc}
-          grad={u.grad}
+          grad={grad}
           onConfirm={confirmComp}
           onClose={() => setComp(null)}
         />
@@ -199,8 +210,8 @@ export default function ChildShell({
       )}
       {income && (
         <ExtraIncomeModal
-          who={u.n}
-          grad={u.grad}
+          who={userName(u)}
+          grad={grad}
           onSave={(entry) => {
             usersApi.addIncome(au, entry);
             setIncome(false);

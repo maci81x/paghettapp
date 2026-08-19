@@ -50,6 +50,47 @@ export function Ring({
   );
 }
 
+/* ── Avatar: foto profilo se c'è, altrimenti emoji ── */
+export function Avatar({
+  photo,
+  emoji,
+  size = 40,
+  grad,
+  radius,
+  onClick,
+  style,
+}: {
+  photo?: string;
+  emoji: string;
+  size?: number;
+  grad?: string;
+  radius?: number;
+  onClick?: () => void;
+  style?: CSSProperties;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius ?? size * 0.3,
+        background: grad ?? P.glass,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: size * 0.5,
+        overflow: "hidden",
+        flexShrink: 0,
+        cursor: onClick ? "pointer" : undefined,
+        ...style,
+      }}
+    >
+      {photo ? <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : emoji}
+    </div>
+  );
+}
+
 /* ── Card vetro ── */
 export function GlassCard({ children, style, onClick }: { children: ReactNode; style?: CSSProperties; onClick?: () => void }) {
   return (
