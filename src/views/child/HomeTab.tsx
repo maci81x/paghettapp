@@ -4,6 +4,7 @@ import type { Activity, Fund, Payment, User, UserId, Users } from "../../data/ty
 import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
 import { userColor, userName } from "../../design/theme";
 import { P, gls } from "../../design/tokens";
+import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
 
 const FUND_HOME_LABEL: Record<Fund, string> = {
   risparmio: `🏦 Risparmio (${SPLIT.risparmio * 100}%)`,
@@ -68,10 +69,10 @@ export default function HomeTab({
   const other = board.find((b) => b.uid !== au)!;
   const diff = Math.abs(me.pts - other.pts);
 
-  // rendimento stimato sul salvadanaio risparmio
+  // rendimento stimato sul salvadanaio risparmio (interesse composto)
   const save = u.w.risparmio;
-  const perWeek = (save * YIELD_YEAR) / 52;
-  const perYear = save * YIELD_YEAR;
+  const perWeek = weeklyGrowth(save, YIELD_YEAR);
+  const perYear = yearlyGrowth(save, YIELD_YEAR);
   const goal = nextMilestone(save);
 
   const bonuses = u.log.filter((l) => l.actId === BONUS_ACT).slice(-3).reverse();
@@ -236,7 +237,7 @@ export default function HomeTab({
             {k === "risparmio" && (
               <>
                 <div style={{ display: "flex", gap: 10, marginTop: 3 }}>
-                  <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>+€{perWeek.toFixed(2)}/settimana</span>
+                  <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>+€{perWeek.toFixed(2)}/sett</span>
                   <span style={{ fontSize: 10, color: P.gold, fontWeight: 700 }}>+€{perYear.toFixed(2)}/anno</span>
                 </div>
                 <div style={{ background: P.glass, borderRadius: 3, height: 5, marginTop: 4 }}>
@@ -244,7 +245,7 @@ export default function HomeTab({
                 </div>
                 <p style={{ fontSize: 9, color: P.tx3, margin: "3px 0 0" }}>Prossimo traguardo: €{goal}</p>
                 <p style={{ fontSize: 9, color: P.tx2, margin: "4px 0 0", lineHeight: 1.4 }}>
-                  📈 Babbo Roby investe i tuoi risparmi. Più li lasci, più crescono! Rendimento medio: ~10%/anno
+                  📈 I tuoi risparmi crescono con l'interesse composto! Babbo Roby li investe: rendimento medio ~{YIELD_YEAR * 100}%/anno.
                 </p>
               </>
             )}

@@ -4,9 +4,8 @@ import type { ChildTab, CompletionDraft, Period, SpesaDraft, UserId, Wish, WishD
 import { Avatar, NavItem } from "../../design/components";
 import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
-import type { ActivitiesApi } from "../../hooks/useActivities";
 import type { MatchesApi } from "../../hooks/useMatches";
-import type { UsersApi } from "../../hooks/useUsers";
+import type { ActivitiesApi, UsersApi } from "../../hooks/useSupabase";
 import AvatarPicker from "../../modals/AvatarPicker";
 import CompletionModal from "../../modals/CompletionModal";
 import ExtraIncomeModal from "../../modals/ExtraIncomeModal";

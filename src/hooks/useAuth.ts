@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { DEFAULT_PINS } from "../data/constants";
-import { useLocalStorage } from "../data/storage";
 import type { PinKey, Screen, UserId } from "../data/types";
 
-/** Login con selezione profilo + PIN a 4 cifre. I PIN sono persistiti. */
-export function useAuth() {
-  const [pins, setPins] = useLocalStorage<Record<PinKey, string>>("pins", () => ({ ...DEFAULT_PINS }));
+/** Login con selezione profilo + PIN a 4 cifre. I PIN arrivano dal database. */
+export function useAuth(pins: Record<PinKey, string>) {
   const [scr, setScr] = useState<Screen>("login");
   const [au, setAu] = useState<UserId | null>(null);
   const [target, setTarget] = useState<PinKey | null>(null);
@@ -56,8 +53,5 @@ export function useAuth() {
     toLogin();
   };
 
-  const changePin = (k: PinKey, value: string) => setPins((p) => ({ ...p, [k]: value }));
-  const resetPin = (k: PinKey) => setPins((p) => ({ ...p, [k]: DEFAULT_PINS[k] }));
-
-  return { scr, au, target, pin, err, pins, startLogin, press, del, toLogin, logout, changePin, resetPin };
+  return { scr, au, target, pin, err, startLogin, press, del, toLogin, logout };
 }

@@ -68,6 +68,13 @@ export const monthReport = (u: User, back = 0): MonthReport => {
 /** Variazione percentuale rispetto al mese scorso: null se non c'è storico. */
 export const trendPct = (now: number, prev: number) => (prev > 0 ? Math.round(((now - prev) / prev) * 100) : null);
 
+/** Media mensile delle sole paghette sugli ultimi `months` mesi. */
+export const monthlyAllowanceAvg = (u: User, months = 3) => {
+  const from = monthKey(months - 1);
+  const rows = allIncome(u).filter((i) => i.type === "paghetta" && i.date.slice(0, 7) >= from);
+  return +(rows.reduce((s, i) => s + i.amount, 0) / months).toFixed(2);
+};
+
 /** Media settimanale guadagnata, usata per stimare quanto manca a un desiderio. */
 export const weeklyAvg = (u: User) => {
   const entries = allIncome(u);

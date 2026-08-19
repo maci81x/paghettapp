@@ -128,7 +128,7 @@ export const YIELD_YEAR = 0.1;
 
 export const USER_IDS = ["mia", "samira"] as const;
 
-/** Badge sbloccabili: la logica di sblocco vive in `useUsers.syncBadges`. */
+/** Badge sbloccabili: la logica di sblocco vive in `data/badges.ts`. */
 export const BADGES: Badge[] = [
   { id: "first_15", n: "Prima settimana €15", i: "🥇", hint: "Arriva a 500 punti in una settimana" },
   { id: "streak_10", n: "10 giorni di streak", i: "🔥", hint: "Segna attività per 10 giorni di fila" },
@@ -163,13 +163,16 @@ export const monthKey = (back = 0) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
-/** Lunedì della settimana corrente, in formato ISO. */
-export const getWeekStart = () => {
-  const d = new Date();
+/** Lunedì della settimana che contiene la data indicata, in formato ISO. */
+export const weekStartOf = (date: Date) => {
+  const d = new Date(date);
   const dow = d.getDay(); // 0 = domenica
   d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
   return isoDate(d);
 };
+
+/** Lunedì della settimana corrente, in formato ISO. */
+export const getWeekStart = () => weekStartOf(new Date());
 
 /** Proiezione investimento: capitale iniziale + versamento mensile, 10%/anno. */
 export const mkInv = (amt: number, mo: number, ex: number) => {

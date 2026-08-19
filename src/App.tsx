@@ -1,20 +1,18 @@
 import { useEffect, useState } from "react";
 import { BADGES } from "./data/constants";
 import GlobalStyle from "./design/GlobalStyle";
-import { P, gls } from "./design/tokens";
-import { useActivities } from "./hooks/useActivities";
+import { P, gls, screen } from "./design/tokens";
 import { useAuth } from "./hooks/useAuth";
 import { useMatches } from "./hooks/useMatches";
-import { useUsers } from "./hooks/useUsers";
+import { useSupabase } from "./hooks/useSupabase";
 import Login from "./views/Login";
 import PinEntry from "./views/PinEntry";
 import AdminShell from "./views/admin/AdminShell";
 import ChildShell from "./views/child/ChildShell";
 
 export default function App() {
-  const auth = useAuth();
-  const usersApi = useUsers();
-  const actsApi = useActivities();
+  const db = useSupabase();
+  const auth = useAuth(db.pins);
   const matchesApi = useMatches();
   const [toast, setToast] = useState<{ who: string; badge: string } | null>(null);
 
@@ -22,9 +20,9 @@ export default function App() {
    * I badge si valutano sullo stato: qualsiasi azione rilevante (approvazione,
    * paghetta, spesa, acquisto di un desiderio) fa ripassare di qui.
    */
-  const { users, syncBadges } = usersApi;
-  const { acts } = actsApi;
+  const { users, acts, syncBadges } = db;
   useEffect(() => {
+    if (db.loading) return;
     const fresh = syncBadges(acts.map((a) => a.id));
     if (fresh.length > 0) {
       const last = fresh[fresh.length - 1];
@@ -32,7 +30,7 @@ export default function App() {
     }
     // syncBadges legge `users`: basta rivalutare quando cambiano utenti o attività
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users, acts]);
+  }, [users, acts, db.loading]);
 
   useEffect(() => {
     if (!toast) return;
@@ -41,11 +39,18 @@ export default function App() {
   }, [toast]);
 
   const view = () => {
+    if (db.loading) {
+      return (
+        <div style={{ ...screen, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: P.tx3, fontSize: 13 }}>Carico i dati…</p>
+        </div>
+      );
+    }
     if (auth.scr === "pin" && auth.target) {
       return (
         <PinEntry
           target={auth.target}
-          users={usersApi.users}
+          users={db.users}
           pin={auth.pin}
           err={auth.err}
           onPress={auth.press}
@@ -57,12 +62,12 @@ export default function App() {
     if (auth.scr === "admin") {
       return (
         <AdminShell
-          usersApi={usersApi}
-          actsApi={actsApi}
+          usersApi={db}
+          actsApi={db}
           matchesApi={matchesApi}
-          pins={auth.pins}
-          onChangePin={auth.changePin}
-          onResetPin={auth.resetPin}
+          pins={db.pins}
+          onChangePin={db.changePin}
+          onResetPin={db.resetPin}
           onLogout={auth.logout}
         />
       );
@@ -71,16 +76,16 @@ export default function App() {
       return (
         <ChildShell
           au={auth.au}
-          usersApi={usersApi}
-          actsApi={actsApi}
+          usersApi={db}
+          actsApi={db}
           matchesApi={matchesApi}
-          pin={auth.pins[auth.au]}
-          onChangePin={(next) => auth.au && auth.changePin(auth.au, next)}
+          pin={db.pins[auth.au]}
+          onChangePin={(next) => auth.au && db.changePin(auth.au, next)}
           onLogout={auth.logout}
         />
       );
     }
-    return <Login users={usersApi.users} onPick={auth.startLogin} />;
+    return <Login users={db.users} onPick={auth.startLogin} />;
   };
 
   const badge = toast && BADGES.find((b) => b.id === toast.badge);
@@ -89,6 +94,28 @@ export default function App() {
     <>
       <GlobalStyle />
       {view()}
+
+      {db.offline && !db.loading && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 74,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9998,
+            ...gls,
+            background: "rgba(15,15,30,.96)",
+            border: `1px solid ${P.gold}44`,
+            color: P.gold,
+            fontSize: 10,
+            fontWeight: 700,
+            padding: "5px 12px",
+          }}
+        >
+          📴 Offline · le modifiche partiranno appena torna la rete
+        </div>
+      )}
+
       {toast && badge && (
         <div
           className="anim"
