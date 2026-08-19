@@ -1,0 +1,282 @@
+import { useState } from "react";
+import { USER_IDS, todayISO } from "../../data/constants";
+import type { ActivityDraft, AdminTab, MatchDraft, MissionDraft, Period, PinKey, UserId } from "../../data/types";
+import { NavItem, Pill } from "../../design/components";
+import { P } from "../../design/tokens";
+import type { ActivitiesApi } from "../../hooks/useActivities";
+import type { MatchesApi } from "../../hooks/useMatches";
+import type { UsersApi } from "../../hooks/useUsers";
+import ActivityEditModal from "../../modals/ActivityEditModal";
+import BonusPointsModal from "../../modals/BonusPointsModal";
+import ExtraIncomeModal from "../../modals/ExtraIncomeModal";
+import MatchEditModal from "../../modals/MatchEditModal";
+import MissionEditModal from "../../modals/MissionEditModal";
+import PinChangeModal from "../../modals/PinChangeModal";
+import Shell from "../Shell";
+import AdminActivitiesTab from "./AdminActivitiesTab";
+import AdminChildView from "./AdminChildView";
+import AdminMatchTab from "./AdminMatchTab";
+import AdminMissionsTab from "./AdminMissionsTab";
+import AdminPiggyTab from "./AdminPiggyTab";
+import AdminPinsTab from "./AdminPinsTab";
+import ApproveTab from "./ApproveTab";
+
+const TABS: { id: AdminTab; i: string; l: string }[] = [
+  { id: "approve", i: "✅", l: "Approva" },
+  { id: "acts", i: "📋", l: "Attività" },
+  { id: "miss", i: "🎯", l: "Missioni" },
+  { id: "match", i: "⚔️", l: "Match" },
+  { id: "piggy", i: "🏦", l: "Salvadanai" },
+  { id: "pins", i: "🔑", l: "PIN" },
+];
+
+export default function AdminShell({
+  usersApi,
+  actsApi,
+  matchesApi,
+  pins,
+  onChangePin,
+  onResetPin,
+  onLogout,
+}: {
+  usersApi: UsersApi;
+  actsApi: ActivitiesApi;
+  matchesApi: MatchesApi;
+  pins: Record<PinKey, string>;
+  onChangePin: (k: PinKey, next: string) => void;
+  onResetPin: (k: PinKey) => void;
+  onLogout: () => void;
+}) {
+  const [tab, setTab] = useState<AdminTab>("approve");
+  const [view, setView] = useState<UserId | null>(null);
+  const [period, setPeriod] = useState<Period>("7g");
+  const [actDraft, setActDraft] = useState<ActivityDraft | null>(null);
+  const [matchDraft, setMatchDraft] = useState<MatchDraft | null>(null);
+  const [missDraft, setMissDraft] = useState<MissionDraft | null>(null);
+  const [pinTarget, setPinTarget] = useState<PinKey | null>(null);
+  const [incomeFor, setIncomeFor] = useState<UserId | null>(null);
+  const [bonusFor, setBonusFor] = useState<UserId | null>(null);
+
+  const { users } = usersApi;
+
+  const saveAct = () => {
+    if (!actDraft?.name.trim()) return;
+    if (actDraft.mode === "add") actsApi.addAct(actDraft);
+    else actsApi.updateAct(actDraft);
+    setActDraft(null);
+  };
+
+  const saveMatch = () => {
+    if (!matchDraft?.name.trim()) return;
+    if (matchDraft.mode === "add") matchesApi.addMatch(matchDraft);
+    else matchesApi.updateMatch(matchDraft);
+    setMatchDraft(null);
+  };
+
+  const saveMission = () => {
+    if (!missDraft?.name.trim()) return;
+    const targets: UserId[] = missDraft.to === "both" ? [...USER_IDS] : [missDraft.to];
+    usersApi.upsertMission(missDraft.id, targets, {
+      name: missDraft.name.trim(),
+      desc: missDraft.desc.trim(),
+      prog: 0,
+      tgt: missDraft.tgt,
+      pts: missDraft.pts,
+      team: missDraft.team,
+      deadline: missDraft.deadline,
+      assignee: missDraft.to,
+      actIds: missDraft.actIds,
+      since: todayISO(),
+    });
+    setMissDraft(null);
+  };
+
+  const body = () => {
+    if (view) {
+      return (
+        <AdminChildView
+          uid={view}
+          users={users}
+          acts={actsApi.acts}
+          todayPts={usersApi.todayPts(view)}
+          weekPts={usersApi.weekPts(view)}
+          period={period}
+          setPeriod={setPeriod}
+          onApprove={usersApi.approve}
+          onReject={usersApi.reject}
+          onIncome={() => setIncomeFor(view)}
+          onBonus={() => setBonusFor(view)}
+        />
+      );
+    }
+    const tabBody = () => {
+      switch (tab) {
+        case "approve":
+          return <ApproveTab users={users} acts={actsApi.acts} onApprove={usersApi.approve} onReject={usersApi.reject} />;
+        case "acts":
+          return (
+            <AdminActivitiesTab
+              acts={actsApi.acts}
+              onNew={() => setActDraft({ mode: "add", name: "", cat: "casa", pts: 3, pen: 0, freq: "daily", max: 1, ch: 0, duration: "" })}
+              onEdit={(a) =>
+                setActDraft({
+                  mode: "edit",
+                  id: a.id,
+                  name: a.name,
+                  cat: a.cat,
+                  pts: a.pts,
+                  pen: a.pen,
+                  freq: a.freq,
+                  max: a.max,
+                  ch: a.ch,
+                  duration: a.duration ? String(a.duration) : "",
+                })
+              }
+              onDelete={(a) => {
+                if (confirm(`Eliminare "${a.name}"?`)) actsApi.delAct(a.id);
+              }}
+            />
+          );
+        case "miss":
+          return (
+            <AdminMissionsTab
+              users={users}
+              acts={actsApi.acts}
+              onNew={() => setMissDraft({ mode: "add", name: "", desc: "", tgt: 5, pts: 30, team: false, deadline: "", to: "mia", actIds: [] })}
+              onEdit={(m) =>
+                setMissDraft({
+                  mode: "edit",
+                  id: m.id,
+                  name: m.name,
+                  desc: m.desc ?? "",
+                  tgt: m.tgt,
+                  pts: m.pts,
+                  team: m.team,
+                  deadline: m.deadline ?? "",
+                  to: m.assignee ?? "mia",
+                  actIds: m.actIds ?? [],
+                })
+              }
+              onDelete={usersApi.delMission}
+            />
+          );
+        case "match":
+          return (
+            <AdminMatchTab
+              matches={matchesApi.matches}
+              onNew={() => setMatchDraft({ mode: "add", name: "", desc: "", prize: "", act: actsApi.acts[0]?.name || "", durDays: 7 })}
+              onEdit={(m) => setMatchDraft({ mode: "edit", id: m.id, name: m.name, desc: m.desc, prize: m.prize, act: m.act, durDays: m.durDays })}
+              onDelete={(m) => {
+                if (confirm(`Eliminare il match "${m.name}"?`)) matchesApi.delMatch(m.id);
+              }}
+              onToggle={matchesApi.toggleVis}
+            />
+          );
+        case "piggy":
+          return (
+            <AdminPiggyTab
+              users={users}
+              period={period}
+              setPeriod={setPeriod}
+              duePreview={usersApi.duePreview}
+              paymentFor={(uid) => usersApi.paymentFor(uid)}
+              onPay={usersApi.payWeek}
+              onUndo={(uid, week) => {
+                if (confirm("Annullare l'accredito di questa settimana?")) usersApi.undoPayment(uid, week);
+              }}
+              onIncome={setIncomeFor}
+            />
+          );
+        case "pins":
+          return (
+            <AdminPinsTab
+              onChange={(k) => setPinTarget(k)}
+              onReset={(k) => {
+                if (confirm("Riportare il PIN a quello di fabbrica?")) onResetPin(k);
+              }}
+            />
+          );
+      }
+    };
+    return (
+      <div>
+        <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
+          {TABS.map((t) => (
+            <Pill key={t.id} active={tab === t.id} onClick={() => setTab(t.id)} color={P.acc}>
+              {t.i} {t.l}
+            </Pill>
+          ))}
+        </div>
+        {tabBody()}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Shell
+        avatar={view ? users[view].av : "🔒"}
+        title={view ? `Admin › ${users[view].n}` : "Admin"}
+        subtitle={view ? undefined : `${usersApi.allPending} in attesa`}
+        tint={view ? users[view].c : P.acc}
+        onBack={view ? () => setView(null) : undefined}
+        onLogout={onLogout}
+        nav={
+          <>
+            <NavItem icon="🔒" label="Admin" active={!view} onClick={() => setView(null)} color={P.acc} badge={usersApi.allPending} />
+            <NavItem icon={users.mia.av} label={users.mia.n} active={view === "mia"} onClick={() => setView("mia")} color={P.mia} badge={usersApi.pendingCnt("mia")} />
+            <NavItem icon={users.samira.av} label={users.samira.n} active={view === "samira"} onClick={() => setView("samira")} color={P.sam} badge={usersApi.pendingCnt("samira")} />
+          </>
+        }
+      >
+        {body()}
+      </Shell>
+
+      {actDraft && <ActivityEditModal draft={actDraft} setDraft={(fn) => setActDraft((d) => (d ? fn(d) : d))} onSave={saveAct} onClose={() => setActDraft(null)} />}
+      {matchDraft && (
+        <MatchEditModal draft={matchDraft} setDraft={(fn) => setMatchDraft((d) => (d ? fn(d) : d))} acts={actsApi.acts} onSave={saveMatch} onClose={() => setMatchDraft(null)} />
+      )}
+      {bonusFor && (
+        <BonusPointsModal
+          who={users[bonusFor].n}
+          grad={users[bonusFor].grad}
+          onSave={(pts, reason) => {
+            usersApi.addBonus(bonusFor, pts, reason);
+            setBonusFor(null);
+          }}
+          onClose={() => setBonusFor(null)}
+        />
+      )}
+      {incomeFor && (
+        <ExtraIncomeModal
+          who={users[incomeFor].n}
+          grad={users[incomeFor].grad}
+          onSave={(entry) => {
+            usersApi.addIncome(incomeFor, entry);
+            setIncomeFor(null);
+          }}
+          onClose={() => setIncomeFor(null)}
+        />
+      )}
+      {missDraft && (
+        <MissionEditModal
+          draft={missDraft}
+          setDraft={(fn) => setMissDraft((d) => (d ? fn(d) : d))}
+          acts={actsApi.acts}
+          onSave={saveMission}
+          onClose={() => setMissDraft(null)}
+        />
+      )}
+      {pinTarget && (
+        <PinChangeModal
+          currentPin={pins[pinTarget]}
+          onSave={(next) => {
+            onChangePin(pinTarget, next);
+            setPinTarget(null);
+          }}
+          onClose={() => setPinTarget(null)}
+        />
+      )}
+    </>
+  );
+}
