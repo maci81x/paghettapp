@@ -1,15 +1,16 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SPLIT, YIELD_YEAR } from "../../data/constants";
 import { monthlyAllowanceAvg } from "../../data/report";
-import type { InvestCfg, User } from "../../data/types";
+import type { InvestCfg, User, UserId } from "../../data/types";
 import { GlassCard, InfoTip, Input, Label, Pill, SectionTitle } from "../../design/components";
 import { P, gls } from "../../design/tokens";
 import { calcCompoundInterest } from "../../utils/compoundInterest";
+import SavingsTrendCard from "./SavingsTrendCard";
 
 const MIN_MONTHS = 12;
 const MAX_MONTHS = 120;
 
-export default function InvestTab({ u, onChange }: { u: User; onChange: (k: keyof InvestCfg, v: number) => void }) {
+export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: User; uc: string; onChange: (k: keyof InvestCfg, v: number) => void }) {
   // il capitale simulato è il salvadanaio vero: le ragazze non lo modificano
   const principal = u.w.risparmio;
   const months = Math.min(MAX_MONTHS, Math.max(MIN_MONTHS, u.inv.mo));
@@ -36,6 +37,8 @@ export default function InvestTab({ u, onChange }: { u: User; onChange: (k: keyo
           👨‍👧 Babbo Roby investe i tuoi risparmi. Più li lasci, più crescono grazie all'interesse composto: i guadagni generano altri guadagni!
         </p>
       </GlassCard>
+
+      <SavingsTrendCard uid={uid} u={u} color={uc} />
 
       <GlassCard>
         <Label>Quanto hai nel risparmio adesso</Label>

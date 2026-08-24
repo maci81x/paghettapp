@@ -55,6 +55,7 @@ const OPS = {
   setPiggybankNote: api.setPiggybankNote,
   createIncome: api.createIncome,
   deleteIncome: api.deleteIncome,
+  confirmIncome: api.confirmIncome,
   createExpense: api.createExpense,
   createWish: api.createWish,
   updateWish: api.updateWish,
@@ -108,6 +109,19 @@ const rowQuotes = (r: api.IncomeRow): Record<Fund, number> => ({
   personale: Number(r.split_personal ?? 0),
   beneficenza: Number(r.split_charity ?? 0),
 });
+
+/**
+ * Stato della conferma di ricezione. Finché la migrazione `income_confirmed`
+ * non è applicata le colonne non arrivano: le entrate risultano già confermate
+ * così l'app non chiede una conferma che non saprebbe salvare.
+ */
+const rowConfirm = (r: api.IncomeRow): { confirmed: boolean; confirmedAt?: string } => {
+  if (!api.schema.incomeConfirm) return { confirmed: true };
+  return {
+    confirmed: !!r.confirmed,
+    confirmedAt: r.confirmed_at ? isoDate(new Date(r.confirmed_at)) : undefined,
+  };
+};
 
 interface Snapshot {
   users: Users;
@@ -172,6 +186,7 @@ function buildSnapshot(rows: {
         source: i.note ?? (i.type === "allowance" ? "Paghetta settimanale" : "Entrata extra"),
         split: quotesToPct(rowQuotes(i)),
         type: i.type === "allowance" ? "paghetta" : "extra",
+        ...rowConfirm(i),
       }));
 
     // le voci saldate da un accredito sono quelle pagate fra un accredito e il precedente
@@ -188,6 +203,7 @@ function buildSnapshot(rows: {
           amount: Number(row.amount),
           split: rowQuotes(row),
           logIds: paidLogs.filter((l) => l.created_at <= row.created_at && l.created_at > prev).map((l) => l.id),
+          ...rowConfirm(row),
         };
       })
       .reverse();
@@ -233,7 +249,7 @@ export function useSupabase() {
   /* ── caricamento ── */
 
   const load = useCallback(async () => {
-    await Promise.all([api.probeSchema(), api.probePinRpc()]);
+    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm()]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
@@ -401,6 +417,14 @@ export function useSupabase() {
     await send("deleteActivity", [id]);
   };
 
+  /** Eliminazione multipla: una sola scrittura sullo stato, una chiamata per attività. */
+  const delActs = async (ids: number[]) => {
+    if (ids.length === 0) return;
+    const set = new Set(ids);
+    setActs((p) => p.filter((a) => !set.has(a.id)));
+    for (const id of ids) await send("deleteActivity", [id]);
+  };
+
   /* ── completamenti ── */
 
   const addLog = async (uid: UserId, actId: number, cnt: number, note: string, tod: Tod, pts: number) => {
@@ -560,6 +584,24 @@ export function useSupabase() {
     for (const f of FUNDS) await send("updatePiggybank", [uid, f, quote[f]]);
   };
 
+  /**
+   * Paghetta accreditata e non ancora confermata dalla ragazza: la Home ne
+   * mostra una sola alla volta, la più recente.
+   */
+  const pendingAllowance = (uid: UserId): IncomeEntry | undefined =>
+    (users[uid].income ?? []).find((i) => i.type === "paghetta" && !i.confirmed);
+
+  /** La ragazza conferma di aver ricevuto la paghetta. */
+  const confirmIncome = async (uid: UserId, id: number) => {
+    const day = todayISO();
+    patch(uid, (u) => ({
+      ...u,
+      income: (u.income ?? []).map((i) => (i.id === id ? { ...i, confirmed: true, confirmedAt: day } : i)),
+      pays: (u.pays ?? []).map((p) => (p.id === id ? { ...p, confirmed: true, confirmedAt: day } : p)),
+    }));
+    await send("confirmIncome", [id]);
+  };
+
   /* ── desideri ── */
 
   const addWish = async (uid: UserId, wish: Omit<Wish, "id" | "done">) => {
@@ -696,6 +738,8 @@ export function useSupabase() {
     for (const f of FUNDS) await send("updatePiggybank", [uid, f, split[f]]);
 
     const id = row?.id ?? Date.now();
+    // senza la migrazione la conferma non è salvabile: l'accredito nasce già confermato
+    const confirmed = !api.schema.incomeConfirm;
     patch(uid, (u) => ({
       ...u,
       w: {
@@ -704,7 +748,7 @@ export function useSupabase() {
         beneficenza: +(u.w.beneficenza + split.beneficenza).toFixed(2),
       },
       log: u.log.map((l) => (logIds.includes(l.id) ? { ...l, paid: true } : l)),
-      pays: [{ id, week, date: todayISO(), pts, amount, split, logIds }, ...(u.pays ?? [])],
+      pays: [{ id, week, date: todayISO(), pts, amount, split, logIds, confirmed }, ...(u.pays ?? [])],
       income: [
         {
           id,
@@ -713,6 +757,7 @@ export function useSupabase() {
           source: "Paghetta settimanale",
           split: { risparmio: SPLIT.risparmio * 100, personale: SPLIT.personale * 100, beneficenza: SPLIT.beneficenza * 100 },
           type: "paghetta" as const,
+          confirmed,
         },
         ...(u.income ?? []),
       ],
@@ -758,6 +803,7 @@ export function useSupabase() {
     addAct,
     updateAct,
     delAct,
+    delActs,
     addLog,
     addBonus,
     approve,
@@ -775,6 +821,8 @@ export function useSupabase() {
     resetPin,
     addSpesa,
     addIncome,
+    pendingAllowance,
+    confirmIncome,
     addWish,
     updateWish,
     delWish,

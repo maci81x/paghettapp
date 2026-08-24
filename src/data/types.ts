@@ -89,6 +89,10 @@ export interface Payment {
   split: Record<Fund, number>;
   /** Voci di log saldate da questo accredito: servono per annullarlo. */
   logIds: number[];
+  /** true quando la ragazza ha confermato di aver ricevuto i soldi. */
+  confirmed?: boolean;
+  /** Giorno della conferma (ISO). */
+  confirmedAt?: string;
 }
 
 /** Entrata registrata: paghetta settimanale o extra (regalo, lavoretto). */
@@ -100,6 +104,18 @@ export interface IncomeEntry {
   /** Percentuali usate per dividere l'importo (somma 100). */
   split: Record<Fund, number>;
   type: "extra" | "paghetta";
+  /** true quando la ragazza ha confermato di aver ricevuto i soldi. */
+  confirmed?: boolean;
+  /** Giorno della conferma (ISO). */
+  confirmedAt?: string;
+}
+
+/** Movimento del salvadanaio Risparmio: quota versata (+) o prelievo (−). */
+export interface SavingsMove {
+  /** Giorno del movimento (ISO). */
+  date: string;
+  delta: number;
+  label: string;
 }
 
 export interface Wish {

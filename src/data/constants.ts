@@ -52,6 +52,19 @@ export const TIERS: Tier[] = [
 export const getTier = (p: number): Tier => TIERS.find((t) => p >= t.min && p <= t.max) || TIERS[0];
 export const getLvl = (p: number): Level => LVLS.find((l) => p >= l.min && p <= l.max) || LVLS[0];
 
+/** Scaglione successivo di paghetta: undefined quando si è già al massimo. */
+export const nextTier = (p: number): Tier | undefined => TIERS.find((t) => t.min > p);
+
+/** Avanzamento (0-100) dentro lo scaglione attuale verso il successivo. */
+export const tierProgress = (p: number): number => {
+  const next = nextTier(p);
+  if (!next) return 100;
+  const cur = getTier(p);
+  const span = next.min - cur.min;
+  if (span <= 0) return 100;
+  return Math.min(100, Math.max(0, ((p - cur.min) / span) * 100));
+};
+
 /** PIN di default: sovrascritti da quelli salvati in localStorage. */
 export const DEFAULT_PINS: Record<PinKey, string> = { mia: "2806", samira: "0811", admin: "0000" };
 

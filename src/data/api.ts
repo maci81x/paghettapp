@@ -1,7 +1,7 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { isoDate, nowTod } from "./constants.ts";
 import { supabase } from "./supabase.ts";
-import type { Activity, Fund, InvestCfg, LogEntry, Mission, Tod, UserId, Wish } from "./types";
+import type { Activity, Fund, InvestCfg, LogEntry, Mission, SavingsMove, Tod, UserId, Wish } from "./types";
 
 /* ══════════════════════════════════════════════════════════════
    Traduzione fra i nomi del database (inglese) e quelli dell'app
@@ -101,6 +101,9 @@ export interface IncomeRow {
   split_savings: number | null;
   split_charity: number | null;
   created_at: string;
+  /** Aggiunte dalla migrazione `income_confirmed`: assenti finché non è applicata. */
+  confirmed?: boolean | null;
+  confirmed_at?: string | null;
 }
 
 export interface ExpenseRow {
@@ -224,7 +227,7 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false };
+export const schema = { extended: false, incomeConfirm: false };
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -232,13 +235,23 @@ export const probeSchema = async () => {
   return schema.extended;
 };
 
-/** Toglie dal payload le colonne che il database non ha ancora. */
-const strip = <T extends Record<string, unknown>>(payload: T, extendedKeys: string[]): T => {
-  if (schema.extended) return payload;
+/** La conferma di ricezione arriva con una migrazione a parte: la rilevo da sola. */
+export const probeIncomeConfirm = async () => {
+  const { error } = await supabase.from("income").select("confirmed").limit(1);
+  schema.incomeConfirm = !error;
+  return schema.incomeConfirm;
+};
+
+/** Toglie dal payload le colonne indicate quando `when` è vero. */
+const stripIf = <T extends Record<string, unknown>>(when: boolean, payload: T, keys: string[]): T => {
+  if (!when) return payload;
   const out = { ...payload };
-  extendedKeys.forEach((k) => delete out[k]);
+  keys.forEach((k) => delete out[k]);
   return out;
 };
+
+/** Toglie dal payload le colonne che il database non ha ancora. */
+const strip = <T extends Record<string, unknown>>(payload: T, extendedKeys: string[]): T => stripIf(!schema.extended, payload, extendedKeys);
 
 /* ── utenti ── */
 
@@ -437,21 +450,61 @@ export const createIncome = (d: {
   wrap<IncomeRow[]>(
     supabase
       .from("income")
-      .insert({
-        user_id: d.userId,
-        type: d.type,
-        amount: d.amount,
-        note: d.note,
-        tier: d.tier ?? null,
-        week_pts: d.weekPts ?? null,
-        split_personal: d.quote?.personale ?? null,
-        split_savings: d.quote?.risparmio ?? null,
-        split_charity: d.quote?.beneficenza ?? null,
-      })
+      .insert(
+        // solo la paghetta va confermata: le entrate extra le registra già la ragazza
+        stripIf(!schema.incomeConfirm, {
+          user_id: d.userId,
+          type: d.type,
+          amount: d.amount,
+          note: d.note,
+          tier: d.tier ?? null,
+          week_pts: d.weekPts ?? null,
+          split_personal: d.quote?.personale ?? null,
+          split_savings: d.quote?.risparmio ?? null,
+          split_charity: d.quote?.beneficenza ?? null,
+          confirmed: d.type !== "allowance",
+          confirmed_at: d.type !== "allowance" ? new Date().toISOString() : null,
+        }, ["confirmed", "confirmed_at"]),
+      )
       .select(),
   );
 
 export const deleteIncome = (id: number) => wrap<IncomeRow[]>(supabase.from("income").delete().eq("id", id).select());
+
+/** La ragazza conferma di aver ricevuto la paghetta. */
+export const confirmIncome = (incomeId: number) =>
+  wrap<IncomeRow[]>(supabase.from("income").update({ confirmed: true, confirmed_at: new Date().toISOString() }).eq("id", incomeId).select());
+
+/**
+ * Movimenti del salvadanaio Risparmio letti dal database, dal più vecchio al
+ * più recente: quote versate dalle entrate e spese pagate dal risparmio.
+ * Alimenta il grafico dell'andamento; se il database non risponde le viste
+ * ricadono sulla ricostruzione dai dati già in memoria (`data/savings.ts`).
+ */
+export const fetchSavingsHistory = async (userId: string): Promise<Result<SavingsMove[]>> => {
+  const [inc, exp] = await Promise.all([
+    wrap<IncomeRow[]>(supabase.from("income").select("*").eq("user_id", userId).order("created_at")),
+    wrap<ExpenseRow[]>(
+      supabase.from("expenses").select("*").eq("user_id", userId).eq("piggybank_type", FUND_DB.risparmio).order("created_at"),
+    ),
+  ]);
+  const failed = inc.error ?? exp.error;
+  if (failed) return { data: null, error: failed };
+
+  const versamenti: SavingsMove[] = (inc.data ?? []).map((r) => ({
+    date: isoDate(new Date(r.created_at)),
+    delta: Number(r.split_savings ?? 0),
+    label: r.note ?? (r.type === "allowance" ? "Paghetta settimanale" : "Entrata extra"),
+  }));
+  const prelievi: SavingsMove[] = (exp.data ?? []).map((r) => ({
+    date: isoDate(new Date(r.created_at)),
+    delta: -Number(r.amount),
+    label: r.description,
+  }));
+
+  const moves = [...versamenti, ...prelievi].filter((m) => Math.abs(m.delta) >= 0.01).sort((a, b) => a.date.localeCompare(b.date));
+  return { data: moves, error: null };
+};
 
 /* ── spese ── */
 

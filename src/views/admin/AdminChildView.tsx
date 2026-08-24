@@ -1,8 +1,14 @@
+import { Suspense, lazy } from "react";
 import { FUNDS, FUND_LABEL, PERIOD_MONTHS, TODS, YIELD_YEAR, getLvl, getTier } from "../../data/constants";
-import type { Activity, Period, UserId, Users } from "../../data/types";
+import type { Activity, Fund, Payment, Period, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, PeriodBar } from "../../design/components";
 import { P } from "../../design/tokens";
 import MonthReportCard from "../MonthReportCard";
+import AdminAllowanceCard from "./AdminAllowanceCard";
+
+// recharts (~450KB) resta fuori dal bundle iniziale: arriva solo quando l'admin
+// apre la scheda di una figlia.
+const AdminSavingsCard = lazy(() => import("./AdminSavingsCard"));
 
 export default function AdminChildView({
   uid,
@@ -12,6 +18,10 @@ export default function AdminChildView({
   weekPts,
   period,
   setPeriod,
+  due,
+  paid,
+  onPay,
+  onUndoPay,
   onApprove,
   onReject,
   onIncome,
@@ -24,6 +34,11 @@ export default function AdminChildView({
   weekPts: number;
   period: Period;
   setPeriod: (p: Period) => void;
+  due: { pts: number; amount: number; split: Record<Fund, number> };
+  /** Accredito della settimana corrente, se già fatto. */
+  paid?: Payment;
+  onPay: () => void;
+  onUndoPay: (week: string) => void;
   onApprove: (uid: UserId, logId: number) => void;
   onReject: (uid: UserId, logId: number) => void;
   onIncome: () => void;
@@ -66,6 +81,14 @@ export default function AdminChildView({
       </div>
 
       <MonthReportCard u={u} />
+
+      <p style={{ color: P.tx, fontSize: 15, fontWeight: 700, margin: "16px 0 10px", letterSpacing: -0.3 }}>💰 Paghetta &amp; Risparmi</p>
+
+      <AdminAllowanceCard u={u} due={due} paid={paid} onPay={onPay} onUndo={onUndoPay} />
+
+      <Suspense fallback={<p style={{ color: P.tx3, fontSize: 12, textAlign: "center", padding: 16 }}>Carico il grafico…</p>}>
+        <AdminSavingsCard uid={uid} u={u} />
+      </Suspense>
 
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 10px" }}>🏦 Salvadanai</p>

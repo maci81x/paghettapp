@@ -106,6 +106,8 @@ export default function ChildShell({
             todayDone={todayDone}
             weekPtsOf={usersApi.weekPts}
             paid={usersApi.paymentFor(au)}
+            toConfirm={usersApi.pendingAllowance(au)}
+            onConfirmIncome={(id) => usersApi.confirmIncome(au, id)}
             onNote={(fund, note) => usersApi.setPiggyNote(au, fund, note)}
             onIncome={() => setIncome(true)}
             onSpesa={() => setSpesa({ ds: "", a: "", f: "personale" })}
@@ -139,7 +141,7 @@ export default function ChildShell({
           />
         );
       case "invest":
-        return <InvestTab u={u} onChange={(k, v) => usersApi.setInvest(au, k, v)} />;
+        return <InvestTab uid={au} u={u} uc={uc} onChange={(k, v) => usersApi.setInvest(au, k, v)} />;
       case "profile":
         return (
           <ProfileTab

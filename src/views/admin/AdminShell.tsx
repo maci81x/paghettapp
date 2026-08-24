@@ -14,6 +14,7 @@ import PinChangeModal from "../../modals/PinChangeModal";
 import Shell from "../Shell";
 import AdminActivitiesTab from "./AdminActivitiesTab";
 import AdminChildView from "./AdminChildView";
+import AdminChildrenSummary from "./AdminChildrenSummary";
 import AdminMatchTab from "./AdminMatchTab";
 import AdminMissionsTab from "./AdminMissionsTab";
 import AdminPiggyTab from "./AdminPiggyTab";
@@ -102,6 +103,12 @@ export default function AdminShell({
           weekPts={usersApi.weekPts(view)}
           period={period}
           setPeriod={setPeriod}
+          due={usersApi.duePreview(view)}
+          paid={usersApi.paymentFor(view)}
+          onPay={() => usersApi.payWeek(view)}
+          onUndoPay={(week) => {
+            if (confirm("Annullare l'accredito di questa settimana?")) usersApi.undoPayment(view, week);
+          }}
           onApprove={usersApi.approve}
           onReject={usersApi.reject}
           onIncome={() => setIncomeFor(view)}
@@ -134,6 +141,11 @@ export default function AdminShell({
               }
               onDelete={(a) => {
                 if (confirm(`Eliminare "${a.name}"?`)) actsApi.delAct(a.id);
+              }}
+              onDeleteMany={(ids) => {
+                if (!confirm(`Eliminare ${ids.length} attività? Non è reversibile.`)) return false;
+                void actsApi.delActs(ids);
+                return true;
               }}
             />
           );
@@ -202,6 +214,7 @@ export default function AdminShell({
     };
     return (
       <div>
+        <AdminChildrenSummary users={users} weekPts={usersApi.weekPts} onOpen={setView} />
         <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
           {TABS.map((t) => (
             <Pill key={t.id} active={tab === t.id} onClick={() => setTab(t.id)} color={P.acc}>

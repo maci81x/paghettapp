@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { BONUS_ACT, CATS, FUNDS, SPLIT, TIERS, USER_IDS, YIELD_YEAR, getTier } from "../../data/constants";
 import { missionProg } from "../../data/report";
-import type { Activity, Fund, Payment, User, UserId, Users } from "../../data/types";
+import { nextMilestone } from "../../data/savings";
+import type { Activity, Fund, IncomeEntry, Payment, User, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
 import { userColor, userName } from "../../design/theme";
 import { P, gls } from "../../design/tokens";
@@ -11,9 +13,6 @@ const FUND_HOME_LABEL: Record<Fund, string> = {
   personale: `🎒 Personale (${SPLIT.personale * 100}%)`,
   beneficenza: `🤝 Beneficenza (${SPLIT.beneficenza * 100}%)`,
 };
-
-/** Traguardo successivo del risparmio, a scatti di €100: alimenta la barra di crescita. */
-const nextMilestone = (v: number) => Math.max(100, Math.ceil(v / 100) * 100 || 100);
 
 export default function HomeTab({
   u,
@@ -27,6 +26,8 @@ export default function HomeTab({
   todayDone,
   weekPtsOf,
   paid,
+  toConfirm,
+  onConfirmIncome,
   onNote,
   onIncome,
   onSpesa,
@@ -42,10 +43,14 @@ export default function HomeTab({
   todayDone: (actId: number) => number;
   weekPtsOf: (uid: UserId) => number;
   paid?: Payment;
+  /** Paghetta accreditata dall'admin e non ancora confermata dalla ragazza. */
+  toConfirm?: IncomeEntry;
+  onConfirmIncome: (id: number) => void;
   onNote: (fund: Fund, note: string) => void;
   onIncome: () => void;
   onSpesa: () => void;
 }) {
+  const [notYet, setNotYet] = useState(false);
   const tier = getTier(wp);
   const weekPct = Math.min(100, (wp / 500) * 100);
   const gap = Math.max(0, 500 - wp);
@@ -97,6 +102,28 @@ export default function HomeTab({
           <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>🔥 {u.streak} giorni di fila</p>
         </div>
       </div>
+
+      {toConfirm && (
+        <GlassCard style={{ background: `linear-gradient(135deg,${P.gold}1f,transparent)`, border: `1.5px solid ${P.gold}55` }}>
+          <p style={{ color: P.tx, fontWeight: 800, fontSize: 15, margin: "0 0 4px", letterSpacing: -0.3 }}>
+            💰 Hai ricevuto la paghetta di €{toConfirm.amount.toFixed(2)}?
+          </p>
+          <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 10px" }}>Accreditata il {toConfirm.date} · confermala quando hai i soldi in mano</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn style={{ flex: 1 }} grad={P.mintG} onClick={() => onConfirmIncome(toConfirm.id)}>
+              ✅ Sì, ricevuta!
+            </Btn>
+            <Btn style={{ flex: 1 }} outline color={P.tx3} onClick={() => setNotYet(true)}>
+              ❌ Non ancora
+            </Btn>
+          </div>
+          {notYet && (
+            <p style={{ color: P.tx2, fontSize: 10, margin: "8px 0 0", lineHeight: 1.4 }}>
+              Nessun problema: chiedi a Babbo Roby. La domanda resta qui finché non confermi.
+            </p>
+          )}
+        </GlassCard>
+      )}
 
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
         <Ring pct={weekPct} size={156} stroke={10} color={uc} glow>
