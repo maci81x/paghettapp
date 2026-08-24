@@ -44,6 +44,8 @@ export interface LogEntry {
   ok: boolean;
   /** true quando i punti sono già confluiti in una paghetta accreditata. */
   paid?: boolean;
+  /** true quando l'admin ha annullato un'approvazione: resta a storico. */
+  revoked?: boolean;
 }
 
 export interface Mission {
@@ -91,7 +93,7 @@ export interface Payment {
   logIds: number[];
   /** true quando la ragazza ha confermato di aver ricevuto i soldi. */
   confirmed?: boolean;
-  /** Giorno della conferma (ISO). */
+  /** Istante della conferma (timestamp ISO completo). */
   confirmedAt?: string;
 }
 
@@ -106,7 +108,7 @@ export interface IncomeEntry {
   type: "extra" | "paghetta";
   /** true quando la ragazza ha confermato di aver ricevuto i soldi. */
   confirmed?: boolean;
-  /** Giorno della conferma (ISO). */
+  /** Istante della conferma (timestamp ISO completo). */
   confirmedAt?: string;
 }
 

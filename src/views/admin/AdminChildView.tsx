@@ -1,10 +1,11 @@
 import { Suspense, lazy } from "react";
 import { FUNDS, FUND_LABEL, PERIOD_MONTHS, TODS, YIELD_YEAR, getLvl, getTier } from "../../data/constants";
-import type { Activity, Fund, Payment, Period, UserId, Users } from "../../data/types";
+import type { Activity, Fund, LogEntry, Payment, Period, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, PeriodBar } from "../../design/components";
 import { P } from "../../design/tokens";
 import MonthReportCard from "../MonthReportCard";
 import AdminAllowanceCard from "./AdminAllowanceCard";
+import AdminLogHistory from "./AdminLogHistory";
 
 // recharts (~450KB) resta fuori dal bundle iniziale: arriva solo quando l'admin
 // apre la scheda di una figlia.
@@ -24,6 +25,9 @@ export default function AdminChildView({
   onUndoPay,
   onApprove,
   onReject,
+  onRevoke,
+  onDeleteLog,
+  onDeduct,
   onIncome,
   onBonus,
 }: {
@@ -41,6 +45,9 @@ export default function AdminChildView({
   onUndoPay: (week: string) => void;
   onApprove: (uid: UserId, logId: number) => void;
   onReject: (uid: UserId, logId: number) => void;
+  onRevoke: (l: LogEntry, name: string) => void;
+  onDeleteLog: (l: LogEntry, name: string) => void;
+  onDeduct: () => void;
   onIncome: () => void;
   onBonus: () => void;
 }) {
@@ -48,7 +55,7 @@ export default function AdminChildView({
   const lvl = getLvl(u.totalPts);
   const tier = getTier(weekPts);
   const months = PERIOD_MONTHS[period];
-  const pending = u.log.filter((l) => !l.ok);
+  const pending = u.log.filter((l) => !l.ok && !l.revoked);
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
 
   return (
@@ -142,6 +149,8 @@ export default function AdminChildView({
           })
         )}
       </GlassCard>
+
+      <AdminLogHistory u={u} acts={acts} onRevoke={onRevoke} onDelete={onDeleteLog} onDeduct={onDeduct} />
 
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>💸 Spese recenti</p>

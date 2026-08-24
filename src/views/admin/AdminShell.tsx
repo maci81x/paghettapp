@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { USER_IDS, todayISO } from "../../data/constants";
-import type { ActivityDraft, AdminTab, MatchDraft, MissionDraft, Period, PinKey, UserId } from "../../data/types";
+import type { ActivityDraft, AdminTab, LogEntry, MatchDraft, MissionDraft, Period, PinKey, UserId } from "../../data/types";
 import { Avatar, NavItem, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
 import type { MatchesApi } from "../../hooks/useMatches";
 import type { ActivitiesApi, UsersApi } from "../../hooks/useSupabase";
+import { fmtDay } from "../../utils/dates";
 import ActivityEditModal from "../../modals/ActivityEditModal";
 import BonusPointsModal from "../../modals/BonusPointsModal";
+import ConfirmModal from "../../modals/ConfirmModal";
+import DeductPointsModal from "../../modals/DeductPointsModal";
 import ExtraIncomeModal from "../../modals/ExtraIncomeModal";
 import MatchEditModal from "../../modals/MatchEditModal";
 import MissionEditModal from "../../modals/MissionEditModal";
@@ -57,6 +60,8 @@ export default function AdminShell({
   const [pinTarget, setPinTarget] = useState<PinKey | null>(null);
   const [incomeFor, setIncomeFor] = useState<UserId | null>(null);
   const [bonusFor, setBonusFor] = useState<UserId | null>(null);
+  const [deductFor, setDeductFor] = useState<UserId | null>(null);
+  const [logAction, setLogAction] = useState<{ uid: UserId; log: LogEntry; name: string; mode: "revoke" | "delete" } | null>(null);
 
   const { users } = usersApi;
 
@@ -111,6 +116,9 @@ export default function AdminShell({
           }}
           onApprove={usersApi.approve}
           onReject={usersApi.reject}
+          onRevoke={(log, name) => setLogAction({ uid: view, log, name, mode: "revoke" })}
+          onDeleteLog={(log, name) => setLogAction({ uid: view, log, name, mode: "delete" })}
+          onDeduct={() => setDeductFor(view)}
           onIncome={() => setIncomeFor(view)}
           onBonus={() => setBonusFor(view)}
         />
@@ -260,6 +268,40 @@ export default function AdminShell({
             setBonusFor(null);
           }}
           onClose={() => setBonusFor(null)}
+        />
+      )}
+      {deductFor && (
+        <DeductPointsModal
+          who={users[deductFor].n}
+          onSave={(pts, reason) => {
+            usersApi.deductPoints(deductFor, pts, reason);
+            setDeductFor(null);
+          }}
+          onClose={() => setDeductFor(null)}
+        />
+      )}
+      {logAction && (
+        <ConfirmModal
+          title={logAction.mode === "revoke" ? "↩️ Annullare l'approvazione?" : "🗑️ Eliminare il record?"}
+          message={
+            logAction.mode === "revoke" ? (
+              <>
+                Annullare <b>{logAction.name}</b> del {fmtDay(logAction.log.date)}? Verranno tolti{" "}
+                <b style={{ color: P.red }}>{Math.abs(logAction.log.pts)} punti</b> a {users[logAction.uid].n}.
+              </>
+            ) : (
+              <>
+                Eliminare questo record ({logAction.name} del {fmtDay(logAction.log.date)})? I punti verranno ricalcolati.
+              </>
+            )
+          }
+          confirmLabel={logAction.mode === "revoke" ? "↩️ Annulla i punti" : "🗑️ Elimina"}
+          danger={logAction.mode === "delete"}
+          onConfirm={() => {
+            if (logAction.mode === "revoke") usersApi.revoke(logAction.uid, logAction.log.id);
+            else usersApi.delLog(logAction.uid, logAction.log.id);
+          }}
+          onClose={() => setLogAction(null)}
         />
       )}
       {incomeFor && (

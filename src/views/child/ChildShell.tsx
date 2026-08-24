@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from "react";
-import { FREQ_UNIT, getLvl } from "../../data/constants";
-import type { ChildTab, CompletionDraft, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
+import { FREQ_UNIT, getLvl, nowTod } from "../../data/constants";
+import type { Activity, ChildTab, CompletionDraft, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
 import { Avatar, NavItem } from "../../design/components";
 import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
@@ -65,6 +65,21 @@ export default function ChildShell({
   const wp = usersApi.weekPts(au);
   const lvl = getLvl(u.totalPts);
   const todayDone = (actId: number) => usersApi.todayDone(au, actId);
+  const periodDone = (a: Activity) => usersApi.periodDone(au, a);
+  const unconfirmed = usersApi.unconfirmedAllowances(au);
+
+  /** Apre il modale di completamento con quante volte resta ancora disponibile. */
+  const openCompletion = (a: Activity, remaining: number) =>
+    setComp({
+      actId: a.id,
+      actName: a.name,
+      cnt: 1,
+      maxCnt: Math.max(1, remaining),
+      freq: FREQ_UNIT[a.freq],
+      note: "",
+      tod: nowTod(),
+      duration: a.duration,
+    });
 
   /** Ogni conferma crea una voce nuova nel log: la stessa attività può essere rifatta più tardi. */
   const confirmComp = () => {
@@ -106,8 +121,9 @@ export default function ChildShell({
             todayDone={todayDone}
             weekPtsOf={usersApi.weekPts}
             paid={usersApi.paymentFor(au)}
-            toConfirm={usersApi.pendingAllowance(au)}
+            toConfirm={unconfirmed[0]}
             onConfirmIncome={(id) => usersApi.confirmIncome(au, id)}
+            onMark={(a) => openCompletion(a, a.max - periodDone(a))}
             onNote={(fund, note) => usersApi.setPiggyNote(au, fund, note)}
             onIncome={() => setIncome(true)}
             onSpesa={() => setSpesa({ ds: "", a: "", f: "personale" })}
@@ -120,10 +136,9 @@ export default function ChildShell({
             grad={grad}
             tp={tp}
             todayDone={todayDone}
+            periodDone={periodDone}
             todayByTod={(actId) => usersApi.todayByTod(au, actId)}
-            onMark={(a, remaining) =>
-              setComp({ actId: a.id, actName: a.name, cnt: 1, maxCnt: remaining, freq: FREQ_UNIT[a.freq], note: "", tod: "mattina", duration: a.duration })
-            }
+            onMark={openCompletion}
           />
         );
       case "miss":
@@ -138,6 +153,7 @@ export default function ChildShell({
             series={usersApi.periodSeries(au, period)}
             onNewSpesa={() => setSpesa({ ds: "", a: "", f: "personale" })}
             onNewIncome={() => setIncome(true)}
+            onConfirmIncome={(id) => usersApi.confirmIncome(au, id)}
           />
         );
       case "invest":
@@ -181,7 +197,16 @@ export default function ChildShell({
         onLogout={onLogout}
         onAvatarClick={() => setTab("profile")}
         nav={TABS.map((t) => (
-          <NavItem key={t.id} icon={t.icon} label={t.label} active={tab === t.id} onClick={() => setTab(t.id)} color={uc} />
+          <NavItem
+            key={t.id}
+            icon={t.icon}
+            label={t.label}
+            active={tab === t.id}
+            onClick={() => setTab(t.id)}
+            color={uc}
+            // paghette da confermare: il pallino le porta a guardare il Wallet
+            badge={t.id === "wallet" ? unconfirmed.length : 0}
+          />
         ))}
       >
         <Suspense fallback={<p style={{ color: P.tx3, fontSize: 12, textAlign: "center", padding: 24 }}>Carico i grafici…</p>}>{content()}</Suspense>

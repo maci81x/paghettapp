@@ -70,7 +70,13 @@ export interface LogRow {
   approved: boolean;
   paid: boolean;
   created_at: string;
+  /** Aggiunte dalla migrazione `activity_logs_kind_revoked`: assenti finché non è applicata. */
+  entry_kind?: LogKind | null;
+  revoked?: boolean | null;
 }
+
+/** Natura di una voce senza attività collegata. */
+export type LogKind = "bonus" | "deduct";
 
 export interface MissionRow {
   id: number;
@@ -160,9 +166,15 @@ export const toActivity = (r: ActRow): Activity => ({
   duration: r.duration ?? undefined,
 });
 
+/**
+ * Bonus o penalità? Con la colonna `entry_kind` è scritto; senza, l'unico
+ * indizio è il segno dei punti (un bonus negativo finisce fra le penalità).
+ */
+export const logKind = (r: LogRow): LogKind => r.entry_kind ?? (r.points < 0 ? "deduct" : "bonus");
+
 export const toLog = (r: LogRow): LogEntry => ({
   id: r.id,
-  actId: r.activity_id ?? BONUS_ACT_ID,
+  actId: r.activity_id ?? (logKind(r) === "deduct" ? DEDUCT_ACT_ID : BONUS_ACT_ID),
   date: isoDate(new Date(r.created_at)),
   cnt: r.times,
   note: r.note ?? "",
@@ -170,6 +182,7 @@ export const toLog = (r: LogRow): LogEntry => ({
   pts: r.points,
   ok: r.approved,
   paid: r.paid,
+  revoked: !!r.revoked,
 });
 
 export const toMission = (r: MissionRow, uid: UserId): Mission => ({
@@ -204,6 +217,9 @@ export const toInvest = (r?: InvRow): InvestCfg => ({
 /** L'app usa questo id fittizio per i punti bonus; nel database la colonna resta NULL. */
 export const BONUS_ACT_ID = -1;
 
+/** Come sopra, per i punti tolti a mano dall'admin. */
+export const DEDUCT_ACT_ID = -2;
+
 /* ══════════════════════════════════════════════════════════════
    Chiamate
    ══════════════════════════════════════════════════════════════ */
@@ -227,7 +243,7 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false, incomeConfirm: false };
+export const schema = { extended: false, incomeConfirm: false, logExtras: false };
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -240,6 +256,13 @@ export const probeIncomeConfirm = async () => {
   const { error } = await supabase.from("income").select("confirmed").limit(1);
   schema.incomeConfirm = !error;
   return schema.incomeConfirm;
+};
+
+/** Idem per le colonne dello storico dei punti (`entry_kind`, `revoked`). */
+export const probeLogExtras = async () => {
+  const { error } = await supabase.from("activity_logs").select("entry_kind").limit(1);
+  schema.logExtras = !error;
+  return schema.logExtras;
 };
 
 /** Toglie dal payload le colonne indicate quando `when` è vero. */
@@ -341,33 +364,105 @@ export const deleteActivity = (id: number) => wrap<ActRow[]>(supabase.from("acti
 
 /* ── log dei completamenti ── */
 
-export const fetchActivityLogs = (userId?: string, options?: { since?: Date; paid?: boolean }) => {
+export const fetchActivityLogs = (userId?: string, options?: { since?: Date; paid?: boolean; approved?: boolean }) => {
   let q = supabase.from("activity_logs").select("*").order("created_at");
   if (userId) q = q.eq("user_id", userId);
   if (options?.since) q = q.gte("created_at", options.since.toISOString());
   if (options?.paid !== undefined) q = q.eq("paid", options.paid);
+  if (options?.approved !== undefined) q = q.eq("approved", options.approved);
   return wrap<LogRow[]>(q);
 };
 
-export const createActivityLog = (d: { userId: string; actId: number | null; pts: number; cnt: number; tod: Tod; note: string; approved?: boolean }) =>
+export const createActivityLog = (d: {
+  userId: string;
+  actId: number | null;
+  pts: number;
+  cnt: number;
+  tod: Tod;
+  note: string;
+  approved?: boolean;
+  kind?: LogKind;
+}) =>
   wrap<LogRow[]>(
     supabase
       .from("activity_logs")
-      .insert({
-        user_id: d.userId,
-        activity_id: d.actId,
-        points: d.pts,
-        times: d.cnt,
-        moment: TOD_DB[d.tod],
-        note: d.note,
-        approved: d.approved ?? false,
-      })
+      .insert(
+        stripIf(!schema.logExtras, {
+          user_id: d.userId,
+          activity_id: d.actId,
+          points: d.pts,
+          times: d.cnt,
+          moment: TOD_DB[d.tod],
+          note: d.note,
+          approved: d.approved ?? false,
+          entry_kind: d.actId === null ? (d.kind ?? "bonus") : null,
+        }, ["entry_kind"]),
+      )
       .select(),
   );
 
-export const approveLog = (logId: number) => wrap<LogRow[]>(supabase.from("activity_logs").update({ approved: true }).eq("id", logId).select());
+export const approveLog = (logId: number) =>
+  wrap<LogRow[]>(
+    supabase
+      .from("activity_logs")
+      .update(stripIf(!schema.logExtras, { approved: true, revoked: false }, ["revoked"]))
+      .eq("id", logId)
+      .select(),
+  );
 
 export const rejectLog = (logId: number) => wrap<LogRow[]>(supabase.from("activity_logs").delete().eq("id", logId).select());
+
+/**
+ * Riallinea `users.total_pts` alla somma dei punti approvati.
+ * Il totale è un contatore incrementale: dopo un annullamento o
+ * un'eliminazione va ricalcolato dai log, non aggiustato a mano.
+ */
+export const recalcTotalPoints = async (userId: string): Promise<Result<number>> => {
+  const logs = await fetchActivityLogs(userId, { approved: true });
+  if (logs.error) return { data: null, error: logs.error };
+  const total = (logs.data ?? []).reduce((s, l) => s + Number(l.points), 0);
+  const up = await updateUser(userId, { total_pts: total });
+  return up.error ? { data: null, error: up.error } : { data: total, error: null };
+};
+
+/**
+ * Annulla un'approvazione: la voce resta a storico come annullata e i punti
+ * escono dal totale. Le missioni collegate si aggiornano da sole, perché il
+ * loro progresso si calcola dai soli completamenti approvati.
+ */
+export const revokeLog = async (logId: number): Promise<Result<LogRow[]>> => {
+  const res = await wrap<LogRow[]>(
+    supabase
+      .from("activity_logs")
+      .update(stripIf(!schema.logExtras, { approved: false, revoked: true }, ["revoked"]))
+      .eq("id", logId)
+      .select(),
+  );
+  const row = res.data?.[0];
+  if (row) await recalcTotalPoints(row.user_id);
+  return res;
+};
+
+/** Elimina del tutto una voce sbagliata e ricalcola il totale dei punti. */
+export const deleteLog = async (logId: number): Promise<Result<LogRow[]>> => {
+  const res = await wrap<LogRow[]>(supabase.from("activity_logs").delete().eq("id", logId).select());
+  const row = res.data?.[0];
+  if (row) await recalcTotalPoints(row.user_id);
+  return res;
+};
+
+/** Punti tolti a mano dall'admin: log già approvato con punti negativi. */
+export const deductPoints = (userId: string, points: number, reason: string) =>
+  createActivityLog({
+    userId,
+    actId: null,
+    pts: -Math.abs(points),
+    cnt: 1,
+    tod: nowTod(),
+    note: reason,
+    approved: true,
+    kind: "deduct",
+  });
 
 export const markLogsPaid = (logIds: number[], paid = true) =>
   wrap<LogRow[]>(supabase.from("activity_logs").update({ paid }).in("id", logIds).select());

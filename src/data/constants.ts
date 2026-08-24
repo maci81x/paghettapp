@@ -89,6 +89,22 @@ export const nowTod = (): Tod => {
 /** actId riservato ai punti bonus assegnati a mano dall'admin. */
 export const BONUS_ACT = -1;
 
+/** actId riservato ai punti tolti a mano dall'admin. */
+export const DEDUCT_ACT = -2;
+
+/** Etichetta delle voci di storico senza attività collegata. */
+export const MANUAL_ACT_LABEL: Record<number, string> = {
+  [BONUS_ACT]: "🎁 Bonus",
+  [DEDUCT_ACT]: "➖ Punti tolti",
+};
+
+/** Parola usata per il periodo in cui vale il limite di completamenti. */
+export const PERIOD_WORD: Record<Freq, string> = {
+  daily: "oggi",
+  weekly: "questa settimana",
+  monthly: "questo mese",
+};
+
 /** Etichette del limite di completamenti, per frequenza. */
 export const MAX_LABEL: Record<Freq, string> = {
   daily: "Quante volte al giorno (max)",
@@ -186,6 +202,17 @@ export const weekStartOf = (date: Date) => {
 
 /** Lunedì della settimana corrente, in formato ISO. */
 export const getWeekStart = () => weekStartOf(new Date());
+
+/**
+ * Primo giorno del periodo in cui vale il limite di completamenti.
+ * Un'attività settimanale con max 1 va segnata una volta a settimana, non una
+ * volta al giorno: il conteggio parte da qui.
+ */
+export const periodStart = (freq: Freq) => {
+  if (freq === "weekly") return getWeekStart();
+  if (freq === "monthly") return `${monthKey(0)}-01`;
+  return todayISO();
+};
 
 /** Proiezione investimento: capitale iniziale + versamento mensile, 10%/anno. */
 export const mkInv = (amt: number, mo: number, ex: number) => {

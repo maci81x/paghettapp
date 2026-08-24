@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BONUS_ACT, CATS, FUNDS, SPLIT, TIERS, USER_IDS, YIELD_YEAR, getTier } from "../../data/constants";
+import { BONUS_ACT, CATS, DEDUCT_ACT, FUNDS, MANUAL_ACT_LABEL, SPLIT, TIERS, USER_IDS, YIELD_YEAR, getTier, todayISO } from "../../data/constants";
 import { missionProg } from "../../data/report";
 import { nextMilestone } from "../../data/savings";
 import type { Activity, Fund, IncomeEntry, Payment, User, UserId, Users } from "../../data/types";
@@ -7,6 +7,7 @@ import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
 import { userColor, userName } from "../../design/theme";
 import { P, gls } from "../../design/tokens";
 import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
+import { fmtDay } from "../../utils/dates";
 
 const FUND_HOME_LABEL: Record<Fund, string> = {
   risparmio: `🏦 Risparmio (${SPLIT.risparmio * 100}%)`,
@@ -28,6 +29,7 @@ export default function HomeTab({
   paid,
   toConfirm,
   onConfirmIncome,
+  onMark,
   onNote,
   onIncome,
   onSpesa,
@@ -46,6 +48,8 @@ export default function HomeTab({
   /** Paghetta accreditata dall'admin e non ancora confermata dalla ragazza. */
   toConfirm?: IncomeEntry;
   onConfirmIncome: (id: number) => void;
+  /** Apre il modale di completamento direttamente dalla Home. */
+  onMark: (a: Activity) => void;
   onNote: (fund: Fund, note: string) => void;
   onIncome: () => void;
   onSpesa: () => void;
@@ -59,6 +63,11 @@ export default function HomeTab({
   // promemoria: attività giornaliere non ancora segnate oggi
   const todo = acts.filter((a) => a.freq === "daily" && todayDone(a.id) === 0).sort((a, b) => b.pts - a.pts);
   const todoTop = todo.slice(0, 5);
+
+  // riepilogo di oggi: cosa ha segnato, in ordine di inserimento
+  const doneToday = u.log
+    .filter((l) => l.date === todayISO() && !l.revoked)
+    .map((l) => ({ l, a: acts.find((x) => x.id === l.actId) }));
 
   // classifica settimanale fra sorelle
   const board = USER_IDS.map((uid) => ({
@@ -80,7 +89,8 @@ export default function HomeTab({
   const perYear = yearlyGrowth(save, YIELD_YEAR);
   const goal = nextMilestone(save);
 
-  const bonuses = u.log.filter((l) => l.actId === BONUS_ACT).slice(-3).reverse();
+  // bonus e penalità: entrambi assegnati a mano dall'admin, entrambi da mostrare
+  const bonuses = u.log.filter((l) => (l.actId === BONUS_ACT || l.actId === DEDUCT_ACT) && !l.revoked).slice(-3).reverse();
 
   return (
     <div>
@@ -108,7 +118,7 @@ export default function HomeTab({
           <p style={{ color: P.tx, fontWeight: 800, fontSize: 15, margin: "0 0 4px", letterSpacing: -0.3 }}>
             💰 Hai ricevuto la paghetta di €{toConfirm.amount.toFixed(2)}?
           </p>
-          <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 10px" }}>Accreditata il {toConfirm.date} · confermala quando hai i soldi in mano</p>
+          <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 10px" }}>Accreditata il {fmtDay(toConfirm.date)} · confermala quando hai i soldi in mano</p>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn style={{ flex: 1 }} grad={P.mintG} onClick={() => onConfirmIncome(toConfirm.id)}>
               ✅ Sì, ricevuta!
@@ -146,6 +156,38 @@ export default function HomeTab({
           <p style={{ color: paid ? P.mint : P.tx3, fontSize: 9, margin: 0 }}>{paid ? "✓ accreditata" : `🔥 ${u.streak}gg streak`}</p>
         </GlassCard>
       </div>
+
+      <GlassCard style={{ background: `linear-gradient(135deg,${uc}10,transparent)` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ color: P.tx, fontSize: 13, fontWeight: 700 }}>☀️ Oggi hai guadagnato</span>
+          <span style={{ color: P.mint, fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{tp}pt</span>
+        </div>
+        {doneToday.length === 0 ? (
+          <p style={{ color: P.tx3, fontSize: 11, margin: "6px 0 0" }}>Non hai ancora segnato niente oggi — comincia da "Da fare oggi" 👇</p>
+        ) : (
+          <div style={{ marginTop: 6 }}>
+            {doneToday.map(({ l, a }) => {
+              const cat = a ? CATS.find((c) => c.id === a.cat) : undefined;
+              const name = a?.name ?? MANUAL_ACT_LABEL[l.actId] ?? "Attività";
+              return (
+                <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0", fontSize: 11 }}>
+                  <span style={{ color: P.tx2 }}>
+                    {cat?.i ?? ""} {name}
+                    {l.cnt > 1 ? ` ×${l.cnt}` : ""}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ color: l.pts >= 0 ? P.mint : P.red, fontWeight: 700 }}>
+                      {l.pts >= 0 ? "+" : ""}
+                      {l.pts}pt
+                    </span>
+                    <span style={{ fontSize: 9, color: l.ok ? P.mint : P.gold }}>{l.ok ? "✅" : "⏳"}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </GlassCard>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <Btn style={{ flex: 1 }} grad={grad} onClick={onIncome}>
@@ -191,11 +233,26 @@ export default function HomeTab({
             {todoTop.map((a) => {
               const cat = CATS.find((c) => c.id === a.cat);
               return (
-                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+                <div
+                  key={a.id}
+                  onClick={() => onMark(a)}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "6px 0",
+                    fontSize: 11,
+                    borderBottom: `1px solid ${P.gb}`,
+                    cursor: "pointer",
+                  }}
+                >
                   <span style={{ color: P.tx }}>
                     {cat?.i} {a.name}
                   </span>
-                  <span style={{ color: P.mint, fontWeight: 700 }}>+{a.pts}pt</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ color: P.mint, fontWeight: 700 }}>+{a.pts}pt</span>
+                    <span style={{ color: uc, fontSize: 10, fontWeight: 700 }}>✅ Fatto!</span>
+                  </span>
                 </div>
               );
             })}
@@ -238,7 +295,7 @@ export default function HomeTab({
 
       {bonuses.length > 0 && (
         <GlassCard style={{ background: `linear-gradient(135deg,${P.gold}08,transparent)`, border: `1px solid ${P.gold}1a` }}>
-          <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>🎁 Punti bonus</p>
+          <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>🎁 Punti bonus e penalità</p>
           {bonuses.map((l) => (
             <div key={l.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 11 }}>
               <span style={{ color: P.tx2 }}>{l.note}</span>

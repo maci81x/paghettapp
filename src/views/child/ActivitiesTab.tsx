@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATS, FREQ_UNIT, TODS } from "../../data/constants";
+import { CATS, FREQ_UNIT, PERIOD_WORD, TODS } from "../../data/constants";
 import type { Activity, Tod } from "../../data/types";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
@@ -19,6 +19,7 @@ export default function ActivitiesTab({
   grad,
   tp,
   todayDone,
+  periodDone,
   todayByTod,
   onMark,
 }: {
@@ -26,6 +27,8 @@ export default function ActivitiesTab({
   grad: string;
   tp: number;
   todayDone: (actId: number) => number;
+  /** Completamenti nel periodo dell'attività: è questo che consuma il limite. */
+  periodDone: (a: Activity) => number;
   todayByTod: (actId: number) => Record<Tod, number>;
   onMark: (a: Activity, remaining: number) => void;
 }) {
@@ -74,8 +77,9 @@ export default function ActivitiesTab({
       {filtered.map((a) => {
         const c = CATS.find((x) => x.id === a.cat);
         const done = todayDone(a.id);
+        const inPeriod = periodDone(a);
         const byTod = todayByTod(a.id);
-        const full = done >= a.max;
+        const full = inPeriod >= a.max;
         return (
           <GlassCard key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", opacity: full ? 0.45 : 1, padding: 12 }}>
             <div style={{ flex: 1 }}>
@@ -93,7 +97,7 @@ export default function ActivitiesTab({
                   ×{a.max}/{FREQ_UNIT[a.freq]}
                 </span>
               </div>
-              {done > 0 && (
+              {inPeriod > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
                   {TODS.filter((t) => byTod[t.k] > 0).map((t) => (
                     <span key={t.k} style={{ background: P.gold + "18", color: P.gold, padding: "1px 6px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
@@ -101,16 +105,19 @@ export default function ActivitiesTab({
                     </span>
                   ))}
                   <span style={{ fontSize: 9, color: P.tx3 }}>
-                    {done}/{a.max} oggi
+                    {inPeriod}/{a.max} {PERIOD_WORD[a.freq]}
+                    {a.freq !== "daily" && done > 0 ? ` · ×${done} oggi` : ""}
                   </span>
                 </div>
               )}
             </div>
             {full ? (
-              <span style={{ color: P.mint, fontSize: 10, fontWeight: 700, padding: "4px 8px", borderRadius: 8, background: P.mint + "0f" }}>✓ Fatto</span>
+              <Btn small disabled color={P.mint}>
+                ✅ Completata
+              </Btn>
             ) : (
-              <Btn small grad={grad} onClick={() => onMark(a, a.max - done)}>
-                Fatta!
+              <Btn small grad={grad} onClick={() => onMark(a, a.max - inPeriod)}>
+                ✅ Fatto!
               </Btn>
             )}
           </GlassCard>

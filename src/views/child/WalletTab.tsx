@@ -4,13 +4,8 @@ import { allIncome } from "../../data/report";
 import type { Period, User } from "../../data/types";
 import { Btn, GlassCard, InfoTip, PeriodBar, SectionTitle } from "../../design/components";
 import { P, gls } from "../../design/tokens";
+import { fmtDayTime } from "../../utils/dates";
 import MonthReportCard from "../MonthReportCard";
-
-/** ISO → gg/mm, il formato usato in tutta la vista. */
-const fmtDay = (iso: string) => {
-  const [, m, d] = iso.split("-");
-  return d && m ? `${d}/${m}` : iso;
-};
 
 export default function WalletTab({
   u,
@@ -20,6 +15,7 @@ export default function WalletTab({
   series,
   onNewSpesa,
   onNewIncome,
+  onConfirmIncome,
 }: {
   u: User;
   uc: string;
@@ -28,11 +24,12 @@ export default function WalletTab({
   series: { d: string; pts: number; spese: number }[];
   onNewSpesa: () => void;
   onNewIncome: () => void;
+  onConfirmIncome: (id: number) => void;
 }) {
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
   const income = allIncome(u);
-  const confirmLabel = (i: (typeof income)[number]) =>
-    i.confirmed ? `✅ Ricevuta il ${fmtDay(i.confirmedAt ?? i.date)}` : "⏳ In attesa di conferma";
+  const confirmLabel = (i: { confirmed?: boolean; confirmedAt?: string; date: string }) =>
+    i.confirmed ? `✅ Ricevuta il ${fmtDayTime(i.confirmedAt ?? i.date)}` : "⏳ In attesa di conferma";
   return (
     <div>
       <SectionTitle>
@@ -102,7 +99,14 @@ export default function WalletTab({
                       {pay ? ` · €${pay.amount.toFixed(2)} (${pay.pts}pt)` : " · extra"}
                     </p>
                     {i.type === "paghetta" && (
-                      <p style={{ color: i.confirmed ? P.mint : P.gold, fontSize: 9, margin: "1px 0 0", fontWeight: 600 }}>{confirmLabel(i)}</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
+                        <span style={{ color: i.confirmed ? P.mint : P.gold, fontSize: 9, fontWeight: 600 }}>{confirmLabel(i)}</span>
+                        {!i.confirmed && (
+                          <Btn small grad={P.mintG} style={{ padding: "3px 8px", fontSize: 9 }} onClick={() => onConfirmIncome(i.id)}>
+                            ✅ Ricevuta!
+                          </Btn>
+                        )}
+                      </div>
                     )}
                   </div>
                   <span style={{ color: P.mint, fontWeight: 700 }}>+€{i.amount.toFixed(2)}</span>
@@ -129,9 +133,14 @@ export default function WalletTab({
               <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
                 {p.pts}pt · 🏦 €{p.split.risparmio.toFixed(2)} · 🎒 €{p.split.personale.toFixed(2)} · 🤝 €{p.split.beneficenza.toFixed(2)}
               </p>
-              <p style={{ color: p.confirmed ? P.mint : P.gold, fontSize: 9, margin: "1px 0 0", fontWeight: 600 }}>
-                {p.confirmed ? `✅ Ricevuta il ${fmtDay(p.confirmedAt ?? p.date)}` : "⏳ In attesa di conferma"}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
+                <span style={{ color: p.confirmed ? P.mint : P.gold, fontSize: 9, fontWeight: 600 }}>{confirmLabel(p)}</span>
+                {!p.confirmed && (
+                  <Btn small grad={P.mintG} style={{ padding: "3px 8px", fontSize: 9 }} onClick={() => onConfirmIncome(p.id)}>
+                    ✅ Ricevuta!
+                  </Btn>
+                )}
+              </div>
             </div>
           ))
         )}

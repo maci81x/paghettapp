@@ -16,7 +16,7 @@ export default function ApproveTab({
 }) {
   const pending = USER_IDS.flatMap((uid) =>
     users[uid].log
-      .filter((l) => !l.ok)
+      .filter((l) => !l.ok && !l.revoked)
       .map((l) => ({ uid, l, a: acts.find((x) => x.id === l.actId) })),
   ).filter((x): x is { uid: UserId; l: LogEntry; a: Activity } => !!x.a);
 

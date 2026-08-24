@@ -3,11 +3,7 @@ import { FUNDS, FUND_LABEL, getTier } from "../../data/constants";
 import type { Fund, Payment, User } from "../../data/types";
 import { Btn, GlassCard, InfoTip } from "../../design/components";
 import { P } from "../../design/tokens";
-
-const fmtDay = (iso: string) => {
-  const [, m, d] = iso.split("-");
-  return d && m ? `${d}/${m}` : iso;
-};
+import { fmtDay, fmtDayTime } from "../../utils/dates";
 
 /** Registro della paghetta settimanale: anteprima dello split e conferma del pagamento. */
 export default function AdminAllowanceCard({
@@ -43,7 +39,7 @@ export default function AdminAllowanceCard({
           <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>
             Settimana del {paid.week} · {paid.pts}pt ·{" "}
             {paid.confirmed ? (
-              <b style={{ color: P.mint }}>✅ Ricevuta il {fmtDay(paid.confirmedAt ?? paid.date)}</b>
+              <b style={{ color: P.mint }}>✅ Ricevuta il {fmtDayTime(paid.confirmedAt ?? paid.date)}</b>
             ) : (
               <b style={{ color: P.gold }}>⏳ In attesa di conferma</b>
             )}

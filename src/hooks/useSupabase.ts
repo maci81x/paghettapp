@@ -3,6 +3,7 @@ import * as api from "../data/api";
 import { BONUS_ACT_ID, DB_FUND, toActivity, toInvest, toLog, toMission, toWish } from "../data/api";
 import { earnedBadges } from "../data/badges";
 import {
+  DEDUCT_ACT,
   DEFAULT_PINS,
   FUNDS,
   PERIOD_DAYS,
@@ -12,6 +13,7 @@ import {
   getWeekStart,
   isoDate,
   nowTod,
+  periodStart,
   splitAllowance,
   splitByPct,
   todayISO,
@@ -47,6 +49,9 @@ const OPS = {
   createActivityLog: api.createActivityLog,
   approveLog: api.approveLog,
   rejectLog: api.rejectLog,
+  revokeLog: api.revokeLog,
+  deleteLog: api.deleteLog,
+  deductPoints: api.deductPoints,
   markLogsPaid: api.markLogsPaid,
   createMission: api.createMission,
   updateMission: api.updateMission,
@@ -117,10 +122,8 @@ const rowQuotes = (r: api.IncomeRow): Record<Fund, number> => ({
  */
 const rowConfirm = (r: api.IncomeRow): { confirmed: boolean; confirmedAt?: string } => {
   if (!api.schema.incomeConfirm) return { confirmed: true };
-  return {
-    confirmed: !!r.confirmed,
-    confirmedAt: r.confirmed_at ? isoDate(new Date(r.confirmed_at)) : undefined,
-  };
+  // timestamp completo: alle ragazze mostriamo anche l'ora della conferma
+  return { confirmed: !!r.confirmed, confirmedAt: r.confirmed_at ?? undefined };
 };
 
 interface Snapshot {
@@ -249,7 +252,7 @@ export function useSupabase() {
   /* ── caricamento ── */
 
   const load = useCallback(async () => {
-    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm()]);
+    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras()]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
@@ -333,12 +336,23 @@ export function useSupabase() {
 
   const weekPts = (uid: UserId) => users[uid].log.filter((l) => l.ok && !l.paid).reduce((s, l) => s + l.pts, 0);
 
-  const pendingCnt = (uid: UserId) => users[uid].log.filter((l) => !l.ok).length;
+  // una voce annullata dall'admin è già decisa: non torna in coda di approvazione
+  const pendingCnt = (uid: UserId) => users[uid].log.filter((l) => !l.ok && !l.revoked).length;
 
   const allPending = USER_IDS.reduce((s, uid) => s + pendingCnt(uid), 0);
 
   const todayDone = (uid: UserId, actId: number) =>
     users[uid].log.filter((l) => l.date === todayISO() && l.actId === actId).reduce((s, l) => s + l.cnt, 0);
+
+  /**
+   * Completamenti nel periodo in cui vale il limite dell'attività: un'attività
+   * settimanale con max 1 va segnata una volta a settimana, non una al giorno.
+   * Le voci annullate non contano: l'attività torna disponibile.
+   */
+  const periodDone = (uid: UserId, act: Activity) => {
+    const from = periodStart(act.freq);
+    return users[uid].log.filter((l) => l.actId === act.id && l.date >= from && !l.revoked).reduce((s, l) => s + l.cnt, 0);
+  };
 
   const todayByTod = (uid: UserId, actId: number) => {
     const out: Record<Tod, number> = { mattina: 0, pomeriggio: 0, sera: 0 };
@@ -453,6 +467,46 @@ export function useSupabase() {
   const reject = async (uid: UserId, logId: number) => {
     patch(uid, (u) => ({ ...u, log: u.log.filter((l) => l.id !== logId) }));
     await send("rejectLog", [logId]);
+  };
+
+  /**
+   * Annulla un'approvazione già data: i punti escono dal totale e — se la voce
+   * non è ancora stata pagata — anche dalla settimana in corso, perché
+   * `weekPts` somma solo i log approvati e non saldati. Le missioni collegate
+   * si aggiornano da sole: il loro progresso guarda i log approvati.
+   */
+  const revoke = async (uid: UserId, logId: number) => {
+    const entry = users[uid].log.find((l) => l.id === logId);
+    if (!entry || !entry.ok) return;
+    patch(uid, (u) => ({
+      ...u,
+      log: u.log.map((l) => (l.id === logId ? { ...l, ok: false, revoked: true } : l)),
+      totalPts: u.totalPts - entry.pts,
+    }));
+    await send("revokeLog", [logId]);
+  };
+
+  /** Elimina del tutto una voce sbagliata. */
+  const delLog = async (uid: UserId, logId: number) => {
+    const entry = users[uid].log.find((l) => l.id === logId);
+    if (!entry) return;
+    patch(uid, (u) => ({
+      ...u,
+      log: u.log.filter((l) => l.id !== logId),
+      totalPts: entry.ok ? u.totalPts - entry.pts : u.totalPts,
+    }));
+    await send("deleteLog", [logId]);
+  };
+
+  /** Punti tolti a mano dall'admin: voce già approvata con punti negativi. */
+  const deductPoints = async (uid: UserId, pts: number, reason: string) => {
+    const amount = -Math.abs(pts);
+    const row = await send<api.LogRow>("deductPoints", [uid, Math.abs(pts), reason]);
+    const entry: LogEntry = row
+      ? toLog(row)
+      : { id: Date.now(), actId: DEDUCT_ACT, date: todayISO(), cnt: 1, note: reason, tod: nowTod(), pts: amount, ok: true };
+    patch(uid, (u) => ({ ...u, log: [...u.log, entry], totalPts: u.totalPts + amount }));
+    await send("updateUser", [uid, { total_pts: users[uid].totalPts + amount }]);
   };
 
   /* ── profilo ── */
@@ -588,16 +642,19 @@ export function useSupabase() {
    * Paghetta accreditata e non ancora confermata dalla ragazza: la Home ne
    * mostra una sola alla volta, la più recente.
    */
-  const pendingAllowance = (uid: UserId): IncomeEntry | undefined =>
-    (users[uid].income ?? []).find((i) => i.type === "paghetta" && !i.confirmed);
+  const pendingAllowance = (uid: UserId): IncomeEntry | undefined => unconfirmedAllowances(uid)[0];
+
+  /** Tutte le paghette in attesa di conferma: alimentano il badge sul Wallet. */
+  const unconfirmedAllowances = (uid: UserId): IncomeEntry[] =>
+    (users[uid].income ?? []).filter((i) => i.type === "paghetta" && !i.confirmed);
 
   /** La ragazza conferma di aver ricevuto la paghetta. */
   const confirmIncome = async (uid: UserId, id: number) => {
-    const day = todayISO();
+    const at = new Date().toISOString();
     patch(uid, (u) => ({
       ...u,
-      income: (u.income ?? []).map((i) => (i.id === id ? { ...i, confirmed: true, confirmedAt: day } : i)),
-      pays: (u.pays ?? []).map((p) => (p.id === id ? { ...p, confirmed: true, confirmedAt: day } : p)),
+      income: (u.income ?? []).map((i) => (i.id === id ? { ...i, confirmed: true, confirmedAt: at } : i)),
+      pays: (u.pays ?? []).map((p) => (p.id === id ? { ...p, confirmed: true, confirmedAt: at } : p)),
     }));
     await send("confirmIncome", [id]);
   };
@@ -797,6 +854,7 @@ export function useSupabase() {
     pendingCnt,
     allPending,
     todayDone,
+    periodDone,
     todayByTod,
     periodSeries,
     findAct,
@@ -808,6 +866,9 @@ export function useSupabase() {
     addBonus,
     approve,
     reject,
+    revoke,
+    delLog,
+    deductPoints,
     setAvatar,
     setPhoto,
     setTheme,
@@ -822,6 +883,7 @@ export function useSupabase() {
     addSpesa,
     addIncome,
     pendingAllowance,
+    unconfirmedAllowances,
     confirmIncome,
     addWish,
     updateWish,
