@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import * as api from "../data/api";
 import { BONUS_ACT_ID, DB_FUND, toActivity, toInvest, toLog, toMission, toWish } from "../data/api";
 import { earnedBadges } from "../data/badges";
+import { periodOf } from "../data/interest";
 import { toAward } from "../data/missions";
+import { movesFromUser } from "../data/savings";
 import {
   DEDUCT_ACT,
   DEFAULT_PINS,
@@ -277,7 +279,7 @@ export function useSupabase() {
   /* ── caricamento ── */
 
   const load = useCallback(async () => {
-    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras(), api.probePiggyName(), api.probeMissionDone()]);
+    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras(), api.probePiggyName(), api.probeMissionDone(), api.probeInterest()]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
@@ -316,6 +318,36 @@ export function useSupabase() {
     setOffline(false);
     setError(null);
     setLoading(false);
+
+    // Interessi dei mesi chiusi: si parte dal primo movimento del risparmio,
+    // il vincolo UNIQUE sul database impedisce di pagare due volte lo stesso
+    // mese anche se due dispositivi aprono l'app insieme.
+    if (api.schema.interest) {
+      let credited = false;
+      for (const uid of USER_IDS) {
+        const first = movesFromUser(snap.users[uid])[0]?.date;
+        const res = await api.capitalizeInterest(uid, periodOf(first ? new Date(first) : new Date()));
+        if (res.data && res.data.monthsCapitalized > 0) credited = true;
+      }
+      // i saldi sono cambiati sul database: li rileggo invece di ricalcolarli qui
+      if (credited) {
+        const fresh = await api.fetchPiggybanks();
+        if (fresh.data) {
+          setUsers((prev) => {
+            const out = { ...prev };
+            USER_IDS.forEach((uid) => {
+              const w = { ...out[uid].w };
+              fresh.data!.filter((row) => row.user_id === uid).forEach((row) => {
+                const fund = DB_FUND[row.type];
+                if (fund) w[fund] = Number(row.balance);
+              });
+              out[uid] = { ...out[uid], w };
+            });
+            return out;
+          });
+        }
+      }
+    }
   }, []);
 
   /**
@@ -566,6 +598,44 @@ export function useSupabase() {
       : { id: Date.now(), actId: DEDUCT_ACT, date: todayISO(), cnt: 1, note: reason, tod: nowTod(), pts: amount, ok: true };
     patch(uid, (u) => ({ ...u, log: [...u.log, entry], totalPts: u.totalPts + amount }));
     await send("updateUser", [uid, { total_pts: users[uid].totalPts + amount }]);
+  };
+
+  /**
+   * Riscatto: i soldi escono dall'app perché vengono consegnati a mano alla
+   * ragazza. Resta una spesa a storico, non un'entrata: nel bilancio è
+   * un'uscita dal salvadanaio, non un guadagno.
+   */
+  const redeemPiggy = async (uid: UserId, fund: Fund, amount: number, reason: string) => {
+    const value = Math.min(users[uid].w[fund], Math.max(0, +amount.toFixed(2)));
+    if (value <= 0) return;
+    const ds = `💸 Riscatto: ${reason.trim() || "consegnato a mano"}`;
+    const row = await send<api.ExpenseRow>("createExpense", [{ userId: uid, amount: value, description: ds, fund }]);
+    patch(uid, (u) => ({
+      ...u,
+      w: { ...u.w, [fund]: Math.max(0, +(u.w[fund] - value).toFixed(2)) },
+      spese: [
+        { id: row?.id ?? Date.now(), d: new Date().toLocaleDateString("it", { day: "2-digit", month: "2-digit" }), date: todayISO(), ds, a: value, f: fund },
+        ...u.spese,
+      ],
+    }));
+    await send("updatePiggybank", [uid, fund, -value]);
+  };
+
+  /** Azzeramento: stessa cosa del riscatto, ma per l'intero saldo. */
+  const resetPiggy = async (uid: UserId, fund: Fund) => {
+    const value = users[uid].w[fund];
+    if (value <= 0) return;
+    const ds = "🔄 Azzeramento salvadanaio";
+    const row = await send<api.ExpenseRow>("createExpense", [{ userId: uid, amount: value, description: ds, fund }]);
+    patch(uid, (u) => ({
+      ...u,
+      w: { ...u.w, [fund]: 0 },
+      spese: [
+        { id: row?.id ?? Date.now(), d: new Date().toLocaleDateString("it", { day: "2-digit", month: "2-digit" }), date: todayISO(), ds, a: value, f: fund },
+        ...u.spese,
+      ],
+    }));
+    await send("updatePiggybank", [uid, fund, -value]);
   };
 
   /* ── profilo ── */
@@ -1064,6 +1134,9 @@ export function useSupabase() {
     adminSetPin,
     resetPin,
     addSpesa,
+    redeemPiggy,
+    resetPiggy,
+    interestSupported: api.schema.interest,
     addIncome,
     pendingAllowance,
     unconfirmedAllowances,

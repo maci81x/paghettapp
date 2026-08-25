@@ -34,6 +34,7 @@ export default function AdminChildView({
   onDeduct,
   onIncome,
   onBonus,
+  onPiggyAction,
   namesRequired,
 }: {
   uid: UserId;
@@ -55,6 +56,8 @@ export default function AdminChildView({
   onDeduct: () => void;
   onIncome: () => void;
   onBonus: () => void;
+  /** Riscatto o azzeramento di un salvadanaio: la conferma vive nello Shell. */
+  onPiggyAction: (mode: "redeem" | "reset", fund: Fund) => void;
   /** Falso finché il database non ha la colonna dei nomi dei salvadanai. */
   namesRequired: boolean;
 }) {
@@ -111,14 +114,24 @@ export default function AdminChildView({
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 10px" }}>🏦 Salvadanai</p>
         {FUNDS.map((k) => (
-          <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `1px solid ${P.gb}` }}>
-            <div>
-              <span style={{ fontSize: 12, color: P.tx }}>{fundName(u, k)}</span>
-              <p style={{ fontSize: 10, color: P.tx3, margin: 0 }}>{u.wN[k]}</p>
+          <div key={k} style={{ padding: "7px 0", borderBottom: `1px solid ${P.gb}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ minWidth: 0 }}>
+                <span style={{ fontSize: 12, color: P.tx }}>{fundName(u, k)}</span>
+                <p style={{ fontSize: 10, color: P.tx3, margin: 0 }}>{u.wN[k]}</p>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <span style={{ color: P.mint, fontWeight: 700, fontSize: 14 }}>€{u.w[k].toFixed(2)}</span>
+                {k === "risparmio" && <p style={{ fontSize: 9, color: P.gold, margin: 0 }}>📈 rend. +€{((u.w[k] * YIELD_YEAR * months) / 12).toFixed(2)}</p>}
+              </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <span style={{ color: P.mint, fontWeight: 700, fontSize: 14 }}>€{u.w[k].toFixed(2)}</span>
-              {k === "risparmio" && <p style={{ fontSize: 9, color: P.gold, margin: 0 }}>📈 rend. +€{((u.w[k] * YIELD_YEAR * months) / 12).toFixed(2)}</p>}
+            <div style={{ display: "flex", gap: 5, marginTop: 5 }}>
+              <Btn small outline color={P.gold} disabled={u.w[k] <= 0} onClick={() => onPiggyAction("redeem", k)}>
+                💸 Riscatta
+              </Btn>
+              <Btn small outline color={P.red} disabled={u.w[k] <= 0} onClick={() => onPiggyAction("reset", k)}>
+                🔄 Azzera
+              </Btn>
             </div>
           </div>
         ))}

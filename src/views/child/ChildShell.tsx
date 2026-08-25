@@ -17,6 +17,7 @@ import SpesaModal from "../../modals/SpesaModal";
 import WishEditModal from "../../modals/WishEditModal";
 import { resizeImage } from "../../utils/imageResize";
 import Shell from "../Shell";
+import { useInterest } from "../../hooks/useInterest";
 import ActivitiesTab from "./ActivitiesTab";
 import HomeTab from "./HomeTab";
 import MissionsTab from "./MissionsTab";
@@ -72,6 +73,7 @@ export default function ChildShell({
   const todayDone = (actId: number) => usersApi.todayDone(au, actId);
   const periodDone = (a: Activity) => usersApi.periodDone(au, a);
   const unconfirmed = usersApi.unconfirmedAllowances(au);
+  const interest = useInterest(au, u.w.risparmio);
   // senza la colonna sul database i nomi non sono salvabili: non li chiediamo
   const needsNames = usersApi.piggyNamesSupported && !hasFundNames(u);
 
@@ -142,6 +144,7 @@ export default function ChildShell({
             onMark={(a) => openCompletion(a, a.max - periodDone(a))}
             onNote={(fund, note) => usersApi.setPiggyNote(au, fund, note)}
             onIncome={() => setIncome(true)}
+            interestThisMonth={interest.thisMonth?.amount ?? 0}
             onSpesa={() => setSpesa({ ds: "", a: "", f: "personale" })}
           />
         );
@@ -175,7 +178,7 @@ export default function ChildShell({
           />
         );
       case "invest":
-        return <InvestTab uid={au} u={u} uc={uc} onChange={(k, v) => usersApi.setInvest(au, k, v)} />;
+        return <InvestTab uid={au} u={u} uc={uc} interestSupported={usersApi.interestSupported} onChange={(k, v) => usersApi.setInvest(au, k, v)} />;
       case "profile":
         return (
           <ProfileTab

@@ -1,14 +1,19 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { YIELD_YEAR } from "../../data/constants";
+import { effectiveYield, periodLabel } from "../../data/interest";
 import type { User, UserId } from "../../data/types";
 import { GlassCard, InfoTip } from "../../design/components";
 import { P, gls } from "../../design/tokens";
+import { useInterest } from "../../hooks/useInterest";
 import { useSavingsHistory } from "../../hooks/useSavingsHistory";
 import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
 
 /** Andamento del salvadanaio Risparmio negli ultimi 3 mesi, vista admin. */
 export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
   const { series, summary } = useSavingsHistory(uid, u);
+  const interest = useInterest(uid, u.w.risparmio);
+  // quanto ha messo dentro davvero: i versamenti al netto degli interessi
+  const deposited = +(summary.contributed - interest.total).toFixed(2);
   const perWeek = weeklyGrowth(summary.current, YIELD_YEAR);
   const perYear = yearlyGrowth(summary.current, YIELD_YEAR);
   const goalPct = Math.min(100, (summary.current / summary.goal) * 100);
@@ -48,8 +53,16 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
-        <span style={{ color: P.tx2 }}>📦 Totale versato</span>
-        <span style={{ color: P.tx, fontWeight: 700 }}>€{summary.contributed.toFixed(2)}</span>
+        <span style={{ color: P.tx2 }}>📦 Versato da {u.n}</span>
+        <span style={{ color: P.tx, fontWeight: 700 }}>€{Math.max(0, deposited).toFixed(2)}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+        <span style={{ color: P.tx2 }}>📈 Interessi maturati</span>
+        <span style={{ color: P.mint, fontWeight: 700 }}>+€{interest.total.toFixed(2)}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+        <span style={{ color: P.tx2 }}>🎯 Rendimento effettivo</span>
+        <span style={{ color: P.gold, fontWeight: 700 }}>{effectiveYield(interest.total, Math.max(0, deposited))}%</span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
         <span style={{ color: P.tx2 }}>💰 Saldo attuale</span>
@@ -67,6 +80,28 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
           {summary.growth >= 0 ? "+" : "−"}€{Math.abs(summary.growth).toFixed(2)}
         </span>
       </div>
+
+      {interest.history.length > 0 && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${P.gb}` }}>
+          <p style={{ color: P.tx, fontSize: 12, fontWeight: 700, margin: "0 0 4px" }}>📈 Storico interessi</p>
+          <div style={{ display: "flex", fontSize: 9, color: P.tx3, fontWeight: 700, paddingBottom: 3, borderBottom: `1px solid ${P.gb}` }}>
+            <span style={{ flex: 1 }}>Periodo</span>
+            <span style={{ width: 74, textAlign: "right" }}>Saldo</span>
+            <span style={{ width: 62, textAlign: "right" }}>Interesse</span>
+            <span style={{ width: 54, textAlign: "right" }}>Tasso</span>
+          </div>
+          <div style={{ maxHeight: 168, overflowY: "auto" }}>
+            {interest.history.map((h) => (
+              <div key={h.id} style={{ display: "flex", fontSize: 10, padding: "4px 0", borderBottom: `1px solid ${P.gb}` }}>
+                <span style={{ flex: 1, color: P.tx }}>{periodLabel(h.period)}</span>
+                <span style={{ width: 74, textAlign: "right", color: P.tx2 }}>€{h.balanceBefore.toFixed(2)}</span>
+                <span style={{ width: 62, textAlign: "right", color: h.amount > 0 ? P.mint : P.tx3, fontWeight: 700 }}>+€{h.amount.toFixed(2)}</span>
+                <span style={{ width: 54, textAlign: "right", color: P.tx3 }}>{(h.rate * 100).toFixed(3)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${P.gb}` }}>
         <div style={{ background: P.glass, borderRadius: 3, height: 5 }}>

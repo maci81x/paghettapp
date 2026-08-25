@@ -5,12 +5,28 @@ import type { InvestCfg, User, UserId } from "../../data/types";
 import { GlassCard, InfoTip, Input, Label, Pill, SectionTitle } from "../../design/components";
 import { P, alpha, gls } from "../../design/tokens";
 import { calcCompoundInterest } from "../../utils/compoundInterest";
+import { useInterest } from "../../hooks/useInterest";
+import InterestCard from "./InterestCard";
 import SavingsTrendCard from "./SavingsTrendCard";
 
 const MIN_MONTHS = 12;
 const MAX_MONTHS = 120;
 
-export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: User; uc: string; onChange: (k: keyof InvestCfg, v: number) => void }) {
+export default function InvestTab({
+  uid,
+  u,
+  uc,
+  interestSupported,
+  onChange,
+}: {
+  uid: UserId;
+  u: User;
+  uc: string;
+  /** Falso finché manca la tabella `interest_log`: restano solo le stime. */
+  interestSupported: boolean;
+  onChange: (k: keyof InvestCfg, v: number) => void;
+}) {
+  const interest = useInterest(uid, u.w.risparmio);
   // il capitale simulato è il salvadanaio vero: le ragazze non lo modificano
   const principal = u.w.risparmio;
   const months = Math.min(MAX_MONTHS, Math.max(MIN_MONTHS, u.inv.mo));
@@ -45,6 +61,8 @@ export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: Us
       </GlassCard>
 
       <SavingsTrendCard uid={uid} u={u} color={uc} />
+
+      <InterestCard view={interest} supported={interestSupported} />
 
       <GlassCard>
         <Label>Quanto hai in {fundName(u, "risparmio")} adesso</Label>

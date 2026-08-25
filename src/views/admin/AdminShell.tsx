@@ -13,6 +13,8 @@ import DeductPointsModal from "../../modals/DeductPointsModal";
 import ExtraIncomeModal from "../../modals/ExtraIncomeModal";
 import MatchEditModal from "../../modals/MatchEditModal";
 import MissionEditModal from "../../modals/MissionEditModal";
+import PiggyActionModal from "../../modals/PiggyActionModal";
+import type { PiggyActionDraft } from "../../modals/PiggyActionModal";
 import PinChangeModal from "../../modals/PinChangeModal";
 import Shell from "../Shell";
 import AdminActivitiesTab from "./AdminActivitiesTab";
@@ -54,6 +56,7 @@ export default function AdminShell({
 }) {
   const [tab, setTab] = useState<AdminTab>("approve");
   const [view, setView] = useState<UserId | null>(null);
+  const [piggyAction, setPiggyAction] = useState<{ uid: UserId; draft: PiggyActionDraft } | null>(null);
   const [period, setPeriod] = useState<Period>("7g");
   const [actDraft, setActDraft] = useState<ActivityDraft | null>(null);
   const [matchDraft, setMatchDraft] = useState<MatchDraft | null>(null);
@@ -126,6 +129,7 @@ export default function AdminShell({
           onIncome={() => setIncomeFor(view)}
           onBonus={() => setBonusFor(view)}
           namesRequired={usersApi.piggyNamesSupported}
+          onPiggyAction={(mode, fund) => setPiggyAction({ uid: view, draft: { mode, fund } })}
         />
       );
     }
@@ -323,6 +327,15 @@ export default function AdminShell({
             setIncomeFor(null);
           }}
           onClose={() => setIncomeFor(null)}
+        />
+      )}
+      {piggyAction && (
+        <PiggyActionModal
+          draft={piggyAction.draft}
+          u={users[piggyAction.uid]}
+          onRedeem={(fund, amount, reason) => usersApi.redeemPiggy(piggyAction.uid, fund, amount, reason)}
+          onReset={(fund) => usersApi.resetPiggy(piggyAction.uid, fund)}
+          onClose={() => setPiggyAction(null)}
         />
       )}
       {missDraft && (

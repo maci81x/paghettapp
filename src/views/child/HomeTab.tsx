@@ -17,6 +17,7 @@ import {
   tierPos,
   todayISO,
 } from "../../data/constants";
+import { monthlyInterest } from "../../data/interest";
 import { missionProgress } from "../../data/missions";
 import { nextMilestone } from "../../data/savings";
 import type { Activity, Fund, IncomeEntry, Payment, User, UserId, Users } from "../../data/types";
@@ -48,6 +49,7 @@ export default function HomeTab({
   onMark,
   onNote,
   onIncome,
+  interestThisMonth,
   onSpesa,
 }: {
   /** Card "In attesa di approvazione": condivisa con l'altra scheda. */
@@ -70,6 +72,8 @@ export default function HomeTab({
   onMark: (a: Activity) => void;
   onNote: (fund: Fund, note: string) => void;
   onIncome: () => void;
+  /** Interessi già accreditati nel mese in corso. */
+  interestThisMonth: number;
   onSpesa: () => void;
 }) {
   const [notYet, setNotYet] = useState(false);
@@ -111,6 +115,7 @@ export default function HomeTab({
   const save = u.w.risparmio;
   const perWeek = weeklyGrowth(save, YIELD_YEAR);
   const perYear = yearlyGrowth(save, YIELD_YEAR);
+  const perMonth = monthlyInterest(save);
   const goal = nextMilestone(save);
 
   // bonus e penalità: entrambi assegnati a mano dall'admin, entrambi da mostrare
@@ -429,7 +434,8 @@ export default function HomeTab({
             </div>
             {k === "risparmio" && (
               <>
-                <div style={{ display: "flex", gap: 10, marginTop: 3 }}>
+                <div style={{ display: "flex", gap: 10, marginTop: 3, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>+€{perMonth.toFixed(2)}/mese</span>
                   <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>+€{perWeek.toFixed(2)}/sett</span>
                   <span style={{ fontSize: 10, color: P.gold, fontWeight: 700 }}>
                     +€{perYear.toFixed(2)}/anno <span style={{ color: P.tx3, fontWeight: 600 }}>({YIELD_YEAR * 100}%)</span>
@@ -438,6 +444,9 @@ export default function HomeTab({
                 <div style={{ background: P.glass, borderRadius: 3, height: 5, marginTop: 4 }}>
                   <div style={{ background: P.mintG, borderRadius: 3, height: 5, width: `${Math.min(100, (save / goal) * 100)}%`, transition: "width .6s" }} />
                 </div>
+                {interestThisMonth > 0 && (
+                  <p style={{ fontSize: 10, color: P.mint, fontWeight: 700, margin: "4px 0 0" }}>📈 +€{interestThisMonth.toFixed(2)} di interessi questo mese!</p>
+                )}
                 <p style={{ fontSize: 9, color: P.tx3, margin: "3px 0 0" }}>Prossimo traguardo: €{goal}</p>
                 <p style={{ fontSize: 9, color: P.tx2, margin: "4px 0 0", lineHeight: 1.4 }}>
                   📈 I tuoi risparmi crescono con l'interesse composto! Babbo Roby li investe: rendimento medio ~{YIELD_YEAR * 100}%/anno.

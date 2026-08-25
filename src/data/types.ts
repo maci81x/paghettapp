@@ -131,6 +131,17 @@ export interface IncomeEntry {
   confirmedAt?: string;
 }
 
+/** Interesse accreditato su un salvadanaio in un mese chiuso. */
+export interface InterestLog {
+  id: number;
+  /** Mese accreditato, formato YYYY-MM. */
+  period: string;
+  balanceBefore: number;
+  amount: number;
+  rate: number;
+  date: string;
+}
+
 /** Movimento del salvadanaio Risparmio: quota versata (+) o prelievo (−). */
 export interface SavingsMove {
   /** Giorno del movimento (ISO). */

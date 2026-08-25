@@ -1,7 +1,8 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { isoDate, nowTod } from "./constants.ts";
+import { MONTH_RATE, monthlyInterest, pendingPeriods } from "./interest.ts";
 import { supabase } from "./supabase.ts";
-import type { Activity, Fund, InvestCfg, LogEntry, Mission, SavingsMove, Tod, UserId, Wish } from "./types";
+import type { Activity, Fund, InterestLog, InvestCfg, LogEntry, Mission, SavingsMove, Tod, UserId, Wish } from "./types";
 
 /* ══════════════════════════════════════════════════════════════
    Traduzione fra i nomi del database (inglese) e quelli dell'app
@@ -250,7 +251,7 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false };
+export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false, interest: false };
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -285,6 +286,17 @@ export const probeMissionDone = async () => {
   const { error } = await supabase.from("missions").select("completed_by").limit(1);
   schema.missionDone = !error;
   return schema.missionDone;
+};
+
+/**
+ * Gli interessi si accreditano solo se esiste `interest_log`: è quella tabella,
+ * col suo vincolo UNIQUE, a impedire che lo stesso mese venga pagato due volte.
+ * Senza, l'app resta alle sole proiezioni.
+ */
+export const probeInterest = async () => {
+  const { error } = await supabase.from("interest_log").select("id").limit(1);
+  schema.interest = !error;
+  return schema.interest;
 };
 
 /** Idem per le colonne dello storico dei punti (`entry_kind`, `revoked`). */
@@ -643,11 +655,12 @@ export const confirmIncome = (incomeId: number) =>
  * ricadono sulla ricostruzione dai dati già in memoria (`data/savings.ts`).
  */
 export const fetchSavingsHistory = async (userId: string): Promise<Result<SavingsMove[]>> => {
-  const [inc, exp] = await Promise.all([
+  const [inc, exp, int] = await Promise.all([
     wrap<IncomeRow[]>(supabase.from("income").select("*").eq("user_id", userId).order("created_at")),
     wrap<ExpenseRow[]>(
       supabase.from("expenses").select("*").eq("user_id", userId).eq("piggybank_type", FUND_DB.risparmio).order("created_at"),
     ),
+    fetchInterestHistory(userId),
   ]);
   const failed = inc.error ?? exp.error;
   if (failed) return { data: null, error: failed };
@@ -663,8 +676,111 @@ export const fetchSavingsHistory = async (userId: string): Promise<Result<Saving
     label: r.description,
   }));
 
-  const moves = [...versamenti, ...prelievi].filter((m) => Math.abs(m.delta) >= 0.01).sort((a, b) => a.date.localeCompare(b.date));
+  // senza gli interessi la curva si scosterebbe dal saldo vero di mese in mese
+  const interessi: SavingsMove[] = (int.data ?? []).map((r) => ({ date: r.date, delta: r.amount, label: `📈 Interessi ${r.period}` }));
+
+  const moves = [...versamenti, ...prelievi, ...interessi].filter((m) => Math.abs(m.delta) >= 0.01).sort((a, b) => a.date.localeCompare(b.date));
   return { data: moves, error: null };
+};
+
+/* ── interessi ── */
+
+export interface InterestRow {
+  id: number;
+  user_id: string;
+  piggybank_type: string;
+  balance_before: number;
+  interest_amount: number;
+  rate_applied: number;
+  period: string;
+  created_at: string;
+}
+
+export const toInterest = (r: InterestRow): InterestLog => ({
+  id: r.id,
+  period: r.period,
+  balanceBefore: Number(r.balance_before),
+  amount: Number(r.interest_amount),
+  rate: Number(r.rate_applied),
+  date: isoDate(new Date(r.created_at)),
+});
+
+/** Storico degli accrediti, dal più vecchio al più recente. */
+export const fetchInterestHistory = async (userId: string, type: Fund = "risparmio"): Promise<Result<InterestLog[]>> => {
+  if (!schema.interest) return { data: [], error: null };
+  const res = await wrap<InterestRow[]>(
+    supabase.from("interest_log").select("*").eq("user_id", userId).eq("piggybank_type", FUND_DB[type]).order("period"),
+  );
+  return res.error ? { data: null, error: res.error } : { data: (res.data ?? []).map(toInterest), error: null };
+};
+
+export interface Capitalization {
+  monthsCapitalized: number;
+  totalInterest: number;
+}
+
+/**
+ * Accredita gli interessi di tutti i mesi chiusi non ancora pagati.
+ *
+ * L'ordine conta: prima si scrive la ricevuta, poi si tocca il saldo. Il
+ * vincolo UNIQUE fa fallire la seconda scrittura quando due dispositivi
+ * partono insieme, e chi perde non accredita nulla. Se invece è il saldo a
+ * non aggiornarsi, la ricevuta viene ritirata così il mese si ritenta: meglio
+ * riprovare che perdere l'interesse di un mese in silenzio.
+ */
+export const capitalizeInterest = async (userId: string, startPeriod: string, type: Fund = "risparmio"): Promise<Result<Capitalization>> => {
+  if (!schema.interest) return { data: { monthsCapitalized: 0, totalInterest: 0 }, error: null };
+  const dbType = FUND_DB[type];
+
+  const done = await wrap<{ period: string }[]>(
+    supabase.from("interest_log").select("period").eq("user_id", userId).eq("piggybank_type", dbType).order("period", { ascending: false }).limit(1),
+  );
+  if (done.error) return { data: null, error: done.error };
+
+  const periods = pendingPeriods(done.data?.[0]?.period ?? null, startPeriod);
+  let monthsCapitalized = 0;
+  let totalInterest = 0;
+
+  for (const period of periods) {
+    const piggy = await wrap<PiggyRow>(supabase.from("piggybanks").select("*").eq("user_id", userId).eq("type", dbType).single());
+    if (piggy.error || !piggy.data) return { data: null, error: piggy.error ?? "salvadanaio non trovato" };
+
+    const balanceBefore = Number(piggy.data.balance);
+    const interest = monthlyInterest(balanceBefore);
+
+    // la riga va scritta anche a interesse zero, altrimenti il mese verrebbe
+    // riprovato a ogni avvio finché il saldo resta a zero
+    const row = await wrap<InterestRow[]>(
+      supabase
+        .from("interest_log")
+        .insert({
+          user_id: userId,
+          piggybank_type: dbType,
+          balance_before: balanceBefore,
+          interest_amount: interest,
+          rate_applied: +MONTH_RATE.toFixed(6),
+          period,
+        })
+        .select(),
+    );
+    // conflitto sull'UNIQUE: quel mese l'ha già accreditato qualcun altro
+    if (row.error) break;
+
+    if (interest > 0) {
+      const up = await wrap<PiggyRow[]>(
+        supabase.from("piggybanks").update({ balance: +(balanceBefore + interest).toFixed(2) }).eq("id", piggy.data.id).select(),
+      );
+      if (up.error) {
+        const id = row.data?.[0]?.id;
+        if (id) await wrap(supabase.from("interest_log").delete().eq("id", id).select());
+        return { data: null, error: up.error };
+      }
+    }
+    monthsCapitalized += 1;
+    totalInterest = +(totalInterest + interest).toFixed(2);
+  }
+
+  return { data: { monthsCapitalized, totalInterest }, error: null };
 };
 
 /* ── spese ── */
