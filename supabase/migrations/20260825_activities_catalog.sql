@@ -1,7 +1,8 @@
 -- Catalogo attività dal foglio originale.
 --
 -- Idempotente e non distruttiva: le attività aggiunte a mano dall'admin e non
--- presenti in questa lista NON vengono toccate né disattivate.
+-- presenti in questa lista NON vengono toccate né disattivate, e quelle che
+-- l'admin aveva eliminato restano eliminate.
 --
 -- Tre passaggi:
 --   1. rinomina le voci che il foglio chiama in modo più esteso, così non
@@ -17,7 +18,9 @@
 -- Da eseguire nella SQL Editor di Supabase (una volta sola).
 
 -- ── 1. allineamento dei nomi già in uso ───────────────────────────────────
--- Solo rinomine sicure: stessa attività, nome più esteso nel foglio.
+-- Solo rinomine sicure: stessa attività, nome più esteso nel foglio. Le voci
+-- eliminate (active = false) si rinominano comunque, così il passaggio 3 non
+-- ne inserisce un doppione accanto — ma restano eliminate.
 update activities set name = 'Preparare colazione a tutti'            where lower(trim(name)) = 'preparare colazione';
 update activities set name = 'Colazione a tema (ideata e cucinata)'   where lower(trim(name)) = 'colazione a tema';
 update activities set name = 'Fare le faccende di casa'               where lower(trim(name)) = 'faccende di casa';
@@ -27,6 +30,11 @@ update activities set name = 'Leggere 20 pagine del libro'            where lowe
 update activities set name = 'Fare i compiti (anche non assegnati)'   where lower(trim(name)) = 'compiti senza aiuto';
 
 -- ── catalogo ──────────────────────────────────────────────────────────────
+drop table if exists catalog;
+
+-- niente `on commit drop`: se la SQL Editor esegue le istruzioni una per una
+-- invece che in un'unica transazione, la tabella sparirebbe prima dei
+-- passaggi 2 e 3
 create temporary table catalog (
   name text,
   emoji text,
@@ -36,7 +44,7 @@ create temporary table catalog (
   frequency text,
   max_completions int,
   challenge boolean
-) on commit drop;
+);
 
 insert into catalog values
   -- casa & faccende
@@ -89,8 +97,9 @@ update activities a
        challenge = c.challenge,
        -- nella logica sfida i punti valgono doppio: il moltiplicatore vive
        -- nell'app, qui challenge_points resta pari ai punti base
-       challenge_points = case when c.challenge then c.points else 0 end,
-       active = true
+       challenge_points = case when c.challenge then c.points else 0 end
+       -- `active` non si tocca: forzarlo a true resusciterebbe le attività
+       -- che l'admin aveva eliminato
   from catalog c
  where lower(trim(a.name)) = lower(trim(c.name));
 
@@ -111,6 +120,8 @@ select c.name,
   from catalog c
  where not exists (select 1 from activities a where lower(trim(a.name)) = lower(trim(c.name)));
 
+drop table if exists catalog;
+
 notify pgrst, 'reload schema';
 
 -- ── verifica ──────────────────────────────────────────────────────────────
@@ -119,3 +130,9 @@ notify pgrst, 'reload schema';
 --   select category, count(*) from activities where active group by category order by category;
 --   select lower(trim(name)), count(*) from activities where active
 --    group by 1 having count(*) > 1;
+--
+-- Se una del catalogo era stata eliminata in passato e la rivuoi, riattivala
+-- a mano — la migrazione di proposito non lo fa:
+--
+--   select name, active from activities order by active desc, category, name;
+--   update activities set active = true where name = 'Buttare la spazzatura';
