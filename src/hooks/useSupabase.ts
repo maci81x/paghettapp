@@ -289,11 +289,21 @@ export function useSupabase() {
     setActs(snap.acts);
     setPins(snap.pins);
     setInvIds(snap.invIds);
-    saveCache(snap);
     setOffline(false);
     setError(null);
     setLoading(false);
   }, []);
+
+  /**
+   * La cache è la fotografia da cui riparte l'app al prossimo avvio: se resta
+   * ferma all'ultimo fetch, tutto ciò che è stato cancellato dopo torna a
+   * galla al primo avvio in cui il database non risponde. Va riscritta a ogni
+   * cambio di stato, non solo dopo il caricamento.
+   */
+  useEffect(() => {
+    if (loading) return;
+    saveCache<Snapshot>({ users, acts, pins, invIds });
+  }, [loading, users, acts, pins, invIds]);
 
   /** Rispedisce le scritture rimaste in sospeso, poi ricarica. */
   const flush = useCallback(async () => {
@@ -302,7 +312,10 @@ export function useSupabase() {
     const rest: PendingOp[] = [];
     for (const op of pending) {
       const res = await runOp(op);
-      if (res.error) rest.push(op);
+      if (res.error) {
+        console.warn(`[paghettapp] "${op.name}" non riuscita di nuovo, resta in coda:`, res.error);
+        rest.push(op);
+      }
     }
     savePending(rest);
     if (rest.length === 0) clearPending();
@@ -321,6 +334,9 @@ export function useSupabase() {
   const send = useCallback(async <T>(name: OpName, args: unknown[]): Promise<T | null> => {
     const res = await runOp({ name, args });
     if (res.error) {
+      // senza questo una delete rifiutata dal database è indistinguibile da una
+      // riuscita: sparisce dalla UI e torna al primo fetch, senza un segnale
+      console.warn(`[paghettapp] "${name}" non riuscita, messa in coda:`, res.error, args);
       queuePending({ name, args });
       setOffline(true);
       return null;
