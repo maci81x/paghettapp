@@ -81,7 +81,10 @@ export default function HomeTab({
   const pos = tierPos(wp);
   const weekPct = Math.min(100, (wp / 500) * 100);
   const gap = Math.max(0, 500 - wp);
-  const suggestions = acts.filter((a) => todayDone(a.id) < a.max).sort((a, b) => b.pts - a.pts).slice(0, 3);
+  const available = acts.filter((a) => todayDone(a.id) < a.max).sort((a, b) => b.pts - a.pts);
+  const suggestions = available.slice(0, 3);
+  // la più remunerativa ancora disponibile: è quella che si suggerisce di fare
+  const best = available[0];
 
   // promemoria: attività giornaliere non ancora segnate oggi
   const todo = acts.filter((a) => a.freq === "daily" && todayDone(a.id) === 0).sort((a, b) => b.pts - a.pts);
@@ -167,25 +170,53 @@ export default function HomeTab({
         </Ring>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-        <GlassCard style={{ textAlign: "center", padding: 12 }}>
-          <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>OGGI</p>
-          <p style={{ fontSize: 26, fontWeight: 800, margin: 0, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>+{tp}</p>
-          <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>punti</p>
-        </GlassCard>
-        <GlassCard style={{ textAlign: "center", padding: 12 }}>
-          <p style={{ color: P.tx3, fontSize: 9, margin: 0, letterSpacing: 0.2 }}>{paid ? "PAGHETTA" : "PAGHETTA IN CORSO"}</p>
-          <p style={{ fontSize: 26, fontWeight: 800, margin: 0, background: P.goldG, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            €{(paid ? paid.amount : tier.r).toFixed(2).replace(".00", "")}
+      <GlassCard style={{ textAlign: "center", padding: 12, marginBottom: 8 }}>
+        <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>OGGI</p>
+        <p style={{ fontSize: 26, fontWeight: 800, margin: 0, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>+{tp}</p>
+        <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>punti</p>
+      </GlassCard>
+
+      {/*
+        A scaglioni la cifra da sola inganna: con 0 punti "€2" si legge come
+        "ho già €2", non come "€2 è il minimo di fine settimana". Il testo che
+        conta è quanto manca al traguardo dopo, quindi è quello grande.
+      */}
+      <GlassCard
+        style={{
+          textAlign: "center",
+          padding: 16,
+          marginBottom: 8,
+          background: `linear-gradient(135deg,${alpha(P.gold, 6)},transparent)`,
+          border: `1.5px solid ${alpha(P.gold, 18)}`,
+        }}
+      >
+        <p style={{ color: P.tx3, fontSize: 9, margin: 0, letterSpacing: 0.2 }}>{paid ? "PAGHETTA" : "PAGHETTA IN CORSO"}</p>
+        <p style={{ fontSize: 32, fontWeight: 800, margin: "2px 0 0", letterSpacing: -1, background: P.goldG, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          €{(paid ? paid.amount : tier.r).toFixed(2).replace(".00", "")}
+        </p>
+
+        {paid ? (
+          <p style={{ color: P.mint, fontSize: 11, fontWeight: 700, margin: "4px 0 0" }}>✓ accreditata</p>
+        ) : wp <= 0 ? (
+          <p style={{ color: P.acc, fontSize: 16, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.35 }}>
+            🎯 Questa settimana parti da €{TIERS[0].r} — fai attività per guadagnare di più!
           </p>
-          <p style={{ color: paid ? P.mint : P.tx3, fontSize: 9, margin: 0 }}>{paid ? "✓ accreditata" : `con ${wp}pt della settimana`}</p>
-          {!paid && (
-            <p style={{ color: nextTier ? P.gold : P.mint, fontSize: 9, fontWeight: 700, margin: "3px 0 0", lineHeight: 1.3 }}>
-              {nextTier ? `🎯 Mancano ${gapTier}pt per €${nextTier.r}` : "🏆 Massimo raggiunto!"}
+        ) : nextTier ? (
+          <>
+            <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0" }}>con {wp}pt della settimana</p>
+            <p style={{ color: P.acc, fontSize: 16, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.35 }}>
+              Mancano {gapTier}pt per arrivare a €{nextTier.r}
             </p>
-          )}
-        </GlassCard>
-      </div>
+            {best && (
+              <p style={{ color: P.tx2, fontSize: 11, margin: "5px 0 0", lineHeight: 1.4 }}>
+                Fai {CATS.find((c) => c.id === best.cat)?.i} <b style={{ color: P.tx }}>{best.name}</b> per +{best.pts}pt!
+              </p>
+            )}
+          </>
+        ) : (
+          <p style={{ color: P.mint, fontSize: 16, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.35 }}>🏆 Hai raggiunto il massimo: €{tier.r}!</p>
+        )}
+      </GlassCard>
 
       <GlassCard style={{ background: `linear-gradient(135deg,${uc}10,transparent)` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
