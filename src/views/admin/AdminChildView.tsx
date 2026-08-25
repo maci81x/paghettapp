@@ -33,6 +33,7 @@ export default function AdminChildView({
   onRevoke,
   onDeleteLog,
   onDeduct,
+  onPenalty,
   onIncome,
   onBonus,
   onPiggyAction,
@@ -55,6 +56,8 @@ export default function AdminChildView({
   onRevoke: (l: LogEntry, name: string) => void;
   onDeleteLog: (l: LogEntry, name: string) => void;
   onDeduct: () => void;
+  /** Apre il modale della penalità legata a un'attività. */
+  onPenalty: () => void;
   onIncome: () => void;
   onBonus: () => void;
   /** Riscatto o azzeramento di un salvadanaio: la conferma vive nello Shell. */
@@ -97,7 +100,7 @@ export default function AdminChildView({
 
       <PeriodBar v={period} set={setPeriod} />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <Btn style={{ flex: 1 }} grad={P.mintG} onClick={onIncome}>
           💝 Registra entrata
         </Btn>
@@ -105,6 +108,10 @@ export default function AdminChildView({
           🎁 Punti Bonus
         </Btn>
       </div>
+
+      <Btn full outline color={P.red} style={{ marginBottom: 12 }} onClick={onPenalty}>
+        ⚠️ Addebita penalità
+      </Btn>
 
       <MonthReportCard u={u} />
 

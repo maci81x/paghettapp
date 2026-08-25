@@ -100,7 +100,7 @@ export default function App() {
         <div
           style={{
             position: "fixed",
-            bottom: 74,
+            bottom: "calc(74px + env(safe-area-inset-bottom))",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 9998,
@@ -123,7 +123,7 @@ export default function App() {
           onClick={() => setToast(null)}
           style={{
             position: "fixed",
-            top: 14,
+            top: "calc(14px + env(safe-area-inset-top))",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 10000,

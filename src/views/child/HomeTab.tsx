@@ -7,6 +7,8 @@ import {
   FUNDS,
   MANUAL_ACT_LABEL,
   SPLIT,
+  isPenalty,
+  penaltiesOf,
   fundName,
   TIERS,
   USER_IDS,
@@ -25,6 +27,7 @@ import { P, alpha, gls } from "../../design/tokens";
 import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
 import TierBar from "../../components/TierBar";
 import PendingApprovalCard from "./PendingApprovalCard";
+import PenaltyCard from "./PenaltyCard";
 import { fmtDay } from "../../utils/dates";
 
 /** Nome scelto dalla ragazza più la quota che gli spetta di ogni paghetta. */
@@ -118,6 +121,9 @@ export default function HomeTab({
 
   // bonus e penalità: entrambi assegnati a mano dall'admin, entrambi da mostrare
   const bonuses = u.log.filter((l) => (l.actId === BONUS_ACT || l.actId === DEDUCT_ACT) && !l.revoked).slice(-3).reverse();
+
+  // penalità legate a un'attività: card propria, in rosso
+  const penalties = penaltiesOf(u.log, 3);
 
   return (
     <div>
@@ -235,11 +241,12 @@ export default function HomeTab({
           <div style={{ marginTop: 6 }}>
             {doneToday.map(({ l, a }) => {
               const cat = a ? CATS.find((c) => c.id === a.cat) : undefined;
-              const name = a?.name ?? MANUAL_ACT_LABEL[l.actId] ?? "Attività";
+              const pen = isPenalty(l);
+              const name = pen ? `⚠️ Penalità: non hai fatto ${a ? a.name : "un'attività"}` : (a?.name ?? MANUAL_ACT_LABEL[l.actId] ?? "Attività");
               return (
                 <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0", fontSize: 11 }}>
-                  <span style={{ color: P.tx2 }}>
-                    {cat?.i ?? ""} {name}
+                  <span style={{ color: pen ? P.red : P.tx2 }}>
+                    {pen ? "" : (cat?.i ?? "")} {name}
                     {l.cnt > 1 ? ` ×${l.cnt}` : ""}
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -349,6 +356,8 @@ export default function HomeTab({
           {tie ? "Testa a testa! 🤝" : me.pts > other.pts ? `Sei avanti di ${diff} punti` : `Ti mancano ${diff} punti per raggiungere ${other.n}`}
         </p>
       </GlassCard>
+
+      <PenaltyCard penalties={penalties} acts={acts} />
 
       {bonuses.length > 0 && (
         <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.gold, 3)},transparent)`, border: `1px solid ${alpha(P.gold, 10)}` }}>

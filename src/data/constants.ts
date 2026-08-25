@@ -113,6 +113,16 @@ export const DEDUCT_ACT = -2;
 /** actId riservato ai punti premio di una missione completata. */
 export const MISSION_ACT = -3;
 
+/**
+ * Penalità addebitata dall'admin: unica voce con punti negativi e un'attività
+ * vera collegata (bonus e punti tolti a mano usano gli id fittizi qui sopra).
+ */
+export const isPenalty = (l: { pts: number; actId: number }) => l.pts < 0 && l.actId >= 0;
+
+/** Penalità addebitate, dalla più recente. */
+export const penaltiesOf = <T extends { pts: number; actId: number; revoked?: boolean }>(log: T[], limit = 5) =>
+  log.filter((l) => isPenalty(l) && !l.revoked).slice(-limit).reverse();
+
 /** Etichetta delle voci di storico senza attività collegata. */
 export const MANUAL_ACT_LABEL: Record<number, string> = {
   [BONUS_ACT]: "🎁 Bonus",

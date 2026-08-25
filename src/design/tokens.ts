@@ -83,11 +83,16 @@ export const gls: CSSProperties = {
   borderRadius: 16,
 };
 
-/** Container mobile-first condiviso da tutte le schermate. */
+/**
+ * Container mobile-first condiviso da tutte le schermate. Il padding in alto
+ * tiene l'header fuori dal notch / Dynamic Island: con `box-sizing: border-box`
+ * resta dentro i 100vh, e in PWA installata l'inset cresce da solo.
+ */
 export const screen: CSSProperties = {
   maxWidth: 420,
   margin: "0 auto",
   minHeight: "100vh",
+  paddingTop: "env(safe-area-inset-top)",
   background: P.bg,
   backgroundImage: P.bg2,
   fontFamily: "'Inter',system-ui,-apple-system,sans-serif",

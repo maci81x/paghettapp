@@ -61,6 +61,7 @@ const OPS = {
   revokeLog: api.revokeLog,
   deleteLog: api.deleteLog,
   deductPoints: api.deductPoints,
+  penalizeActivity: api.penalizeActivity,
   markLogsPaid: api.markLogsPaid,
   createMission: api.createMission,
   updateMission: api.updateMission,
@@ -602,6 +603,21 @@ export function useSupabase() {
   };
 
   /**
+   * Penalità legata a un'attività non svolta: voce già approvata con i punti
+   * negativi dell'attività, che entra subito nel totale e nella settimana.
+   */
+  const penalizeActivity = async (uid: UserId, actId: number, pen: number, note: string) => {
+    const amount = -Math.abs(pen);
+    if (amount === 0) return;
+    const row = await send<api.LogRow>("penalizeActivity", [uid, actId, Math.abs(pen), note]);
+    const entry: LogEntry = row
+      ? toLog(row)
+      : { id: Date.now(), actId, date: todayISO(), cnt: 0, note, tod: nowTod(), pts: amount, ok: true };
+    patch(uid, (u) => ({ ...u, log: [...u.log, entry], totalPts: u.totalPts + amount }));
+    await send("updateUser", [uid, { total_pts: users[uid].totalPts + amount }]);
+  };
+
+  /**
    * Riscatto: i soldi escono dall'app perché vengono consegnati a mano alla
    * ragazza. Resta una spesa a storico, non un'entrata: nel bilancio è
    * un'uscita dal salvadanaio, non un guadagno.
@@ -1098,6 +1114,7 @@ export function useSupabase() {
     users,
     acts,
     pins,
+    penalizeActivity,
     todayPts,
     weekPts,
     pendingCnt,

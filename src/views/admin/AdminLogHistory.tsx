@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BONUS_ACT, CATS, DEDUCT_ACT, MANUAL_ACT_LABEL, TODS, getWeekStart, isoDate, weekStartOf } from "../../data/constants";
+import { BONUS_ACT, CATS, DEDUCT_ACT, MANUAL_ACT_LABEL, TODS, actIcon, getWeekStart, isPenalty, isoDate, weekStartOf } from "../../data/constants";
 import type { Activity, LogEntry, User } from "../../data/types";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
@@ -131,17 +131,19 @@ export default function AdminLogHistory({
         <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 12 }}>Nessuna voce in questo periodo</p>
       ) : (
         rows.slice(0, shown).map((l) => {
-          const name = nameOf(l);
           const st = statusOf(l);
           const manual = l.actId === BONUS_ACT || l.actId === DEDUCT_ACT;
-          const cat = manual ? undefined : CATS.find((c) => c.id === acts.find((a) => a.id === l.actId)?.cat);
+          const act = acts.find((a) => a.id === l.actId);
+          const penalty = isPenalty(l);
+          const name = penalty ? `Penalità: ${act?.name ?? "attività eliminata"}` : nameOf(l);
+          const icon = penalty ? "⚠️" : manual ? undefined : (act && actIcon(act)) || CATS.find((c) => c.id === act?.cat)?.i;
           return (
             <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: `1px solid ${P.gb}` }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 10, color: P.tx3, fontWeight: 700 }}>{fmtDay(l.date)}</span>
-                  <span style={{ color: P.tx, fontSize: 12, fontWeight: 600 }}>
-                    {cat?.i} {name}
+                  <span style={{ color: penalty ? P.red : P.tx, fontSize: 12, fontWeight: 600 }}>
+                    {icon} {name}
                     {l.cnt > 1 ? ` ×${l.cnt}` : ""}
                   </span>
                 </div>
@@ -152,7 +154,7 @@ export default function AdminLogHistory({
                   </span>
                   <span style={{ fontSize: 9, color: st.color, fontWeight: 600 }}>{st.label}</span>
                   {l.paid && <span style={{ fontSize: 9, color: P.tx3 }}>💸 pagata</span>}
-                  {!manual && <span style={{ fontSize: 9, color: P.tx3 }}>{TODS.find((t) => t.k === l.tod)?.l}</span>}
+                  {!manual && !penalty && <span style={{ fontSize: 9, color: P.tx3 }}>{TODS.find((t) => t.k === l.tod)?.l}</span>}
                 </div>
                 {l.note && <p style={{ color: P.tx3, fontSize: 9, margin: "1px 0 0" }}>{l.note}</p>}
               </div>

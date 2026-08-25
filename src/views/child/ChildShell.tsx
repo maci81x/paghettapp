@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import { FREQ_UNIT, fundName, getLvl, hasFundNames, nowTod } from "../../data/constants";
+import { FREQ_UNIT, fundName, getLvl, hasFundNames, nowTod, penaltiesOf } from "../../data/constants";
 import type { Activity, ChildTab, CompletionDraft, Fund, LogEntry, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
 import { Avatar, NavItem } from "../../design/components";
 import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
@@ -153,6 +153,7 @@ export default function ChildShell({
           <ActivitiesTab
             pending={pendingProps}
             acts={actsApi.acts}
+            penalties={penaltiesOf(u.log)}
             grad={grad}
             tp={tp}
             todayDone={todayDone}

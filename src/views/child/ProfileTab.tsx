@@ -1,8 +1,11 @@
 import { useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { BADGES, FUNDS, FUND_LABEL, FUND_NAME_MAX, FUND_NAME_MIN, LVLS, fundName, getLvl, validFundName } from "../../data/constants";
 import { weeklyAvg } from "../../data/report";
 import type { Fund, User, Wish } from "../../data/types";
-import { Avatar, Btn, GlassCard, InfoTip, Input } from "../../design/components";
+import { Avatar, Btn, GlassCard, InfoTip, Input, Pill } from "../../design/components";
+import { THEME_LABEL, useThemeMode } from "../../hooks/useThemeMode";
+import type { ThemePref } from "../../hooks/useThemeMode";
 import { BG_PATTERNS, COLOR_PRESETS, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
 
@@ -52,8 +55,12 @@ export default function ProfileTab({
   const avg = weeklyAvg(u);
   const badges = u.badges ?? [];
 
-  const fileRef = useRef<HTMLInputElement>(null);
+  // due input distinti: `capture` apre la fotocamera, senza apre la galleria
+  const camRef = useRef<HTMLInputElement>(null);
+  const galRef = useRef<HTMLInputElement>(null);
+  const [pickSrc, setPickSrc] = useState(false);
   const [photoErr, setPhotoErr] = useState("");
+  const theme = useThemeMode();
   const [editName, setEditName] = useState(false);
   const [name, setName] = useState(userName(u));
   const [editFund, setEditFund] = useState<Fund | null>(null);
@@ -75,6 +82,12 @@ export default function ProfileTab({
     }
   };
 
+  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
+    void pickPhoto(e.target.files?.[0]);
+    e.target.value = ""; // così riselezionare la stessa foto rilancia l'evento
+    setPickSrc(false);
+  };
+
   const saveName = () => {
     onNickname(name);
     setEditName(false);
@@ -90,11 +103,11 @@ export default function ProfileTab({
             size={120}
             radius={34}
             grad={grad}
-            onClick={() => fileRef.current?.click()}
+            onClick={() => setPickSrc(true)}
             style={{ boxShadow: `0 10px 32px ${uc}44`, border: `3px solid ${uc}` }}
           />
           <div
-            onClick={() => fileRef.current?.click()}
+            onClick={() => setPickSrc(true)}
             style={{
               position: "absolute",
               left: 0,
@@ -113,17 +126,22 @@ export default function ProfileTab({
             📷 Cambia
           </div>
         </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          style={{ display: "none" }}
-          onChange={(e) => {
-            void pickPhoto(e.target.files?.[0]);
-            e.target.value = ""; // così riselezionare la stessa foto rilancia l'evento
-          }}
-        />
+        {pickSrc && (
+          <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 8 }}>
+            <Btn small grad={grad} onClick={() => camRef.current?.click()}>
+              📷 Scatta foto
+            </Btn>
+            <Btn small grad={grad} onClick={() => galRef.current?.click()}>
+              🖼️ Scegli dalla galleria
+            </Btn>
+            <Btn small outline color={P.tx3} onClick={() => setPickSrc(false)}>
+              ✕
+            </Btn>
+          </div>
+        )}
+        {/* `capture` apre la fotocamera; senza l'attributo si apre la galleria */}
+        <input ref={camRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={onFile} />
+        <input ref={galRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} />
         {photoErr && <p style={{ color: P.red, fontSize: 10, margin: "0 0 6px" }}>{photoErr}</p>}
 
         <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 8 }}>
@@ -215,6 +233,19 @@ export default function ProfileTab({
           })}
         </GlassCard>
       )}
+
+      <GlassCard>
+        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
+          🌗 Tema <InfoTip text="Lo cambi anche dal bottone in alto: tocca per passare fra scuro, chiaro e auto." />
+        </p>
+        <div style={{ display: "flex", gap: 5 }}>
+          {(Object.keys(THEME_LABEL) as ThemePref[]).map((k) => (
+            <Pill key={k} active={theme.pref === k} color={P.acc} onClick={() => theme.set(k)} s>
+              {THEME_LABEL[k].i} {THEME_LABEL[k].l}
+            </Pill>
+          ))}
+        </div>
+      </GlassCard>
 
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>🎨 I miei colori</p>

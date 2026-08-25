@@ -7,6 +7,7 @@ import type { MatchesApi } from "../../hooks/useMatches";
 import type { ActivitiesApi, UsersApi } from "../../hooks/useSupabase";
 import { fmtDay } from "../../utils/dates";
 import ActivityEditModal from "../../modals/ActivityEditModal";
+import ActivityPenaltyModal from "../../modals/ActivityPenaltyModal";
 import BonusPointsModal from "../../modals/BonusPointsModal";
 import ConfirmModal from "../../modals/ConfirmModal";
 import DeductPointsModal from "../../modals/DeductPointsModal";
@@ -65,6 +66,7 @@ export default function AdminShell({
   const [incomeFor, setIncomeFor] = useState<UserId | null>(null);
   const [bonusFor, setBonusFor] = useState<UserId | null>(null);
   const [deductFor, setDeductFor] = useState<UserId | null>(null);
+  const [penaltyFor, setPenaltyFor] = useState<UserId | null>(null);
   const [logAction, setLogAction] = useState<{ uid: UserId; log: LogEntry; name: string; mode: "revoke" | "delete" } | null>(null);
 
   const { users } = usersApi;
@@ -126,6 +128,7 @@ export default function AdminShell({
           onRevoke={(log, name) => setLogAction({ uid: view, log, name, mode: "revoke" })}
           onDeleteLog={(log, name) => setLogAction({ uid: view, log, name, mode: "delete" })}
           onDeduct={() => setDeductFor(view)}
+          onPenalty={() => setPenaltyFor(view)}
           onIncome={() => setIncomeFor(view)}
           onBonus={() => setBonusFor(view)}
           namesRequired={usersApi.piggyNamesSupported}
@@ -283,6 +286,17 @@ export default function AdminShell({
             setBonusFor(null);
           }}
           onClose={() => setBonusFor(null)}
+        />
+      )}
+      {penaltyFor && (
+        <ActivityPenaltyModal
+          who={users[penaltyFor].n}
+          acts={actsApi.acts}
+          onSave={(act, note) => {
+            usersApi.penalizeActivity(penaltyFor, act.id, act.pen, note);
+            setPenaltyFor(null);
+          }}
+          onClose={() => setPenaltyFor(null)}
         />
       )}
       {deductFor && (

@@ -32,7 +32,7 @@ export default function Shell({
   children: ReactNode;
 }) {
   const [guide, setGuide] = useState(false);
-  const { mode, toggle } = useThemeMode();
+  const { label, toggle } = useThemeMode();
   const bg = bgPattern && bgPattern !== "none" ? `${bgPattern},${P.bg2}` : P.bg2;
   return (
     <div style={{ ...screen, backgroundImage: bg, backgroundSize: bgSize, display: "flex", flexDirection: "column", position: "relative" }}>
@@ -76,10 +76,23 @@ export default function Shell({
         <div style={{ display: "flex", gap: 6 }}>
           <button
             onClick={toggle}
-            title={mode === "dark" ? "Passa al tema chiaro" : "Passa al tema scuro"}
-            style={{ width: 28, height: 28, borderRadius: 9, ...gls, color: P.tx2, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            title={`Tema ${label.l} · tocca per cambiare`}
+            style={{
+              minWidth: 34,
+              padding: "2px 5px",
+              borderRadius: 9,
+              ...gls,
+              color: P.tx2,
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1.1,
+            }}
           >
-            {mode === "dark" ? "☀️" : "🌙"}
+            <span style={{ fontSize: 13 }}>{label.i}</span>
+            <span style={{ fontSize: 7, color: P.tx3, fontWeight: 700 }}>{label.l}</span>
           </button>
           <button
             onClick={() => setGuide(true)}
@@ -93,14 +106,14 @@ export default function Shell({
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: "auto", padding: 16, paddingBottom: 80 }}>{children}</div>
+      <div style={{ flex: 1, overflow: "auto", padding: 16, paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>{children}</div>
 
       <div
         style={{
           display: "flex",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "5px 6px 10px",
+          padding: "5px 6px calc(10px + env(safe-area-inset-bottom))",
           borderTop: `1px solid ${P.gb}`,
           position: "fixed",
           bottom: 0,

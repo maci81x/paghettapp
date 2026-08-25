@@ -79,7 +79,7 @@ export interface LogRow {
 }
 
 /** Natura di una voce senza attività collegata. */
-export type LogKind = "bonus" | "deduct";
+export type LogKind = "bonus" | "deduct" | "penalty";
 
 export interface MissionRow {
   id: number;
@@ -176,7 +176,8 @@ export const toActivity = (r: ActRow): Activity => ({
  * Bonus o penalità? Con la colonna `entry_kind` è scritto; senza, l'unico
  * indizio è il segno dei punti (un bonus negativo finisce fra le penalità).
  */
-export const logKind = (r: LogRow): LogKind => r.entry_kind ?? (r.points < 0 ? "deduct" : "bonus");
+export const logKind = (r: LogRow): LogKind =>
+  r.entry_kind ?? (r.points < 0 ? (r.activity_id == null ? "deduct" : "penalty") : "bonus");
 
 export const toLog = (r: LogRow): LogEntry => ({
   id: r.id,
@@ -439,7 +440,7 @@ export const createActivityLog = (d: {
           moment: TOD_DB[d.tod],
           note: d.note,
           approved: d.approved ?? false,
-          entry_kind: d.actId === null ? (d.kind ?? "bonus") : null,
+          entry_kind: d.kind ?? (d.actId === null ? "bonus" : null),
         }, ["entry_kind"]),
       )
       .select(),
@@ -510,6 +511,24 @@ export const deductPoints = (userId: string, points: number, reason: string) =>
     note: reason,
     approved: true,
     kind: "deduct",
+  });
+
+/**
+ * Penalità legata a un'attività non svolta: voce già approvata con i punti
+ * negativi dell'attività. `times: 0` è deliberato — la voce non è un
+ * completamento, quindi non deve consumare il limite giornaliero né far
+ * avanzare le missioni collegate, che contano proprio i `times`.
+ */
+export const penalizeActivity = (userId: string, actId: number, points: number, note: string) =>
+  createActivityLog({
+    userId,
+    actId,
+    pts: -Math.abs(points),
+    cnt: 0,
+    tod: nowTod(),
+    note,
+    approved: true,
+    kind: "penalty",
   });
 
 export const markLogsPaid = (logIds: number[], paid = true) =>
