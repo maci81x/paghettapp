@@ -10,22 +10,36 @@
 -- Applicandola i regali nuovi usano il tipo giusto; quelli già registrati
 -- restano 'extra' e continuano a comparire correttamente grazie alla nota.
 --
+-- Idempotente: rieseguirla non cambia niente.
+--
 -- Da eseguire nella SQL Editor di Supabase (una volta sola).
 
+-- Il vincolo da sostituire si riconosce dalla colonna su cui insiste, non
+-- dalla parola "type" nel suo testo: cercarla a stringa rischia di colpire un
+-- CHECK diverso che quella parola ce l'ha per caso (`piggybank_type`, ...).
+-- Vengono rimossi tutti i CHECK che insistono sulla sola colonna `type`.
 DO $$
 DECLARE
   con text;
+  col smallint;
 BEGIN
-  -- il CHECK sul tipo può avere nomi diversi a seconda di come è nata la tabella
-  SELECT conname INTO con
-    FROM pg_constraint
-   WHERE conrelid = 'income'::regclass
-     AND contype = 'c'
-     AND pg_get_constraintdef(oid) ILIKE '%type%';
+  SELECT attnum INTO col
+    FROM pg_attribute
+   WHERE attrelid = 'income'::regclass AND attname = 'type' AND NOT attisdropped;
 
-  IF con IS NOT NULL THEN
-    EXECUTE format('ALTER TABLE income DROP CONSTRAINT %I', con);
+  IF col IS NULL THEN
+    RAISE EXCEPTION 'la tabella income non ha una colonna "type"';
   END IF;
+
+  FOR con IN
+    SELECT conname
+      FROM pg_constraint
+     WHERE conrelid = 'income'::regclass
+       AND contype = 'c'
+       AND conkey = ARRAY[col]
+  LOOP
+    EXECUTE format('ALTER TABLE income DROP CONSTRAINT %I', con);
+  END LOOP;
 END $$;
 
 ALTER TABLE income
@@ -33,3 +47,9 @@ ALTER TABLE income
   CHECK (type IN ('allowance', 'extra', 'bonus', 'gift'));
 
 NOTIFY pgrst, 'reload schema';
+
+-- ── prima di applicarla, se vuoi vedere cosa verrà rimosso ────────────────
+--
+--   select conname, pg_get_constraintdef(oid)
+--     from pg_constraint
+--    where conrelid = 'income'::regclass and contype = 'c';
