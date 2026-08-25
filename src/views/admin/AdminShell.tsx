@@ -18,6 +18,7 @@ import Shell from "../Shell";
 import AdminActivitiesTab from "./AdminActivitiesTab";
 import AdminChildView from "./AdminChildView";
 import AdminChildrenSummary from "./AdminChildrenSummary";
+import AdminComparisonCard from "./AdminComparisonCard";
 import AdminMatchTab from "./AdminMatchTab";
 import AdminMissionsTab from "./AdminMissionsTab";
 import AdminPiggyTab from "./AdminPiggyTab";
@@ -224,6 +225,7 @@ export default function AdminShell({
     return (
       <div>
         <AdminChildrenSummary users={users} weekPts={usersApi.weekPts} onOpen={setView} />
+        <AdminComparisonCard users={users} />
         <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
           {TABS.map((t) => (
             <Pill key={t.id} active={tab === t.id} onClick={() => setTab(t.id)} color={P.acc}>

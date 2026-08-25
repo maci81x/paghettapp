@@ -69,7 +69,13 @@ export interface Mission {
 
 export interface Spesa {
   id: number;
+  /** Giorno in formato "gg/mm": è solo l'etichetta mostrata. */
   d: string;
+  /**
+   * Giorno reale (ISO): serve per filtrare per periodo, cosa che `d` non
+   * permette perché non porta l'anno. Facoltativo nelle cache salvate prima.
+   */
+  date?: string;
   ds: string;
   a: number;
   f: Fund;

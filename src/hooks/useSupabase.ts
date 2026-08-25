@@ -193,6 +193,7 @@ function buildSnapshot(rows: {
       .map((e) => ({
         id: e.id,
         d: new Date(e.created_at).toLocaleDateString("it", { day: "2-digit", month: "2-digit" }),
+        date: isoDate(new Date(e.created_at)),
         ds: e.description,
         a: Number(e.amount),
         f: DB_FUND[e.piggybank_type] ?? "personale",
@@ -685,6 +686,7 @@ export function useSupabase() {
         {
           id: row?.id ?? Date.now(),
           d: new Date().toLocaleDateString("it", { day: "2-digit", month: "2-digit" }),
+          date: todayISO(),
           ds,
           a: amount,
           f: fund,
@@ -759,7 +761,14 @@ export function useSupabase() {
       w: { ...u.w, [w.fund]: Math.max(0, +(u.w[w.fund] - w.cost).toFixed(2)) },
       wishes: (u.wishes ?? []).map((x) => (x.id === id ? { ...x, done: true } : x)),
       spese: [
-        { id: Date.now(), d: new Date().toLocaleDateString("it", { day: "2-digit", month: "2-digit" }), ds: `🎁 ${w.name}`, a: w.cost, f: w.fund },
+        {
+          id: Date.now(),
+          d: new Date().toLocaleDateString("it", { day: "2-digit", month: "2-digit" }),
+          date: todayISO(),
+          ds: `🎁 ${w.name}`,
+          a: w.cost,
+          f: w.fund,
+        },
         ...u.spese,
       ],
     }));

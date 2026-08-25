@@ -1,9 +1,12 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState } from "react";
+import MovementFilters from "../../components/MovementFilters";
+import MovementSummary from "../../components/MovementSummary";
 import { FUNDS, PERIOD_MONTHS, TODS, YIELD_YEAR, fundName, getLvl, getTier } from "../../data/constants";
 import type { Activity, Fund, LogEntry, Payment, Period, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, PeriodBar } from "../../design/components";
-import { P } from "../../design/tokens";
-import { allIncome } from "../../data/report";
+import { P, alpha } from "../../design/tokens";
+import type { MovementFilter } from "../../data/movements";
+import { emptyFilter, filterMovements, incomeIcon, isFiltered, summarize } from "../../data/movements";
 import MonthReportCard from "../MonthReportCard";
 import AdminAllowanceCard from "./AdminAllowanceCard";
 import AdminLogHistory from "./AdminLogHistory";
@@ -55,13 +58,16 @@ export default function AdminChildView({
   /** Falso finché il database non ha la colonna dei nomi dei salvadanai. */
   namesRequired: boolean;
 }) {
+  const [filter, setFilter] = useState<MovementFilter>(emptyFilter);
   const u = users[uid];
   const lvl = getLvl(u.totalPts);
   const tier = getTier(weekPts);
   const months = PERIOD_MONTHS[period];
   const pending = u.log.filter((l) => !l.ok && !l.revoked);
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
-  const income = allIncome(u).slice(0, 8);
+  const moves = filterMovements(u, filter);
+  const summary = summarize(moves);
+  const filtered = isFiltered(filter);
 
   return (
     <div>
@@ -157,21 +163,41 @@ export default function AdminChildView({
 
       <AdminLogHistory u={u} acts={acts} onRevoke={onRevoke} onDelete={onDeleteLog} onDeduct={onDeduct} />
 
+      <GlassCard style={{ padding: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>🔎 Filtra movimenti</p>
+          <span
+            style={{
+              background: alpha(filtered ? P.acc : P.tx3, 13),
+              color: filtered ? P.acc : P.tx3,
+              borderRadius: 8,
+              padding: "2px 8px",
+              fontSize: 10,
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {summary.count} moviment{summary.count === 1 ? "o" : "i"}
+          </span>
+        </div>
+        <MovementFilters u={u} value={filter} onChange={setFilter} showConfirmed />
+      </GlassCard>
+
+      <MovementSummary u={u} summary={summary} />
+
       <GlassCard>
-        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>📥 Entrate recenti</p>
-        {income.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10, margin: 0 }}>Nessuna entrata registrata</p>
+        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>📥 Entrate</p>
+        {moves.income.length === 0 ? (
+          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10, margin: 0 }}>Nessuna entrata in questo periodo</p>
         ) : (
-          income.map((i) => (
+          moves.income.map((i) => (
             <div key={i.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: `1px solid ${P.gb}` }}>
               <div style={{ minWidth: 0 }}>
-                <span style={{ color: P.tx, fontSize: 11 }}>
-                  {i.type === "regalo" ? i.source : `${i.type === "paghetta" ? "🟢" : "💝"} ${i.source}`}
-                </span>
+                <span style={{ color: P.tx, fontSize: 11 }}>{i.type === "regalo" ? i.source : `${incomeIcon(i.type)} ${i.source}`}</span>
                 <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
                   {i.date}
                   {i.type === "regalo" ? ` · 100% ${fundName(u, "personale")}` : i.type === "extra" ? " · extra" : " · paghetta"}
-                  {i.confirmed === false ? " · ⏳ non confermata" : ""}
+                  {i.type === "paghetta" && (i.confirmed ? " · ✅ confermata" : " · ⏳ non confermata")}
                 </p>
               </div>
               <span style={{ color: i.type === "regalo" ? P.gold : P.mint, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>+€{i.amount.toFixed(2)}</span>
@@ -181,15 +207,21 @@ export default function AdminChildView({
       </GlassCard>
 
       <GlassCard>
-        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>💸 Spese recenti</p>
-        {u.spese.slice(0, 5).map((s) => (
-          <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
-            <span style={{ color: P.tx }}>
-              {s.d} · {s.ds}
-            </span>
-            <span style={{ color: P.red }}>-€{s.a.toFixed(2)}</span>
-          </div>
-        ))}
+        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>💸 Spese</p>
+        {moves.spese.length === 0 ? (
+          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10, margin: 0 }}>Nessuna spesa in questo periodo</p>
+        ) : (
+          moves.spese.map((s) => (
+            <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+              <span style={{ color: P.tx }}>
+                {s.d} · {s.ds}
+              </span>
+              <span style={{ color: P.red }}>
+                -€{s.a.toFixed(2)} <span style={{ color: P.tx3 }}>({fundName(u, s.f)})</span>
+              </span>
+            </div>
+          ))
+        )}
       </GlassCard>
     </div>
   );

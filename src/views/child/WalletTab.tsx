@@ -1,9 +1,13 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useState } from "react";
+import MovementFilters from "../../components/MovementFilters";
+import MovementSummary from "../../components/MovementSummary";
 import { FUNDS, fundName } from "../../data/constants";
-import { allIncome } from "../../data/report";
+import type { MovementFilter } from "../../data/movements";
+import { emptyFilter, filterMovements, isFiltered, summarize } from "../../data/movements";
 import type { Period, User } from "../../data/types";
 import { Btn, GlassCard, InfoTip, PeriodBar, SectionTitle } from "../../design/components";
-import { P, gls } from "../../design/tokens";
+import { P, alpha, gls } from "../../design/tokens";
 import { fmtDayTime } from "../../utils/dates";
 import MonthReportCard from "../MonthReportCard";
 
@@ -28,8 +32,12 @@ export default function WalletTab({
   onNewGift: () => void;
   onConfirmIncome: (id: number) => void;
 }) {
+  const [filter, setFilter] = useState<MovementFilter>(emptyFilter);
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
-  const income = allIncome(u);
+  const moves = filterMovements(u, filter);
+  const { income, spese } = moves;
+  const summary = summarize(moves);
+  const filtered = isFiltered(filter);
   const confirmLabel = (i: { confirmed?: boolean; confirmedAt?: string; date: string }) =>
     i.confirmed ? `✅ Ricevuta il ${fmtDayTime(i.confirmedAt ?? i.date)}` : "⏳ In attesa di conferma";
   return (
@@ -69,10 +77,32 @@ export default function WalletTab({
 
       <MonthReportCard u={u} />
 
+      <GlassCard style={{ padding: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>🔎 Filtra movimenti</p>
+          <span
+            style={{
+              background: alpha(filtered ? P.acc : P.tx3, 13),
+              color: filtered ? P.acc : P.tx3,
+              borderRadius: 8,
+              padding: "2px 8px",
+              fontSize: 10,
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {summary.count} moviment{summary.count === 1 ? "o" : "i"}
+          </span>
+        </div>
+        <MovementFilters u={u} value={filter} onChange={setFilter} />
+      </GlassCard>
+
+      <MovementSummary u={u} summary={summary} />
+
       <GlassCard>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>
-            📥 Entrate <InfoTip text="Paghette settimanali ed entrate extra: regali, lavoretti, mance." />
+            📥 Entrate <InfoTip text="Paghette settimanali, entrate extra e regali. La lista segue i filtri qui sopra." />
           </p>
           <div style={{ display: "flex", gap: 6 }}>
             <Btn small grad={P.mintG} onClick={onNewIncome}>
@@ -84,7 +114,9 @@ export default function WalletTab({
           </div>
         </div>
         {income.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>Nessuna entrata registrata</p>
+          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>
+            {filtered ? "Nessuna entrata in questo periodo" : "Nessuna entrata registrata"}
+          </p>
         ) : (
           income.map((i, idx) => {
             const pay = i.type === "paghetta" ? (u.pays ?? []).find((p) => p.id === i.id) : undefined;
@@ -161,16 +193,18 @@ export default function WalletTab({
             + Spesa
           </Btn>
         </div>
-        {u.spese.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>Nessuna spesa registrata</p>
+        {spese.length === 0 ? (
+          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>
+            {filtered ? "Nessuna spesa in questo periodo" : "Nessuna spesa registrata"}
+          </p>
         ) : (
-          u.spese.map((s) => (
+          spese.map((s) => (
             <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
               <span style={{ color: P.tx }}>
                 {s.d} · {s.ds}
               </span>
               <span style={{ color: P.red }}>
-                -€{s.a.toFixed(2)} <span style={{ color: P.tx3 }}>({s.f})</span>
+                -€{s.a.toFixed(2)} <span style={{ color: P.tx3 }}>({fundName(u, s.f)})</span>
               </span>
             </div>
           ))
