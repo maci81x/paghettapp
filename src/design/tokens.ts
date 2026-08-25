@@ -13,8 +13,12 @@ const DARK = {
   surf: "rgba(15,15,30,.96)",
   /** Velo dietro le modali. */
   overlay: "rgba(0,0,0,.8)",
-  /** Traccia non riempita degli anelli di progresso. */
-  ringTrack: "rgba(255,255,255,0.04)",
+  /**
+   * Traccia non riempita di barre e anelli. Non può essere `glass`: quella è
+   * un velo bianco, pensato per il fondo scuro, e in tema chiaro sparisce
+   * sulla card bianca lasciando la barra senza binario.
+   */
+  track: "rgba(255,255,255,0.12)",
   tx: "#f0f0f8",
   tx2: "#a0a0b8",
   tx3: "#5c5c72",
@@ -41,7 +45,7 @@ const LIGHT: typeof DARK = {
   gb: "rgba(24,20,60,0.10)",
   surf: "rgba(255,255,255,.97)",
   overlay: "rgba(24,20,60,.45)",
-  ringTrack: "rgba(24,20,60,0.08)",
+  track: "rgba(24,20,60,0.12)",
   tx: "#15152a",
   tx2: "#4c4c66",
   tx3: "#7a7a95",

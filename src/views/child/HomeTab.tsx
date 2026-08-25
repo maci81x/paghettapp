@@ -9,12 +9,10 @@ import {
   SPLIT,
   fundName,
   TIERS,
-  TIER_TICK,
   USER_IDS,
   YIELD_YEAR,
   getTier,
   nextTier as nextTierOf,
-  tierPos,
   todayISO,
 } from "../../data/constants";
 import { monthlyInterest } from "../../data/interest";
@@ -25,6 +23,7 @@ import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
 import { userColor, userName } from "../../design/theme";
 import { P, alpha, gls } from "../../design/tokens";
 import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
+import TierBar from "../../components/TierBar";
 import PendingApprovalCard from "./PendingApprovalCard";
 import { fmtDay } from "../../utils/dates";
 
@@ -80,7 +79,6 @@ export default function HomeTab({
   const tier = getTier(wp);
   const nextTier = nextTierOf(wp);
   const gapTier = nextTier ? nextTier.min - wp : 0;
-  const pos = tierPos(wp);
   const weekPct = Math.min(100, (wp / 500) * 100);
   const gap = Math.max(0, 500 - wp);
   const available = acts.filter((a) => todayDone(a.id) < a.max).sort((a, b) => b.pts - a.pts);
@@ -221,6 +219,11 @@ export default function HomeTab({
         )}
       </GlassCard>
 
+      {/* Barra tier: subito sotto la stima della paghetta, è lì che serve. */}
+      <GlassCard style={{ padding: "16px 16px 12px", marginBottom: 8 }}>
+        <TierBar wp={wp} color={uc} grad={grad} />
+      </GlassCard>
+
       <GlassCard style={{ background: `linear-gradient(135deg,${uc}10,transparent)` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <span style={{ color: P.tx, fontSize: 13, fontWeight: 700 }}>☀️ Oggi hai guadagnato</span>
@@ -253,66 +256,6 @@ export default function HomeTab({
         )}
       </GlassCard>
 
-      {/* Barra tier: dove sono adesso e cosa manca al traguardo dopo. */}
-      <GlassCard style={{ padding: 16, marginBottom: 8 }}>
-        <div style={{ padding: "0 22px" }}>
-          <div style={{ position: "relative", height: 18 }}>
-            <div style={{ position: "absolute", top: 6, left: 0, right: 0, height: 6, borderRadius: 3, background: P.glass }} />
-            <div style={{ position: "absolute", top: 6, left: 0, width: `${pos}%`, height: 6, borderRadius: 3, background: grad, transition: "width .6s" }} />
-            {TIERS.map((t, i) => (
-              <div
-                key={t.r}
-                style={{
-                  position: "absolute",
-                  top: 1,
-                  left: `${i * TIER_TICK}%`,
-                  transform: "translateX(-50%)",
-                  boxSizing: "content-box",
-                  width: 12,
-                  height: 12,
-                  borderRadius: 8,
-                  background: wp >= t.min ? uc : P.glass,
-                  border: `2px solid ${P.bg}`,
-                  transition: "background .3s",
-                }}
-              />
-            ))}
-            <div
-              style={{
-                position: "absolute",
-                top: -1,
-                left: `${pos}%`,
-                transform: "translateX(-50%)",
-                boxSizing: "content-box",
-                width: 14,
-                height: 14,
-                borderRadius: 10,
-                background: grad,
-                border: `3px solid ${P.bg}`,
-                boxShadow: `0 0 10px ${alpha(uc, 55)}`,
-                transition: "left .6s",
-              }}
-            />
-          </div>
-          <div style={{ position: "relative", height: 26, marginTop: 6 }}>
-            {TIERS.map((t, i) => (
-              <div key={t.r} style={{ position: "absolute", left: `${i * TIER_TICK}%`, transform: "translateX(-50%)", width: 44, textAlign: "center" }}>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: wp >= t.min ? P.tx : P.tx3 }}>€{t.r}</p>
-                <p style={{ margin: 0, fontSize: 8, color: P.tx3 }}>{t.min}pt</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <p style={{ margin: 0, textAlign: "center", fontSize: 10, color: P.tx2 }}>
-          {nextTier ? (
-            <>
-              Sei a <b style={{ color: P.tx }}>{wp}pt</b> • Mancano <b style={{ color: uc }}>{gapTier}pt</b> per €{nextTier.r}
-            </>
-          ) : (
-            "🏆 Sei al massimo!"
-          )}
-        </p>
-      </GlassCard>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <Btn style={{ flex: 1 }} grad={grad} onClick={onIncome}>
@@ -330,7 +273,7 @@ export default function HomeTab({
         </div>
         {gap > 0 && (
           <>
-            <div style={{ background: P.glass, borderRadius: 4, height: 6, marginBottom: 8 }}>
+            <div style={{ background: P.track, borderRadius: 4, height: 6, marginBottom: 8 }}>
               <div style={{ background: grad, borderRadius: 4, height: 6, width: `${weekPct}%`, transition: "width .5s" }} />
             </div>
             <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 4px" }}>💡 Prova queste attività:</p>
@@ -441,7 +384,7 @@ export default function HomeTab({
                     +€{perYear.toFixed(2)}/anno <span style={{ color: P.tx3, fontWeight: 600 }}>({YIELD_YEAR * 100}%)</span>
                   </span>
                 </div>
-                <div style={{ background: P.glass, borderRadius: 3, height: 5, marginTop: 4 }}>
+                <div style={{ background: P.track, borderRadius: 3, height: 5, marginTop: 4 }}>
                   <div style={{ background: P.mintG, borderRadius: 3, height: 5, width: `${Math.min(100, (save / goal) * 100)}%`, transition: "width .6s" }} />
                 </div>
                 {interestThisMonth > 0 && (
@@ -481,7 +424,7 @@ export default function HomeTab({
                     {prog}/{m.tgt}
                   </span>
                 </div>
-                <div style={{ background: P.glass, borderRadius: 3, height: 5, marginTop: 3 }}>
+                <div style={{ background: P.track, borderRadius: 3, height: 5, marginTop: 3 }}>
                   <div style={{ background: prog >= m.tgt ? P.mintG : P.accG, borderRadius: 3, height: 5, width: `${Math.min(100, (prog / m.tgt) * 100)}%` }} />
                 </div>
               </div>

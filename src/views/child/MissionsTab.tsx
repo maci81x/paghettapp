@@ -113,7 +113,7 @@ function MissionCard({ m, uid, users, acts, grad, collapsed }: { m: Mission; uid
             </span>
             <span style={{ color: prog.done ? P.mint : P.tx3, fontSize: 11, fontWeight: 800 }}>{pct}% completata</span>
           </div>
-          <div style={{ background: P.glass, borderRadius: 6, height: 12, overflow: "hidden" }}>
+          <div style={{ background: P.track, borderRadius: 6, height: 12, overflow: "hidden" }}>
             <div style={{ background: prog.done ? P.mintG : grad, borderRadius: 6, height: 12, width: `${prog.pct}%`, transition: "width .5s" }} />
           </div>
 

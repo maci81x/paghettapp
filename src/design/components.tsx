@@ -29,7 +29,7 @@ export function Ring({
         height={size}
         style={{ transform: "rotate(-90deg)", "--gc": color + "66", animation: glow ? "glow 3s ease infinite" : "none" } as CSSProperties}
       >
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={P.ringTrack} strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={P.track} strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}

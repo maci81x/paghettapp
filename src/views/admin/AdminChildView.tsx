@@ -1,6 +1,7 @@
 import { Suspense, lazy, useState } from "react";
 import MovementFilters from "../../components/MovementFilters";
 import MovementSummary from "../../components/MovementSummary";
+import TierBar from "../../components/TierBar";
 import { FUNDS, PERIOD_MONTHS, TODS, YIELD_YEAR, fundName, getLvl, getTier } from "../../data/constants";
 import type { Activity, Fund, LogEntry, Payment, Period, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, PeriodBar } from "../../design/components";
@@ -89,6 +90,10 @@ export default function AdminChildView({
           </p>
         </div>
       </div>
+
+      <GlassCard style={{ padding: "14px 14px 10px" }}>
+        <TierBar wp={weekPts} color={u.c} grad={u.grad} />
+      </GlassCard>
 
       <PeriodBar v={period} set={setPeriod} />
 

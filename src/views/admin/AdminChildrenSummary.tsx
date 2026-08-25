@@ -1,4 +1,5 @@
-import { USER_IDS, getLvl, getTier, nextTier, tierProgress } from "../../data/constants";
+import TierBar from "../../components/TierBar";
+import { USER_IDS, getLvl, getTier } from "../../data/constants";
 import type { UserId, Users } from "../../data/types";
 import { Avatar, GlassCard } from "../../design/components";
 import { P } from "../../design/tokens";
@@ -22,9 +23,7 @@ export default function AdminChildrenSummary({
         const u = users[uid];
         const wp = weekPts(uid);
         const tier = getTier(wp);
-        const next = nextTier(wp);
         const lvl = getLvl(u.totalPts);
-        const pct = tierProgress(wp);
 
         return (
           <GlassCard
@@ -46,12 +45,9 @@ export default function AdminChildrenSummary({
               {wp}pt <span style={{ color: P.tx3, fontWeight: 600 }}>→</span> <span style={{ color: P.gold }}>€{tier.r}</span>
             </p>
 
-            <div style={{ background: P.glass, borderRadius: 3, height: 5, margin: "6px 0 3px" }}>
-              <div style={{ background: u.grad, borderRadius: 3, height: 5, width: `${pct}%`, transition: "width .6s" }} />
+            <div style={{ marginTop: 6 }}>
+              <TierBar wp={wp} color={u.c} grad={u.grad} compact />
             </div>
-            <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
-              {next ? `Mancano ${next.min - wp}pt per €${next.r}` : "🏆 Livello massimo di paghetta"}
-            </p>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 7, borderTop: `1px solid ${P.gb}` }}>
               <span style={{ fontSize: 10, color: lvl.c, fontWeight: 700 }}>

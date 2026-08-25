@@ -45,7 +45,7 @@ export default function MonthReportCard({ u, title = "📊 Report del mese" }: {
             <span style={{ color: P.tx2 }}>{FUND_LABEL[k]}</span>
             <span style={{ color: FUND_COLOR[k], fontWeight: 700 }}>€{now.byFund[k].toFixed(2)}</span>
           </div>
-          <div style={{ background: P.glass, borderRadius: 3, height: 5, marginTop: 2 }}>
+          <div style={{ background: P.track, borderRadius: 3, height: 5, marginTop: 2 }}>
             <div style={{ background: FUND_COLOR[k], borderRadius: 3, height: 5, width: `${(now.byFund[k] / maxFund) * 100}%`, transition: "width .5s" }} />
           </div>
         </div>

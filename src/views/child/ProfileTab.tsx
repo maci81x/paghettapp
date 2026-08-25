@@ -361,7 +361,7 @@ export default function ProfileTab({
                 </div>
                 {!w.done && (
                   <>
-                    <div style={{ background: P.glass, borderRadius: 3, height: 5, marginTop: 5 }}>
+                    <div style={{ background: P.track, borderRadius: 3, height: 5, marginTop: 5 }}>
                       <div style={{ background: pct >= 100 ? P.mintG : uc, borderRadius: 3, height: 5, width: `${pct}%`, transition: "width .5s" }} />
                     </div>
                     <p style={{ fontSize: 9, color: missing <= 0 ? P.mint : P.tx3, margin: "3px 0 0" }}>

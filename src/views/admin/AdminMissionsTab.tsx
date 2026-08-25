@@ -121,7 +121,7 @@ export default function AdminMissionsTab({
           return (
             <div key={uid} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0 0" }}>
               <span style={{ color: users[uid].c, fontSize: 11, fontWeight: 700, minWidth: 54 }}>{users[uid].n}</span>
-              <div style={{ flex: 1, background: P.glass, borderRadius: 4, height: 8, overflow: "hidden" }}>
+              <div style={{ flex: 1, background: P.track, borderRadius: 4, height: 8, overflow: "hidden" }}>
                 <div style={{ background: prog.done ? P.mintG : users[uid].grad, height: 8, width: `${prog.pct}%`, transition: "width .5s" }} />
               </div>
               <span style={{ color: P.tx2, fontSize: 10, fontWeight: 700, minWidth: 38, textAlign: "right" }}>

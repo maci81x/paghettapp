@@ -188,7 +188,7 @@ export default function MissionEditModal({
                 {linked.map((a) => `${CATS.find((c) => c.id === a.cat)?.i ?? ""} ${a.name}`).join(", ")}
               </p>
             )}
-            <div style={{ background: P.glass, borderRadius: 6, height: 12, marginTop: 8 }} />
+            <div style={{ background: P.track, borderRadius: 6, height: 12, marginTop: 8 }} />
             <p style={{ color: P.tx3, fontSize: 9, margin: "3px 0 0" }}>
               {team ? "Insieme" : "Il tuo progresso"}: 0/{draft.tgt} · a {targets.map((t) => names[t]).join(" e ")}
             </p>

@@ -104,7 +104,7 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
       )}
 
       <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${P.gb}` }}>
-        <div style={{ background: P.glass, borderRadius: 3, height: 5 }}>
+        <div style={{ background: P.track, borderRadius: 3, height: 5 }}>
           <div style={{ background: P.mintG, borderRadius: 3, height: 5, width: `${goalPct}%`, transition: "width .6s" }} />
         </div>
         <p style={{ color: P.tx3, fontSize: 10, margin: "4px 0 0" }}>
