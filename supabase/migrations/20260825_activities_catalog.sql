@@ -16,6 +16,9 @@
 -- dalla stessa versione che porta questa migrazione.
 --
 -- Da eseguire nella SQL Editor di Supabase (una volta sola).
+--
+-- Se l'inserimento si ferma su `visible_to`, quella colonna è un text[] e non
+-- un jsonb: sostituisci '["mia","samira"]'::jsonb con array['mia','samira'].
 
 -- ── 1. allineamento dei nomi già in uso ───────────────────────────────────
 -- Solo rinomine sicure: stessa attività, nome più esteso nel foglio. Le voci
@@ -30,12 +33,12 @@ update activities set name = 'Leggere 20 pagine del libro'            where lowe
 update activities set name = 'Fare i compiti (anche non assegnati)'   where lower(trim(name)) = 'compiti senza aiuto';
 
 -- ── catalogo ──────────────────────────────────────────────────────────────
-drop table if exists catalog;
+drop table if exists pg_temp.catalog;
 
 -- niente `on commit drop`: se la SQL Editor esegue le istruzioni una per una
 -- invece che in un'unica transazione, la tabella sparirebbe prima dei
 -- passaggi 2 e 3
-create temporary table catalog (
+create temporary table pg_temp.catalog (
   name text,
   emoji text,
   category text,
@@ -120,7 +123,7 @@ select c.name,
   from catalog c
  where not exists (select 1 from activities a where lower(trim(a.name)) = lower(trim(c.name)));
 
-drop table if exists catalog;
+drop table if exists pg_temp.catalog;
 
 notify pgrst, 'reload schema';
 
