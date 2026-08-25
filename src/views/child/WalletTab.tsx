@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FUNDS, FUND_LABEL } from "../../data/constants";
+import { FUNDS, fundName } from "../../data/constants";
 import { allIncome } from "../../data/report";
 import type { Period, User } from "../../data/types";
 import { Btn, GlassCard, InfoTip, PeriodBar, SectionTitle } from "../../design/components";
@@ -15,6 +15,7 @@ export default function WalletTab({
   series,
   onNewSpesa,
   onNewIncome,
+  onNewGift,
   onConfirmIncome,
 }: {
   u: User;
@@ -24,6 +25,7 @@ export default function WalletTab({
   series: { d: string; pts: number; spese: number }[];
   onNewSpesa: () => void;
   onNewIncome: () => void;
+  onNewGift: () => void;
   onConfirmIncome: (id: number) => void;
 }) {
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
@@ -44,7 +46,7 @@ export default function WalletTab({
         </div>
         {FUNDS.map((k) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
-            <span style={{ color: P.tx }}>{FUND_LABEL[k]}</span>
+            <span style={{ color: P.tx }}>{fundName(u, k)}</span>
             <span style={{ color: P.mint, fontWeight: 700 }}>€{u.w[k].toFixed(2)}</span>
           </div>
         ))}
@@ -72,16 +74,22 @@ export default function WalletTab({
           <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>
             📥 Entrate <InfoTip text="Paghette settimanali ed entrate extra: regali, lavoretti, mance." />
           </p>
-          <Btn small grad={P.mintG} onClick={onNewIncome}>
-            💝 Entrata
-          </Btn>
+          <div style={{ display: "flex", gap: 6 }}>
+            <Btn small grad={P.mintG} onClick={onNewIncome}>
+              💝 Entrata
+            </Btn>
+            <Btn small grad={P.goldG} onClick={onNewGift}>
+              🎁 Regalo
+            </Btn>
+          </div>
         </div>
         {income.length === 0 ? (
           <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>Nessuna entrata registrata</p>
         ) : (
           income.map((i, idx) => {
             const pay = i.type === "paghetta" ? (u.pays ?? []).find((p) => p.id === i.id) : undefined;
-            const color = i.type === "paghetta" ? P.mint : P.gold;
+            const color = i.type === "paghetta" ? P.mint : i.type === "regalo" ? P.gold : P.acc;
+            const icon = i.type === "paghetta" ? "🟢" : i.type === "regalo" ? "🎁" : "💝";
             return (
               <div key={i.id} style={{ display: "flex", gap: 8 }}>
                 {/* timeline: pallino + filo di collegamento */}
@@ -92,11 +100,11 @@ export default function WalletTab({
                 <div style={{ flex: 1, display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11 }}>
                   <div>
                     <span style={{ color: P.tx }}>
-                      {i.type === "paghetta" ? "🟢" : "💝"} {i.source}
+                      {i.type === "regalo" ? i.source : `${icon} ${i.source}`}
                     </span>
                     <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
                       {i.date}
-                      {pay ? ` · €${pay.amount.toFixed(2)} (${pay.pts}pt)` : " · extra"}
+                      {pay ? ` · €${pay.amount.toFixed(2)} (${pay.pts}pt)` : i.type === "regalo" ? ` · 100% ${fundName(u, "personale")}` : " · extra"}
                     </p>
                     {i.type === "paghetta" && (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>

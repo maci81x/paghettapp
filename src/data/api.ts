@@ -40,6 +40,8 @@ export interface PiggyRow {
   type: DbFund;
   balance: number;
   note?: string | null;
+  /** Aggiunta dalla migrazione `piggybanks_nickname`: assente finché non è applicata. */
+  nickname?: string | null;
 }
 
 export interface ActRow {
@@ -97,7 +99,7 @@ export interface MissionRow {
 export interface IncomeRow {
   id: number;
   user_id: string;
-  type: "allowance" | "extra" | "bonus";
+  type: "allowance" | "extra" | "bonus" | "gift";
   amount: number;
   tier: number | null;
   week_pts: number | null;
@@ -243,7 +245,7 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false, incomeConfirm: false, logExtras: false };
+export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false };
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -256,6 +258,17 @@ export const probeIncomeConfirm = async () => {
   const { error } = await supabase.from("income").select("confirmed").limit(1);
   schema.incomeConfirm = !error;
   return schema.incomeConfirm;
+};
+
+/**
+ * Il nome dei salvadanai vive in `piggybanks.nickname`. Senza quella colonna
+ * i nomi non sono salvabili: l'app non li chiede e usa le etichette generiche,
+ * invece di bloccare la ragazza davanti a un modale che non può funzionare.
+ */
+export const probePiggyName = async () => {
+  const { error } = await supabase.from("piggybanks").select("nickname").limit(1);
+  schema.piggyName = !error;
+  return schema.piggyName;
 };
 
 /** Idem per le colonne dello storico dei punti (`entry_kind`, `revoked`). */
@@ -530,6 +543,12 @@ export const setPiggybankNote = (userId: string, type: Fund, note: string) => {
   return wrap<PiggyRow[]>(supabase.from("piggybanks").update({ note }).eq("user_id", userId).eq("type", FUND_DB[type]).select());
 };
 
+/** Nome del salvadanaio scelto dalla ragazza. */
+export const setPiggybankName = (userId: string, type: Fund, nickname: string) => {
+  if (!schema.piggyName) return Promise.resolve<Result<PiggyRow[]>>({ data: [], error: null });
+  return wrap<PiggyRow[]>(supabase.from("piggybanks").update({ nickname }).eq("user_id", userId).eq("type", FUND_DB[type]).select());
+};
+
 /* ── entrate ── */
 
 export const fetchIncome = (userId?: string) => {
@@ -567,6 +586,18 @@ export const createIncome = (d: {
       )
       .select(),
   );
+
+/**
+ * Regalo: tutto nel Personale. Se il database non accetta ancora il tipo
+ * 'gift' (manca la migrazione `income_gift_type`) ripiega su 'extra': la nota
+ * porta comunque il marchio 🎁, che è come l'app lo riconosce e lo mostra.
+ */
+export const createGift = async (d: { userId: string; amount: number; note: string }): Promise<Result<IncomeRow[]>> => {
+  const payload = { userId: d.userId, amount: d.amount, note: d.note, quote: { risparmio: 0, personale: d.amount, beneficenza: 0 } };
+  const res = await createIncome({ ...payload, type: "gift" });
+  if (!res.error) return res;
+  return createIncome({ ...payload, type: "extra" });
+};
 
 export const deleteIncome = (id: number) => wrap<IncomeRow[]>(supabase.from("income").delete().eq("id", id).select());
 

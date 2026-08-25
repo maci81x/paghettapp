@@ -1,8 +1,9 @@
 import { Suspense, lazy } from "react";
-import { FUNDS, FUND_LABEL, PERIOD_MONTHS, TODS, YIELD_YEAR, getLvl, getTier } from "../../data/constants";
+import { FUNDS, PERIOD_MONTHS, TODS, YIELD_YEAR, fundName, getLvl, getTier } from "../../data/constants";
 import type { Activity, Fund, LogEntry, Payment, Period, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, PeriodBar } from "../../design/components";
 import { P } from "../../design/tokens";
+import { allIncome } from "../../data/report";
 import MonthReportCard from "../MonthReportCard";
 import AdminAllowanceCard from "./AdminAllowanceCard";
 import AdminLogHistory from "./AdminLogHistory";
@@ -30,6 +31,7 @@ export default function AdminChildView({
   onDeduct,
   onIncome,
   onBonus,
+  namesRequired,
 }: {
   uid: UserId;
   users: Users;
@@ -50,6 +52,8 @@ export default function AdminChildView({
   onDeduct: () => void;
   onIncome: () => void;
   onBonus: () => void;
+  /** Falso finché il database non ha la colonna dei nomi dei salvadanai. */
+  namesRequired: boolean;
 }) {
   const u = users[uid];
   const lvl = getLvl(u.totalPts);
@@ -57,6 +61,7 @@ export default function AdminChildView({
   const months = PERIOD_MONTHS[period];
   const pending = u.log.filter((l) => !l.ok && !l.revoked);
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
+  const income = allIncome(u).slice(0, 8);
 
   return (
     <div>
@@ -91,7 +96,7 @@ export default function AdminChildView({
 
       <p style={{ color: P.tx, fontSize: 15, fontWeight: 700, margin: "16px 0 10px", letterSpacing: -0.3 }}>💰 Paghetta &amp; Risparmi</p>
 
-      <AdminAllowanceCard u={u} due={due} paid={paid} onPay={onPay} onUndo={onUndoPay} />
+      <AdminAllowanceCard u={u} due={due} paid={paid} namesRequired={namesRequired} onPay={onPay} onUndo={onUndoPay} />
 
       <Suspense fallback={<p style={{ color: P.tx3, fontSize: 12, textAlign: "center", padding: 16 }}>Carico il grafico…</p>}>
         <AdminSavingsCard uid={uid} u={u} />
@@ -102,7 +107,7 @@ export default function AdminChildView({
         {FUNDS.map((k) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `1px solid ${P.gb}` }}>
             <div>
-              <span style={{ fontSize: 12, color: P.tx }}>{FUND_LABEL[k]}</span>
+              <span style={{ fontSize: 12, color: P.tx }}>{fundName(u, k)}</span>
               <p style={{ fontSize: 10, color: P.tx3, margin: 0 }}>{u.wN[k]}</p>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -151,6 +156,29 @@ export default function AdminChildView({
       </GlassCard>
 
       <AdminLogHistory u={u} acts={acts} onRevoke={onRevoke} onDelete={onDeleteLog} onDeduct={onDeduct} />
+
+      <GlassCard>
+        <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>📥 Entrate recenti</p>
+        {income.length === 0 ? (
+          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10, margin: 0 }}>Nessuna entrata registrata</p>
+        ) : (
+          income.map((i) => (
+            <div key={i.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: `1px solid ${P.gb}` }}>
+              <div style={{ minWidth: 0 }}>
+                <span style={{ color: P.tx, fontSize: 11 }}>
+                  {i.type === "regalo" ? i.source : `${i.type === "paghetta" ? "🟢" : "💝"} ${i.source}`}
+                </span>
+                <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
+                  {i.date}
+                  {i.type === "regalo" ? ` · 100% ${fundName(u, "personale")}` : i.type === "extra" ? " · extra" : " · paghetta"}
+                  {i.confirmed === false ? " · ⏳ non confermata" : ""}
+                </p>
+              </div>
+              <span style={{ color: i.type === "regalo" ? P.gold : P.mint, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>+€{i.amount.toFixed(2)}</span>
+            </div>
+          ))
+        )}
+      </GlassCard>
 
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>💸 Spese recenti</p>

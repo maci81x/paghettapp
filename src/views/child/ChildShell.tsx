@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from "react";
-import { FREQ_UNIT, getLvl, nowTod } from "../../data/constants";
-import type { Activity, ChildTab, CompletionDraft, LogEntry, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
+import { FREQ_UNIT, fundName, getLvl, hasFundNames, nowTod } from "../../data/constants";
+import type { Activity, ChildTab, CompletionDraft, Fund, LogEntry, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
 import { Avatar, NavItem } from "../../design/components";
 import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
@@ -10,6 +10,8 @@ import AvatarPicker from "../../modals/AvatarPicker";
 import CompletionModal from "../../modals/CompletionModal";
 import ConfirmModal from "../../modals/ConfirmModal";
 import ExtraIncomeModal from "../../modals/ExtraIncomeModal";
+import GiftModal from "../../modals/GiftModal";
+import NamePiggybanksModal from "../../modals/NamePiggybanksModal";
 import PinChangeModal from "../../modals/PinChangeModal";
 import SpesaModal from "../../modals/SpesaModal";
 import WishEditModal from "../../modals/WishEditModal";
@@ -58,6 +60,7 @@ export default function ChildShell({
   const [income, setIncome] = useState(false);
   const [wish, setWish] = useState<WishDraft | null>(null);
   const [withdraw, setWithdraw] = useState<{ l: LogEntry; name: string } | null>(null);
+  const [gift, setGift] = useState(false);
 
   const u = usersApi.users[au];
   // colori e nome mostrati alla figlia: quelli che ha scelto lei, se li ha scelti
@@ -69,6 +72,8 @@ export default function ChildShell({
   const todayDone = (actId: number) => usersApi.todayDone(au, actId);
   const periodDone = (a: Activity) => usersApi.periodDone(au, a);
   const unconfirmed = usersApi.unconfirmedAllowances(au);
+  // senza la colonna sul database i nomi non sono salvabili: non li chiediamo
+  const needsNames = usersApi.piggyNamesSupported && !hasFundNames(u);
 
   /** Card "In attesa di approvazione": stessa in Home e in Attività. */
   const pendingProps = {
@@ -165,6 +170,7 @@ export default function ChildShell({
             series={usersApi.periodSeries(au, period)}
             onNewSpesa={() => setSpesa({ ds: "", a: "", f: "personale" })}
             onNewIncome={() => setIncome(true)}
+            onNewGift={() => setGift(true)}
             onConfirmIncome={(id) => usersApi.confirmIncome(au, id)}
           />
         );
@@ -184,6 +190,8 @@ export default function ChildShell({
             onTheme={(c) => usersApi.setTheme(au, c)}
             onBg={(v) => usersApi.setBgPattern(au, v)}
             onNickname={(n) => usersApi.setNickname(au, n)}
+            piggyNames={usersApi.piggyNamesSupported}
+            onPiggyName={(f, name) => usersApi.setPiggyName(au, f, name)}
             onAddWish={() => setWish({ mode: "add", name: "", cost: "", fund: "personale", priority: 2 })}
             onEditWish={(w) => setWish({ mode: "edit", id: w.id, name: w.name, cost: String(w.cost), fund: w.fund, priority: w.priority })}
             onDelWish={(w) => {
@@ -232,6 +240,27 @@ export default function ChildShell({
           grad={grad}
           onConfirm={confirmComp}
           onClose={() => setComp(null)}
+        />
+      )}
+      {needsNames && (
+        <NamePiggybanksModal
+          u={u}
+          grad={grad}
+          onSave={(names) => {
+            (Object.keys(names) as Fund[]).forEach((f) => void usersApi.setPiggyName(au, f, names[f]));
+          }}
+        />
+      )}
+      {gift && (
+        <GiftModal
+          who={userName(u)}
+          grad={grad}
+          personaleName={fundName(u, "personale")}
+          onSave={(from, reason, amount) => {
+            void usersApi.addGift(au, from, reason, amount);
+            setGift(false);
+          }}
+          onClose={() => setGift(false)}
         />
       )}
       {withdraw && (

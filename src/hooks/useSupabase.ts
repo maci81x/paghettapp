@@ -6,11 +6,15 @@ import {
   DEDUCT_ACT,
   DEFAULT_PINS,
   FUNDS,
+  FUND_NAME_MAX,
+  GIFT_PCT,
   PERIOD_DAYS,
   SPLIT,
   USER_IDS,
   getTier,
   getWeekStart,
+  giftNote,
+  isGiftNote,
   isoDate,
   nowTod,
   periodStart,
@@ -59,6 +63,8 @@ const OPS = {
   deleteMission: api.deleteMission,
   updatePiggybank: api.updatePiggybank,
   setPiggybankNote: api.setPiggybankNote,
+  setPiggybankName: api.setPiggybankName,
+  createGift: api.createGift,
   createIncome: api.createIncome,
   deleteIncome: api.deleteIncome,
   confirmIncome: api.confirmIncome,
@@ -86,6 +92,7 @@ const mkUser = (row: api.UserRow | undefined, uid: UserId): User => ({
   streak: row?.streak ?? 0,
   w: emptyFunds(),
   wN: { risparmio: "", personale: "", beneficenza: "" },
+  wNick: { risparmio: "", personale: "", beneficenza: "" },
   inv: toInvest(),
   spese: [],
   log: [],
@@ -108,6 +115,16 @@ const quotesToPct = (q: Record<Fund, number>): Record<Fund, number> => {
   const total = FUNDS.reduce((s, k) => s + q[k], 0);
   if (total <= 0) return { risparmio: SPLIT.risparmio * 100, personale: SPLIT.personale * 100, beneficenza: SPLIT.beneficenza * 100 };
   return { risparmio: (q.risparmio / total) * 100, personale: (q.personale / total) * 100, beneficenza: (q.beneficenza / total) * 100 };
+};
+
+/**
+ * Tipo mostrato dall'app. Il regalo si riconosce dal marchio nella nota anche
+ * quando il database non accetta ancora 'gift' e lo ha salvato come 'extra'.
+ */
+const incomeKind = (r: api.IncomeRow): IncomeEntry["type"] => {
+  if (r.type === "allowance") return "paghetta";
+  if (r.type === "gift" || isGiftNote(r.note ?? "")) return "regalo";
+  return "extra";
 };
 
 const rowQuotes = (r: api.IncomeRow): Record<Fund, number> => ({
@@ -163,6 +180,7 @@ function buildSnapshot(rows: {
         if (!fund) return;
         u.w[fund] = Number(p.balance);
         u.wN[fund] = p.note ?? "";
+        if (u.wNick) u.wNick[fund] = p.nickname ?? "";
       });
 
     const logRows = rows.logs.filter((l) => l.user_id === uid);
@@ -189,7 +207,7 @@ function buildSnapshot(rows: {
         amount: Number(i.amount),
         source: i.note ?? (i.type === "allowance" ? "Paghetta settimanale" : "Entrata extra"),
         split: quotesToPct(rowQuotes(i)),
-        type: i.type === "allowance" ? "paghetta" : "extra",
+        type: incomeKind(i),
         ...rowConfirm(i),
       }));
 
@@ -253,7 +271,7 @@ export function useSupabase() {
   /* ── caricamento ── */
 
   const load = useCallback(async () => {
-    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras()]);
+    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras(), api.probePiggyName()]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
@@ -570,6 +588,28 @@ export function useSupabase() {
     const value = nickname.trim().slice(0, 15);
     patch(uid, (u) => ({ ...u, nickname: value }));
     await send("updateUser", [uid, { nickname: value || null }]);
+  };
+
+  /** Nome del salvadanaio. Senza la colonna sul database non è salvabile. */
+  const setPiggyName = async (uid: UserId, fund: Fund, name: string) => {
+    const value = name.trim().slice(0, FUND_NAME_MAX);
+    patch(uid, (u) => ({ ...u, wNick: { ...(u.wNick ?? { risparmio: "", personale: "", beneficenza: "" }), [fund]: value } }));
+    await send("setPiggybankName", [uid, fund, value]);
+  };
+
+  /** Regalo: l'intero importo entra nel salvadanaio Personale. */
+  const addGift = async (uid: UserId, from: string, reason: string, amount: number) => {
+    const note = giftNote(from, reason);
+    const row = await send<api.IncomeRow>("createGift", [{ userId: uid, amount, note }]);
+    patch(uid, (u) => ({
+      ...u,
+      w: { ...u.w, personale: +(u.w.personale + amount).toFixed(2) },
+      income: [
+        { id: row?.id ?? Date.now(), date: todayISO(), amount, source: note, split: { ...GIFT_PCT }, type: "regalo" as const, confirmed: true },
+        ...(u.income ?? []),
+      ],
+    }));
+    await send("updatePiggybank", [uid, "personale", amount]);
   };
 
   const setPiggyNote = async (uid: UserId, fund: Fund, note: string) => {
@@ -912,6 +952,9 @@ export function useSupabase() {
     setBgPattern,
     setNickname,
     setPiggyNote,
+    setPiggyName,
+    addGift,
+    piggyNamesSupported: api.schema.piggyName,
     setInvest,
     verifyPin,
     changePin,

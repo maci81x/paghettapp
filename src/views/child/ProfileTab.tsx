@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { BADGES, FUND_LABEL, LVLS, getLvl } from "../../data/constants";
+import { BADGES, FUNDS, FUND_LABEL, FUND_NAME_MAX, FUND_NAME_MIN, LVLS, fundName, getLvl, validFundName } from "../../data/constants";
 import { weeklyAvg } from "../../data/report";
-import type { User, Wish } from "../../data/types";
+import type { Fund, User, Wish } from "../../data/types";
 import { Avatar, Btn, GlassCard, InfoTip, Input } from "../../design/components";
 import { BG_PATTERNS, COLOR_PRESETS, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
@@ -20,6 +20,8 @@ export default function ProfileTab({
   onTheme,
   onBg,
   onNickname,
+  piggyNames,
+  onPiggyName,
   onAddWish,
   onEditWish,
   onDelWish,
@@ -36,6 +38,9 @@ export default function ProfileTab({
   onTheme: (c: { from: string; to: string }) => void;
   onBg: (value: string) => void;
   onNickname: (name: string) => void;
+  /** Falso finché il database non ha la colonna dei nomi: la sezione resta nascosta. */
+  piggyNames: boolean;
+  onPiggyName: (fund: Fund, name: string) => void;
   onAddWish: () => void;
   onEditWish: (w: Wish) => void;
   onDelWish: (w: Wish) => void;
@@ -51,6 +56,14 @@ export default function ProfileTab({
   const [photoErr, setPhotoErr] = useState("");
   const [editName, setEditName] = useState(false);
   const [name, setName] = useState(userName(u));
+  const [editFund, setEditFund] = useState<Fund | null>(null);
+  const [fundDraft, setFundDraft] = useState("");
+
+  const saveFund = (k: Fund) => {
+    if (!validFundName(fundDraft)) return;
+    onPiggyName(k, fundDraft.trim());
+    setEditFund(null);
+  };
 
   const pickPhoto = async (file?: File) => {
     if (!file) return;
@@ -146,6 +159,62 @@ export default function ProfileTab({
           {lvl.i} {lvl.n} · {u.totalPts}pt
         </p>
       </div>
+
+      {piggyNames && (
+        <GlassCard>
+          <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
+            🐷 I miei salvadanai <InfoTip text="Il nome è tuo: lo vedi ovunque nell'app, al posto dei nomi standard." />
+          </p>
+          {FUNDS.map((k) => {
+            const editing = editFund === k;
+            const tooShort = editing && fundDraft.trim().length > 0 && fundDraft.trim().length < FUND_NAME_MIN;
+            return (
+              <div key={k} style={{ padding: "7px 0", borderBottom: `1px solid ${P.gb}` }}>
+                {editing ? (
+                  <>
+                    <p style={{ color: P.tx3, fontSize: 9, margin: "0 0 3px" }}>{FUND_LABEL[k]}</p>
+                    <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                      <Input
+                        value={fundDraft}
+                        autoFocus
+                        maxLength={FUND_NAME_MAX}
+                        onChange={(e) => setFundDraft(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && saveFund(k)}
+                      />
+                      <Btn small grad={P.mintG} disabled={!validFundName(fundDraft)} onClick={() => saveFund(k)}>
+                        ✓
+                      </Btn>
+                      <Btn small outline color={P.tx3} onClick={() => setEditFund(null)}>
+                        ✕
+                      </Btn>
+                    </div>
+                    <p style={{ fontSize: 9, color: tooShort ? P.red : P.tx3, margin: "3px 0 0" }}>
+                      {tooShort ? `Almeno ${FUND_NAME_MIN} caratteri` : `${fundDraft.trim().length}/${FUND_NAME_MAX}`}
+                    </p>
+                  </>
+                ) : (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ color: P.tx, fontSize: 12, fontWeight: 600, margin: 0 }}>{fundName(u, k)}</p>
+                      <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>{FUND_LABEL[k]}</p>
+                    </div>
+                    <Btn
+                      small
+                      color={P.blue}
+                      onClick={() => {
+                        setFundDraft(u.wNick?.[k] ?? "");
+                        setEditFund(k);
+                      }}
+                    >
+                      ✏️
+                    </Btn>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </GlassCard>
+      )}
 
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>🎨 I miei colori</p>

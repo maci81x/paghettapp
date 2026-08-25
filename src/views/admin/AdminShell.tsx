@@ -121,6 +121,7 @@ export default function AdminShell({
           onDeduct={() => setDeductFor(view)}
           onIncome={() => setIncomeFor(view)}
           onBonus={() => setBonusFor(view)}
+          namesRequired={usersApi.piggyNamesSupported}
         />
       );
     }

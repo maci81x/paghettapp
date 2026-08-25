@@ -1,4 +1,4 @@
-import type { Activity, Badge, Category, Freq, Fund, Level, PinKey, Period, Tier, Tod } from "./types";
+import type { Activity, Badge, Category, Freq, Fund, Level, PinKey, Period, Tier, Tod, User } from "./types";
 
 export const CATS: Category[] = [
   { id: "casa", n: "Casa", i: "🏠", c: "#6366f1" },
@@ -136,6 +136,8 @@ export const byFreqThenPenalty = (a: Activity, b: Activity) =>
 /** Split fisso della paghetta. */
 export const SPLIT: Record<Fund, number> = { risparmio: 0.3, personale: 0.6, beneficenza: 0.1 };
 
+export const FUND_ICON: Record<Fund, string> = { risparmio: "🏦", personale: "🎒", beneficenza: "🤝" };
+
 export const FUND_LABEL: Record<Fund, string> = {
   risparmio: "🏦 Risparmio",
   personale: "🎒 Personale",
@@ -143,6 +145,36 @@ export const FUND_LABEL: Record<Fund, string> = {
 };
 
 export const FUNDS: Fund[] = ["risparmio", "personale", "beneficenza"];
+
+/** Lunghezza ammessa per il nome di un salvadanaio. */
+export const FUND_NAME_MIN = 2;
+export const FUND_NAME_MAX = 30;
+
+export const validFundName = (v: string) => {
+  const t = v.trim();
+  return t.length >= FUND_NAME_MIN && t.length <= FUND_NAME_MAX;
+};
+
+/** Nome scelto dalla ragazza, o l'etichetta generica se non l'ha ancora dato. */
+export const fundName = (u: User, k: Fund) => {
+  const nick = u.wNick?.[k]?.trim();
+  return nick ? `${FUND_ICON[k]} ${nick}` : FUND_LABEL[k];
+};
+
+/** Vero quando tutti e tre i salvadanai hanno un nome valido. */
+export const hasFundNames = (u: User) => FUNDS.every((k) => validFundName(u.wNick?.[k] ?? ""));
+
+/** Un regalo va tutto nel Personale: niente split 30/60/10. */
+export const GIFT_PCT: Record<Fund, number> = { risparmio: 0, personale: 100, beneficenza: 0 };
+
+/**
+ * Nota con cui un regalo viene salvato. È anche il modo in cui lo si
+ * riconosce quando il database non accetta ancora il tipo 'gift' e il regalo
+ * finisce registrato come entrata extra.
+ */
+export const GIFT_MARK = "🎁";
+export const giftNote = (from: string, reason: string) => `${GIFT_MARK} Da ${from.trim()} — ${reason.trim()}`;
+export const isGiftNote = (note: string) => note.startsWith(`${GIFT_MARK} Da `);
 
 /**
  * Divide un importo secondo le frazioni indicate (0-1).

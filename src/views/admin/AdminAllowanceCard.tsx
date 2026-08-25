@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FUNDS, FUND_LABEL, getTier } from "../../data/constants";
+import { FUNDS, fundName, getTier, hasFundNames } from "../../data/constants";
 import type { Fund, Payment, User } from "../../data/types";
 import { Btn, GlassCard, InfoTip } from "../../design/components";
 import { P } from "../../design/tokens";
@@ -10,6 +10,7 @@ export default function AdminAllowanceCard({
   u,
   due,
   paid,
+  namesRequired,
   onPay,
   onUndo,
 }: {
@@ -17,11 +18,16 @@ export default function AdminAllowanceCard({
   due: { pts: number; amount: number; split: Record<Fund, number> };
   /** Accredito della settimana corrente, se già fatto. */
   paid?: Payment;
+  /** Falso finché il database non ha la colonna dei nomi: non si può pretenderli. */
+  namesRequired: boolean;
   onPay: () => void;
   onUndo: (week: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const tier = getTier(due.pts);
+  // i salvadanai li battezza la ragazza: senza nomi l'accredito finirebbe in
+  // contenitori che per lei non hanno ancora un'identità
+  const blocked = namesRequired && !hasFundNames(u);
   const history = (u.pays ?? []).slice(0, 4);
 
   return (
@@ -48,6 +54,13 @@ export default function AdminAllowanceCard({
             Annulla
           </Btn>
         </div>
+      ) : blocked ? (
+        <p style={{ color: P.gold, fontSize: 12, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
+          ⚠️ {u.n} non ha ancora dato un nome ai salvadanai. Chiedi a {u.n} di farlo prima!
+          <span style={{ display: "block", color: P.tx3, fontSize: 10, fontWeight: 400, marginTop: 4 }}>
+            Li trova al primo accesso, oppure nel suo Profilo → 🐷 I miei salvadanai.
+          </span>
+        </p>
       ) : !open ? (
         <Btn full grad={P.goldG} onClick={() => setOpen(true)}>
           📤 Registra paghetta settimanale
@@ -63,7 +76,7 @@ export default function AdminAllowanceCard({
 
           {FUNDS.map((k) => (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
-              <span style={{ color: P.tx }}>{FUND_LABEL[k]}</span>
+              <span style={{ color: P.tx }}>{fundName(u, k)}</span>
               <span style={{ color: P.mint, fontWeight: 700 }}>€{due.split[k].toFixed(2)}</span>
             </div>
           ))}

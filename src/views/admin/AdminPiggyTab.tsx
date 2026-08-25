@@ -1,4 +1,4 @@
-import { FUNDS, FUND_LABEL, PERIOD_MONTHS, SPLIT, USER_IDS, YIELD_YEAR } from "../../data/constants";
+import { FUNDS, FUND_LABEL, PERIOD_MONTHS, SPLIT, USER_IDS, YIELD_YEAR, fundName } from "../../data/constants";
 import type { Fund, Payment, Period, UserId, Users } from "../../data/types";
 import { Btn, GlassCard, InfoTip, PeriodBar } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
@@ -63,7 +63,7 @@ export default function AdminPiggyTab({
             {FUNDS.map((k) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${P.gb}`, fontSize: 11 }}>
                 <div>
-                  <span style={{ color: P.tx }}>{FUND_LABEL[k]}</span>
+                  <span style={{ color: P.tx }}>{fundName(users[uid], k)}</span>
                   <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>{u.wN[k]}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>

@@ -105,7 +105,7 @@ export interface IncomeEntry {
   source: string;
   /** Percentuali usate per dividere l'importo (somma 100). */
   split: Record<Fund, number>;
-  type: "extra" | "paghetta";
+  type: "extra" | "paghetta" | "regalo";
   /** true quando la ragazza ha confermato di aver ricevuto i soldi. */
   confirmed?: boolean;
   /** Istante della conferma (timestamp ISO completo). */
@@ -145,7 +145,14 @@ export interface User {
   totalPts: number;
   streak: number;
   w: Record<Fund, number>;
+  /** "Dove lo tieni": nota libera scritta dalla ragazza. */
   wN: Record<Fund, string>;
+  /**
+   * Nome che la ragazza ha dato a ogni salvadanaio. Facoltativo: manca nelle
+   * cache salvate prima della feature e finché la colonna `nickname` non è
+   * stata aggiunta al database.
+   */
+  wNick?: Record<Fund, string>;
   inv: InvestCfg;
   spese: Spesa[];
   log: LogEntry[];
@@ -259,6 +266,14 @@ export interface WishDraft {
   cost: string;
   fund: Fund;
   priority: 1 | 2 | 3;
+}
+
+export interface GiftDraft {
+  /** Chi ha fatto il regalo. */
+  from: string;
+  /** Per cosa: compleanno, promozione, un pensiero. */
+  reason: string;
+  amount: string;
 }
 
 export interface SpesaDraft {

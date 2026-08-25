@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { SPLIT, YIELD_YEAR } from "../../data/constants";
+import { SPLIT, YIELD_YEAR, fundName } from "../../data/constants";
 import { monthlyAllowanceAvg } from "../../data/report";
 import type { InvestCfg, User, UserId } from "../../data/types";
 import { GlassCard, InfoTip, Input, Label, Pill, SectionTitle } from "../../design/components";
@@ -47,7 +47,7 @@ export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: Us
       <SavingsTrendCard uid={uid} u={u} color={uc} />
 
       <GlassCard>
-        <Label>Quanto hai nel risparmio adesso</Label>
+        <Label>Quanto hai in {fundName(u, "risparmio")} adesso</Label>
         <div style={{ ...gls, padding: 9, borderRadius: 10, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ color: P.mint, fontSize: 16, fontWeight: 800 }}>€{principal.toFixed(2)}</span>
           <span style={{ color: P.tx3, fontSize: 9 }}>gestito da Babbo Roby</span>

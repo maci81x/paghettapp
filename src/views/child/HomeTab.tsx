@@ -7,6 +7,7 @@ import {
   FUNDS,
   MANUAL_ACT_LABEL,
   SPLIT,
+  fundName,
   TIERS,
   TIER_TICK,
   USER_IDS,
@@ -26,11 +27,8 @@ import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
 import PendingApprovalCard from "./PendingApprovalCard";
 import { fmtDay } from "../../utils/dates";
 
-const FUND_HOME_LABEL: Record<Fund, string> = {
-  risparmio: `🏦 Risparmio (${SPLIT.risparmio * 100}%)`,
-  personale: `🎒 Personale (${SPLIT.personale * 100}%)`,
-  beneficenza: `🤝 Beneficenza (${SPLIT.beneficenza * 100}%)`,
-};
+/** Nome scelto dalla ragazza più la quota che gli spetta di ogni paghetta. */
+const fundHomeLabel = (u: User, k: Fund) => `${fundName(u, k)} (${SPLIT[k] * 100}%)`;
 
 export default function HomeTab({
   pending,
@@ -426,14 +424,16 @@ export default function HomeTab({
         {FUNDS.map((k) => (
           <div key={k} style={{ padding: "8px 0", borderBottom: `1px solid ${P.gb}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 12, color: P.tx }}>{FUND_HOME_LABEL[k]}</span>
+              <span style={{ fontSize: 12, color: P.tx }}>{fundHomeLabel(u, k)}</span>
               <span style={{ color: P.mint, fontWeight: 700, fontSize: 15 }}>€{u.w[k].toFixed(2)}</span>
             </div>
             {k === "risparmio" && (
               <>
                 <div style={{ display: "flex", gap: 10, marginTop: 3 }}>
                   <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>+€{perWeek.toFixed(2)}/sett</span>
-                  <span style={{ fontSize: 10, color: P.gold, fontWeight: 700 }}>+€{perYear.toFixed(2)}/anno</span>
+                  <span style={{ fontSize: 10, color: P.gold, fontWeight: 700 }}>
+                    +€{perYear.toFixed(2)}/anno <span style={{ color: P.tx3, fontWeight: 600 }}>({YIELD_YEAR * 100}%)</span>
+                  </span>
                 </div>
                 <div style={{ background: P.glass, borderRadius: 3, height: 5, marginTop: 4 }}>
                   <div style={{ background: P.mintG, borderRadius: 3, height: 5, width: `${Math.min(100, (save / goal) * 100)}%`, transition: "width .6s" }} />
