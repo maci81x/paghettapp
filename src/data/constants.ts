@@ -232,22 +232,3 @@ export const periodStart = (freq: Freq) => {
   if (freq === "monthly") return `${monthKey(0)}-01`;
   return todayISO();
 };
-
-/** Proiezione investimento: capitale iniziale + versamento mensile, 10%/anno. */
-export const mkInv = (amt: number, mo: number, ex: number) => {
-  const r = YIELD_YEAR / 12;
-  const rows: { m: string; investito: number; guadagno: number; totale: number }[] = [];
-  let inv = 0;
-  let tot = 0;
-  for (let m = 1; m <= mo; m++) {
-    inv += m === 1 ? amt : ex;
-    tot = m === 1 ? amt * (1 + r) : (tot + ex) * (1 + r);
-    rows.push({
-      m: `M${m}`,
-      investito: +inv.toFixed(2),
-      guadagno: +(tot - inv).toFixed(2),
-      totale: +tot.toFixed(2),
-    });
-  }
-  return rows;
-};

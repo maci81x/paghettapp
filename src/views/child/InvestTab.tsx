@@ -19,6 +19,12 @@ export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: Us
   const suggested = +(monthlyAllowanceAvg(u, 3) * SPLIT.risparmio).toFixed(2);
 
   const res = calcCompoundInterest(principal, monthlyAdd, YIELD_YEAR, months);
+  /**
+   * Quanto rendono in tutto i soldi versati, non il tasso annuo: i versamenti
+   * dei mesi finali lavorano per poche settimane, quindi su un anno questa
+   * percentuale sta ben sotto al 10%. Sono due numeri diversi e vanno detti
+   * come due numeri diversi, altrimenti si legge il 10% come sbagliato.
+   */
   const growthPct = res.totalContributed > 0 ? Math.round((res.totalGrowth / res.totalContributed) * 100) : 0;
   // con orizzonti lunghi il grafico mostra un punto ogni N mesi, altrimenti diventa illeggibile
   const step = Math.ceil(res.monthlyBreakdown.length / 24) || 1;
@@ -76,15 +82,23 @@ export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: Us
         )}
 
         <div style={{ borderTop: `1px solid ${P.gb}`, paddingTop: 10 }}>
-          <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: "0 0 6px" }}>
-            💰 Tra {months} mesi avrai: <span style={{ color: P.gold, fontSize: 16 }}>€{res.finalValue.toFixed(2)}</span>
-          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: 0 }}>
+              💰 Tra {months} mesi avrai: <span style={{ color: P.gold, fontSize: 16 }}>€{res.finalValue.toFixed(2)}</span>
+            </p>
+            <span style={{ background: alpha(P.gold, 13), color: P.gold, borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 800, flexShrink: 0, whiteSpace: "nowrap" }}>
+              tasso {YIELD_YEAR * 100}%/anno
+            </span>
+          </div>
           <p style={{ color: P.tx2, fontSize: 11, margin: "0 0 3px" }}>
             📦 Di cui versato da te: <b style={{ color: P.acc }}>€{res.totalContributed.toFixed(2)}</b>
           </p>
           <p style={{ color: P.tx2, fontSize: 11, margin: 0 }}>
-            📈 Di cui guadagnato con gli interessi: <b style={{ color: P.mint }}>€{res.totalGrowth.toFixed(2)}</b>{" "}
-            <span style={{ color: P.mint }}>(+{growthPct}%)</span>
+            📈 Di cui guadagnato con gli interessi: <b style={{ color: P.mint }}>€{res.totalGrowth.toFixed(2)}</b>
+          </p>
+          <p style={{ color: P.tx3, fontSize: 10, margin: "5px 0 0", lineHeight: 1.45 }}>
+            Sono <b style={{ color: P.mint }}>+{growthPct}%</b> su tutto quello che hai versato in {months} mesi — un altro numero rispetto al tasso.
+            {monthlyAdd > 0 && " I soldi che aggiungi negli ultimi mesi lavorano poco tempo, quindi il totale cresce meno del 10% all'anno."}
           </p>
         </div>
 
