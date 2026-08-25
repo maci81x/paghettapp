@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CATS, FREQ_UNIT, PERIOD_WORD, TODS } from "../../data/constants";
 import type { Activity, Tod } from "../../data/types";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
-import { P } from "../../design/tokens";
+import { P, alpha } from "../../design/tokens";
 
 type PtsFilter = "all" | "low" | "mid" | "high";
 
@@ -86,7 +86,7 @@ export default function ActivitiesTab({
               <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 14 }}>{c?.i}</span>
                 <span style={{ color: P.tx, fontSize: 12, fontWeight: 600 }}>{a.name}</span>
-                {a.ch ? <span style={{ background: P.gold + "22", color: P.gold, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>⚡</span> : null}
+                {a.ch ? <span style={{ background: alpha(P.gold, 13), color: P.gold, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>⚡</span> : null}
                 <span style={{ background: P.glass, color: P.tx3, padding: "1px 6px", borderRadius: 5, fontSize: 8 }}>{FREQ_SHORT[a.freq]}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
@@ -100,7 +100,7 @@ export default function ActivitiesTab({
               {inPeriod > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
                   {TODS.filter((t) => byTod[t.k] > 0).map((t) => (
-                    <span key={t.k} style={{ background: P.gold + "18", color: P.gold, padding: "1px 6px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
+                    <span key={t.k} style={{ background: alpha(P.gold, 9), color: P.gold, padding: "1px 6px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
                       {t.l.split(" ")[0]} ×{byTod[t.k]}
                     </span>
                   ))}

@@ -1,6 +1,6 @@
 import type { Match } from "../../data/types";
 import { Btn, GlassCard } from "../../design/components";
-import { P, gls } from "../../design/tokens";
+import { P, alpha, gls } from "../../design/tokens";
 
 export default function AdminMatchTab({
   matches,
@@ -32,7 +32,7 @@ export default function AdminMatchTab({
               <button
                 onClick={() => onToggle(m.id)}
                 title={m.vis ? "Visibile alle figlie" : "Nascosto"}
-                style={{ ...gls, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, color: m.vis ? P.mint : P.tx3, borderColor: m.vis ? P.mint + "44" : P.gb }}
+                style={{ ...gls, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, color: m.vis ? P.mint : P.tx3, borderColor: m.vis ? alpha(P.mint, 27) : P.gb }}
               >
                 {m.vis ? "👁" : "🙈"}
               </button>

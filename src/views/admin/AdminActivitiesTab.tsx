@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CATS, FREQ_UNIT } from "../../data/constants";
 import type { Activity } from "../../data/types";
 import { Btn, GlassCard } from "../../design/components";
-import { P } from "../../design/tokens";
+import { P, alpha } from "../../design/tokens";
 
 export default function AdminActivitiesTab({
   acts,
@@ -80,8 +80,8 @@ export default function AdminActivitiesTab({
               gap: 8,
               padding: 12,
               cursor: selecting ? "pointer" : undefined,
-              border: selecting && checked ? `1px solid ${P.red}66` : undefined,
-              background: selecting && checked ? P.red + "12" : undefined,
+              border: selecting && checked ? `1px solid ${alpha(P.red, 40)}` : undefined,
+              background: selecting && checked ? alpha(P.red, 7) : undefined,
             }}
           >
             {selecting && (
@@ -97,7 +97,7 @@ export default function AdminActivitiesTab({
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <span style={{ fontSize: 13 }}>{cat?.i}</span>
                 <span style={{ color: P.tx, fontSize: 12, fontWeight: 600 }}>{a.name}</span>
-                {a.ch ? <span style={{ background: P.gold + "22", color: P.gold, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>⚡</span> : null}
+                {a.ch ? <span style={{ background: alpha(P.gold, 13), color: P.gold, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>⚡</span> : null}
               </div>
               <span style={{ fontSize: 10, color: P.tx3 }}>
                 +{a.pts}pt {a.pen ? `/ ${a.pen}pt` : ""} · max ×{a.max}/{FREQ_UNIT[a.freq]}

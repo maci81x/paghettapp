@@ -4,7 +4,7 @@ import { missionProg } from "../../data/report";
 import type { Activity, Match, Mission, User, Users } from "../../data/types";
 import { Avatar, GlassCard, InfoTip, Ring, SectionTitle } from "../../design/components";
 import { userColor, userGrad, userName } from "../../design/theme";
-import { P } from "../../design/tokens";
+import { P, alpha } from "../../design/tokens";
 
 /** Countdown alla scadenza: verde >3gg, arancio 1-3gg, rosso scaduta. */
 function Deadline({ iso }: { iso: string }) {
@@ -34,12 +34,12 @@ function MissionCard({ m, u, acts }: { m: Mission; u: User; acts: Activity[] }) 
         <div style={{ flex: 1 }}>
           <p style={{ color: P.tx, fontSize: 14, fontWeight: 700, margin: 0 }}>{m.name}</p>
           <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
-            <span style={{ background: P.acc + "18", color: P.acc, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
+            <span style={{ background: alpha(P.acc, 9), color: P.acc, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
               {m.team ? "👥 Squadra" : "👤 Individuale"}
             </span>
-            <span style={{ background: P.gold + "18", color: P.gold, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>+{m.pts}pt</span>
+            <span style={{ background: alpha(P.gold, 9), color: P.gold, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>+{m.pts}pt</span>
             {m.deadline ? <Deadline iso={m.deadline} /> : null}
-            {done && <span style={{ background: P.mint + "18", color: P.mint, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>✅ Completata</span>}
+            {done && <span style={{ background: alpha(P.mint, 9), color: P.mint, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>✅ Completata</span>}
           </div>
         </div>
         <Ring pct={pct} size={48} stroke={4} color={done ? P.mint : P.acc}>
@@ -117,7 +117,7 @@ export default function MissionsTab({
         <>
           <p style={{ color: P.tx, fontSize: 15, fontWeight: 700, margin: "18px 0 10px", letterSpacing: -0.3 }}>⚔️ Match</p>
           {visible.map((m) => (
-            <GlassCard key={m.id} style={{ background: `linear-gradient(135deg,${P.mia}06,${P.sam}06)` }}>
+            <GlassCard key={m.id} style={{ background: `linear-gradient(135deg,${alpha(P.mia, 2)},${alpha(P.sam, 2)})` }}>
               <p style={{ color: P.tx, fontSize: 14, fontWeight: 700, margin: "0 0 3px", textAlign: "center" }}>{m.name}</p>
               {m.desc && <p style={{ color: P.tx2, fontSize: 10, margin: "0 0 3px", textAlign: "center", lineHeight: 1.4 }}>{m.desc}</p>}
               {m.prize && <p style={{ color: P.gold, fontSize: 10, margin: "0 0 8px", textAlign: "center" }}>🏆 {m.prize}</p>}

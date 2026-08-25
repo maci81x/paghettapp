@@ -29,7 +29,7 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
           <XAxis dataKey="d" tick={{ fill: P.tx3, fontSize: 8 }} interval="preserveStartEnd" />
           <YAxis tick={{ fill: P.tx3, fontSize: 8 }} />
           <Tooltip
-            contentStyle={{ ...gls, background: "rgba(15,15,30,.95)", fontSize: 10, borderRadius: 10 }}
+            contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }}
             formatter={(v) => [`€${Number(v).toFixed(2)}`, "Saldo"]}
           />
           <Line type="monotone" dataKey="saldo" stroke={P.mint} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />

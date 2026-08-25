@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { CSSProperties, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import type { Period } from "../data/types";
-import { P, gls } from "./tokens";
+import { P, alpha, gls } from "./tokens";
 
 /* ── Ring progressivo SVG ── */
 export function Ring({
@@ -29,7 +29,7 @@ export function Ring({
         height={size}
         style={{ transform: "rotate(-90deg)", "--gc": color + "66", animation: glow ? "glow 3s ease infinite" : "none" } as CSSProperties}
       >
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={P.ringTrack} strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -190,7 +190,7 @@ export function InfoTip({ text }: { text: string }) {
     <span style={{ position: "relative", display: "inline-block", marginLeft: 6, cursor: "pointer" }} onClick={() => setOpen(!open)}>
       <span
         style={{
-          background: P.acc + "33",
+          background: alpha(P.acc, 20),
           color: P.acc,
           borderRadius: "50%",
           width: 16,
@@ -206,7 +206,7 @@ export function InfoTip({ text }: { text: string }) {
       </span>
       {open && (
         <div
-          style={{ position: "absolute", bottom: 22, left: -90, zIndex: 999, ...gls, background: "rgba(15,15,30,.95)", padding: 12, width: 220, fontSize: 11, color: P.tx2, lineHeight: 1.5 }}
+          style={{ position: "absolute", bottom: 22, left: -90, zIndex: 999, ...gls, background: P.surf, padding: 12, width: 220, fontSize: 11, color: P.tx2, lineHeight: 1.5 }}
           onClick={(e) => e.stopPropagation()}
         >
           {text}
@@ -318,12 +318,12 @@ export function Label({ children }: { children: ReactNode }) {
 export function Modal({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      style={{ position: "fixed", inset: 0, background: P.overlay, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ ...gls, background: "rgba(15,15,30,.96)", padding: 20, maxWidth: 380, maxHeight: "85vh", overflow: "auto", width: "100%" }}
+        style={{ ...gls, background: P.surf, padding: 20, maxWidth: 380, maxHeight: "85vh", overflow: "auto", width: "100%" }}
       >
         {children}
       </div>

@@ -57,7 +57,7 @@ export default function WalletTab({
             <CartesianGrid strokeDasharray="3 3" stroke={P.gb} />
             <XAxis dataKey="d" tick={{ fill: P.tx3, fontSize: 8 }} />
             <YAxis tick={{ fill: P.tx3, fontSize: 8 }} />
-            <Tooltip contentStyle={{ ...gls, background: "rgba(15,15,30,.95)", fontSize: 10, borderRadius: 10 }} />
+            <Tooltip contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }} />
             <Legend wrapperStyle={{ fontSize: 9 }} />
             <Bar dataKey="pts" name="Punti" fill={uc} radius={[5, 5, 0, 0]} />
             <Bar dataKey="spese" name="Spese €" fill={P.red} radius={[5, 5, 0, 0]} />

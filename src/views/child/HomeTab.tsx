@@ -1,11 +1,26 @@
 import { useState } from "react";
-import { BONUS_ACT, CATS, DEDUCT_ACT, FUNDS, MANUAL_ACT_LABEL, SPLIT, TIERS, USER_IDS, YIELD_YEAR, getTier, todayISO } from "../../data/constants";
+import {
+  BONUS_ACT,
+  CATS,
+  DEDUCT_ACT,
+  FUNDS,
+  MANUAL_ACT_LABEL,
+  SPLIT,
+  TIERS,
+  TIER_TICK,
+  USER_IDS,
+  YIELD_YEAR,
+  getTier,
+  nextTier as nextTierOf,
+  tierPos,
+  todayISO,
+} from "../../data/constants";
 import { missionProg } from "../../data/report";
 import { nextMilestone } from "../../data/savings";
 import type { Activity, Fund, IncomeEntry, Payment, User, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
 import { userColor, userName } from "../../design/theme";
-import { P, gls } from "../../design/tokens";
+import { P, alpha, gls } from "../../design/tokens";
 import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
 import { fmtDay } from "../../utils/dates";
 
@@ -56,6 +71,9 @@ export default function HomeTab({
 }) {
   const [notYet, setNotYet] = useState(false);
   const tier = getTier(wp);
+  const nextTier = nextTierOf(wp);
+  const gapTier = nextTier ? nextTier.min - wp : 0;
+  const pos = tierPos(wp);
   const weekPct = Math.min(100, (wp / 500) * 100);
   const gap = Math.max(0, 500 - wp);
   const suggestions = acts.filter((a) => todayDone(a.id) < a.max).sort((a, b) => b.pts - a.pts).slice(0, 3);
@@ -114,7 +132,7 @@ export default function HomeTab({
       </div>
 
       {toConfirm && (
-        <GlassCard style={{ background: `linear-gradient(135deg,${P.gold}1f,transparent)`, border: `1.5px solid ${P.gold}55` }}>
+        <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.gold, 12)},transparent)`, border: `1.5px solid ${alpha(P.gold, 33)}` }}>
           <p style={{ color: P.tx, fontWeight: 800, fontSize: 15, margin: "0 0 4px", letterSpacing: -0.3 }}>
             💰 Hai ricevuto la paghetta di €{toConfirm.amount.toFixed(2)}?
           </p>
@@ -149,11 +167,16 @@ export default function HomeTab({
           <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>punti</p>
         </GlassCard>
         <GlassCard style={{ textAlign: "center", padding: 12 }}>
-          <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>PAGHETTA</p>
+          <p style={{ color: P.tx3, fontSize: 9, margin: 0, letterSpacing: 0.2 }}>{paid ? "PAGHETTA" : "PAGHETTA IN CORSO"}</p>
           <p style={{ fontSize: 26, fontWeight: 800, margin: 0, background: P.goldG, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             €{(paid ? paid.amount : tier.r).toFixed(2).replace(".00", "")}
           </p>
-          <p style={{ color: paid ? P.mint : P.tx3, fontSize: 9, margin: 0 }}>{paid ? "✓ accreditata" : `🔥 ${u.streak}gg streak`}</p>
+          <p style={{ color: paid ? P.mint : P.tx3, fontSize: 9, margin: 0 }}>{paid ? "✓ accreditata" : `con ${wp}pt della settimana`}</p>
+          {!paid && (
+            <p style={{ color: nextTier ? P.gold : P.mint, fontSize: 9, fontWeight: 700, margin: "3px 0 0", lineHeight: 1.3 }}>
+              {nextTier ? `🎯 Mancano ${gapTier}pt per €${nextTier.r}` : "🏆 Massimo raggiunto!"}
+            </p>
+          )}
         </GlassCard>
       </div>
 
@@ -189,6 +212,67 @@ export default function HomeTab({
         )}
       </GlassCard>
 
+      {/* Barra tier: dove sono adesso e cosa manca al traguardo dopo. */}
+      <GlassCard style={{ padding: 16, marginBottom: 8 }}>
+        <div style={{ padding: "0 22px" }}>
+          <div style={{ position: "relative", height: 18 }}>
+            <div style={{ position: "absolute", top: 6, left: 0, right: 0, height: 6, borderRadius: 3, background: P.glass }} />
+            <div style={{ position: "absolute", top: 6, left: 0, width: `${pos}%`, height: 6, borderRadius: 3, background: grad, transition: "width .6s" }} />
+            {TIERS.map((t, i) => (
+              <div
+                key={t.r}
+                style={{
+                  position: "absolute",
+                  top: 1,
+                  left: `${i * TIER_TICK}%`,
+                  transform: "translateX(-50%)",
+                  boxSizing: "content-box",
+                  width: 12,
+                  height: 12,
+                  borderRadius: 8,
+                  background: wp >= t.min ? uc : P.glass,
+                  border: `2px solid ${P.bg}`,
+                  transition: "background .3s",
+                }}
+              />
+            ))}
+            <div
+              style={{
+                position: "absolute",
+                top: -1,
+                left: `${pos}%`,
+                transform: "translateX(-50%)",
+                boxSizing: "content-box",
+                width: 14,
+                height: 14,
+                borderRadius: 10,
+                background: grad,
+                border: `3px solid ${P.bg}`,
+                boxShadow: `0 0 10px ${alpha(uc, 55)}`,
+                transition: "left .6s",
+              }}
+            />
+          </div>
+          <div style={{ position: "relative", height: 26, marginTop: 6 }}>
+            {TIERS.map((t, i) => (
+              <div key={t.r} style={{ position: "absolute", left: `${i * TIER_TICK}%`, transform: "translateX(-50%)", width: 44, textAlign: "center" }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: wp >= t.min ? P.tx : P.tx3 }}>€{t.r}</p>
+                <p style={{ margin: 0, fontSize: 8, color: P.tx3 }}>{t.min}pt</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p style={{ margin: 0, textAlign: "center", fontSize: 10, color: P.tx2 }}>
+          {nextTier ? (
+            <>
+              Sei a <b style={{ color: P.tx }}>{wp}pt</b> • Mancano <b style={{ color: uc }}>{gapTier}pt</b> per €{nextTier.r}
+            </>
+          ) : (
+            "🏆 Sei al massimo!"
+          )}
+        </p>
+      </GlassCard>
+
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <Btn style={{ flex: 1 }} grad={grad} onClick={onIncome}>
           💝 Registra entrata
@@ -198,7 +282,7 @@ export default function HomeTab({
         </Btn>
       </div>
 
-      <GlassCard style={{ background: `linear-gradient(135deg,${P.gold}06,transparent)`, border: `1px solid ${P.gold}15` }}>
+      <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.gold, 2)},transparent)`, border: `1px solid ${alpha(P.gold, 8)}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
           <span style={{ color: P.tx, fontSize: 12, fontWeight: 700 }}>🎯 Per arrivare a €15</span>
           <span style={{ color: gap === 0 ? P.mint : P.gold, fontSize: 14, fontWeight: 800 }}>{gap === 0 ? "🏆 Raggiunto!" : ` ${gap}pt`}</span>
@@ -263,7 +347,7 @@ export default function HomeTab({
         )}
       </GlassCard>
 
-      <GlassCard style={{ background: `linear-gradient(135deg,${P.mia}06,${P.sam}06)` }}>
+      <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.mia, 2)},${alpha(P.sam, 2)})` }}>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>🏆 Classifica settimana</p>
         {board.map((b, i) => (
           <div key={b.uid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", gap: 8 }}>
@@ -282,19 +366,8 @@ export default function HomeTab({
         </p>
       </GlassCard>
 
-      <GlassCard style={{ padding: 12 }}>
-        <div style={{ display: "flex", gap: 2 }}>
-          {TIERS.map((t) => (
-            <div key={t.r} style={{ flex: 1, textAlign: "center" }}>
-              <div style={{ height: 6, borderRadius: 3, background: wp >= t.min ? uc + "aa" : P.glass, transition: "all .3s" }} />
-              <p style={{ fontSize: 8, color: wp >= t.min ? P.tx : P.tx3, margin: "3px 0 0", fontWeight: 600 }}>€{t.r}</p>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
-
       {bonuses.length > 0 && (
-        <GlassCard style={{ background: `linear-gradient(135deg,${P.gold}08,transparent)`, border: `1px solid ${P.gold}1a` }}>
+        <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.gold, 3)},transparent)`, border: `1px solid ${alpha(P.gold, 10)}` }}>
           <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>🎁 Punti bonus e penalità</p>
           {bonuses.map((l) => (
             <div key={l.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 11 }}>

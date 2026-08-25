@@ -3,7 +3,7 @@ import { SPLIT, YIELD_YEAR } from "../../data/constants";
 import { monthlyAllowanceAvg } from "../../data/report";
 import type { InvestCfg, User, UserId } from "../../data/types";
 import { GlassCard, InfoTip, Input, Label, Pill, SectionTitle } from "../../design/components";
-import { P, gls } from "../../design/tokens";
+import { P, alpha, gls } from "../../design/tokens";
 import { calcCompoundInterest } from "../../utils/compoundInterest";
 import SavingsTrendCard from "./SavingsTrendCard";
 
@@ -32,7 +32,7 @@ export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: Us
         📈 I miei risparmi <InfoTip text={`Interesse composto al ${YIELD_YEAR * 100}%/anno, capitalizzato ogni mese. Blocco minimo 1 anno.`} />
       </SectionTitle>
 
-      <GlassCard style={{ background: `linear-gradient(135deg,${P.mint}08,transparent)`, border: `1px solid ${P.mint}1a` }}>
+      <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.mint, 3)},transparent)`, border: `1px solid ${alpha(P.mint, 10)}` }}>
         <p style={{ color: P.tx2, fontSize: 11, margin: 0, lineHeight: 1.5 }}>
           👨‍👧 Babbo Roby investe i tuoi risparmi. Più li lasci, più crescono grazie all'interesse composto: i guadagni generano altri guadagni!
         </p>
@@ -94,7 +94,7 @@ export default function InvestTab({ uid, u, uc, onChange }: { uid: UserId; u: Us
             <XAxis dataKey="m" tick={{ fill: P.tx3, fontSize: 8 }} interval="preserveStartEnd" />
             <YAxis tick={{ fill: P.tx3, fontSize: 8 }} />
             <Tooltip
-              contentStyle={{ ...gls, background: "rgba(15,15,30,.95)", fontSize: 10, borderRadius: 10 }}
+              contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }}
               formatter={(v) => `€${Number(v).toFixed(2)}`}
             />
             <Legend wrapperStyle={{ fontSize: 9 }} />

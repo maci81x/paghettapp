@@ -1,7 +1,7 @@
 import { FUNDS, FUND_LABEL, PERIOD_MONTHS, SPLIT, USER_IDS, YIELD_YEAR } from "../../data/constants";
 import type { Fund, Payment, Period, UserId, Users } from "../../data/types";
 import { Btn, GlassCard, InfoTip, PeriodBar } from "../../design/components";
-import { P } from "../../design/tokens";
+import { P, alpha } from "../../design/tokens";
 import MonthReportCard from "../MonthReportCard";
 
 const SPLIT_LABEL = FUNDS.map((k) => `${SPLIT[k] * 100}% ${FUND_LABEL[k].split(" ")[1]}`).join(" · ");
@@ -105,7 +105,7 @@ export default function AdminPiggyTab({
           </GlassCard>
         );
       })}
-      <GlassCard style={{ background: P.gold + "08", border: `1px solid ${P.gold}1a` }}>
+      <GlassCard style={{ background: alpha(P.gold, 3), border: `1px solid ${alpha(P.gold, 10)}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>💰 Totale Famiglia</span>
           <span style={{ color: P.gold, fontWeight: 800, fontSize: 20 }}>€{family.toFixed(2)}</span>

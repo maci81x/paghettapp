@@ -1,7 +1,7 @@
 import type { PinKey, Users } from "../data/types";
 import { Avatar } from "../design/components";
 import { userColor, userGrad, userName } from "../design/theme";
-import { P, gls, screen } from "../design/tokens";
+import { P, alpha, gls, screen } from "../design/tokens";
 
 export default function Login({ users, onPick }: { users: Users; onPick: (k: PinKey) => void }) {
   const profiles: { k: PinKey; l: string; c: string; av: string; grad: string; photo?: string }[] = [
@@ -22,7 +22,7 @@ export default function Login({ users, onPick }: { users: Users; onPick: (k: Pin
           justifyContent: "center",
           fontSize: 32,
           marginBottom: 14,
-          boxShadow: `0 8px 32px ${P.acc}44`,
+          boxShadow: `0 8px 32px ${alpha(P.acc, 27)}`,
         }}
       >
         💰

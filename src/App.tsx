@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BADGES } from "./data/constants";
 import GlobalStyle from "./design/GlobalStyle";
-import { P, gls, screen } from "./design/tokens";
+import { P, alpha, gls, screen } from "./design/tokens";
 import { useAuth } from "./hooks/useAuth";
 import { useMatches } from "./hooks/useMatches";
 import { useSupabase } from "./hooks/useSupabase";
@@ -103,8 +103,8 @@ export default function App() {
             transform: "translateX(-50%)",
             zIndex: 9998,
             ...gls,
-            background: "rgba(15,15,30,.96)",
-            border: `1px solid ${P.gold}44`,
+            background: P.surf,
+            border: `1px solid ${alpha(P.gold, 27)}`,
             color: P.gold,
             fontSize: 10,
             fontWeight: 700,
@@ -126,8 +126,8 @@ export default function App() {
             transform: "translateX(-50%)",
             zIndex: 10000,
             ...gls,
-            background: "rgba(15,15,30,.96)",
-            border: `1px solid ${P.gold}55`,
+            background: P.surf,
+            border: `1px solid ${alpha(P.gold, 33)}`,
             padding: "10px 16px",
             display: "flex",
             alignItems: "center",

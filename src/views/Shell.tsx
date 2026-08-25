@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { useThemeMode } from "../hooks/useThemeMode";
 import GuideModal from "../modals/GuideModal";
 import { P, gls, screen } from "../design/tokens";
 
@@ -31,6 +32,7 @@ export default function Shell({
   children: ReactNode;
 }) {
   const [guide, setGuide] = useState(false);
+  const { mode, toggle } = useThemeMode();
   const bg = bgPattern && bgPattern !== "none" ? `${bgPattern},${P.bg2}` : P.bg2;
   return (
     <div style={{ ...screen, backgroundImage: bg, backgroundSize: bgSize, display: "flex", flexDirection: "column", position: "relative" }}>
@@ -73,6 +75,13 @@ export default function Shell({
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <button
+            onClick={toggle}
+            title={mode === "dark" ? "Passa al tema chiaro" : "Passa al tema scuro"}
+            style={{ width: 28, height: 28, borderRadius: 9, ...gls, color: P.tx2, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            {mode === "dark" ? "☀️" : "🌙"}
+          </button>
+          <button
             onClick={() => setGuide(true)}
             style={{ width: 28, height: 28, borderRadius: 9, ...gls, color: P.gold, fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
@@ -99,7 +108,7 @@ export default function Shell({
           transform: "translateX(-50%)",
           width: "100%",
           maxWidth: 420,
-          background: "rgba(10,10,26,.93)",
+          background: P.surf,
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
         }}

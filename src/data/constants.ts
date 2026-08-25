@@ -50,6 +50,7 @@ export const TIERS: Tier[] = [
 ];
 
 export const getTier = (p: number): Tier => TIERS.find((t) => p >= t.min && p <= t.max) || TIERS[0];
+
 export const getLvl = (p: number): Level => LVLS.find((l) => p >= l.min && p <= l.max) || LVLS[0];
 
 /** Scaglione successivo di paghetta: undefined quando si è già al massimo. */
@@ -64,6 +65,13 @@ export const tierProgress = (p: number): number => {
   if (span <= 0) return 100;
   return Math.min(100, Math.max(0, ((p - cur.min) / span) * 100));
 };
+
+/** Passo fra due tacche: sulla barra i tier sono equidistanti, non in scala coi punti. */
+export const TIER_TICK = 100 / (TIERS.length - 1);
+
+/** Posizione 0-100 sull'intera barra tier: tacche superate + avanzamento nel tier corrente. */
+export const tierPos = (p: number): number =>
+  Math.min(100, Math.max(0, (TIERS.indexOf(getTier(p)) + tierProgress(p) / 100) * TIER_TICK));
 
 /** PIN di default: sovrascritti da quelli salvati in localStorage. */
 export const DEFAULT_PINS: Record<PinKey, string> = { mia: "2806", samira: "0811", admin: "0000" };
