@@ -84,15 +84,30 @@ export const gls: CSSProperties = {
 };
 
 /**
- * Container mobile-first condiviso da tutte le schermate. Il padding in alto
- * tiene l'header fuori dal notch / Dynamic Island: con `box-sizing: border-box`
- * resta dentro i 100vh, e in PWA installata l'inset cresce da solo.
+ * Spazio da lasciare in cima: notch, Dynamic Island o barra di stato. `max`
+ * e non solo `env(...)`: il valore di ripiego di `env` scatta solo dove la
+ * funzione non esiste, mentre su iPhone `env` risponde e in alcuni contesti
+ * (Safari a schermo intero, PWA appena installata) risponde troppo poco. I
+ * 44px sono l'altezza minima della barra di stato iOS.
+ */
+export const SAFE_TOP = "max(env(safe-area-inset-top, 44px), 44px)";
+
+/** Idem in basso, per la home indicator: qui non serve un minimo. */
+export const SAFE_BOTTOM = "env(safe-area-inset-bottom, 0px)";
+
+/**
+ * Container mobile-first condiviso da tutte le schermate. Con
+ * `box-sizing: border-box` il padding resta dentro i 100vh.
+ *
+ * Attenzione: chi fa lo spread di `screen` e poi scrive `padding`, sovrascrive
+ * anche questo `paddingTop`. In quel caso va rimesso a mano (vedi Login e
+ * PinEntry).
  */
 export const screen: CSSProperties = {
   maxWidth: 420,
   margin: "0 auto",
   minHeight: "100vh",
-  paddingTop: "env(safe-area-inset-top)",
+  paddingTop: SAFE_TOP,
   background: P.bg,
   backgroundImage: P.bg2,
   fontFamily: "'Inter',system-ui,-apple-system,sans-serif",

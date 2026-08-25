@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BADGES } from "./data/constants";
 import GlobalStyle from "./design/GlobalStyle";
-import { P, alpha, gls, screen } from "./design/tokens";
+import { P, SAFE_BOTTOM, SAFE_TOP, alpha, gls, screen } from "./design/tokens";
 import { useAuth } from "./hooks/useAuth";
 import { useMatches } from "./hooks/useMatches";
 import { useSupabase } from "./hooks/useSupabase";
@@ -100,7 +100,7 @@ export default function App() {
         <div
           style={{
             position: "fixed",
-            bottom: "calc(74px + env(safe-area-inset-bottom))",
+            bottom: `calc(74px + ${SAFE_BOTTOM})`,
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 9998,
@@ -123,7 +123,7 @@ export default function App() {
           onClick={() => setToast(null)}
           style={{
             position: "fixed",
-            top: "calc(14px + env(safe-area-inset-top))",
+            top: `calc(14px + ${SAFE_TOP})`,
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 10000,

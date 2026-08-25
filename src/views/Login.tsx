@@ -1,7 +1,7 @@
 import type { PinKey, Users } from "../data/types";
 import { Avatar } from "../design/components";
 import { userColor, userGrad, userName } from "../design/theme";
-import { P, alpha, gls, screen } from "../design/tokens";
+import { P, SAFE_TOP, alpha, gls, screen } from "../design/tokens";
 
 export default function Login({ users, onPick }: { users: Users; onPick: (k: PinKey) => void }) {
   const profiles: { k: PinKey; l: string; c: string; av: string; grad: string; photo?: string }[] = [
@@ -10,7 +10,7 @@ export default function Login({ users, onPick }: { users: Users; onPick: (k: Pin
     { k: "admin", l: "Admin", c: P.acc, av: "🔒", grad: P.accG },
   ];
   return (
-    <div style={{ ...screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32 }}>
+    <div style={{ ...screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, paddingTop: SAFE_TOP }}>
       <div
         style={{
           width: 64,

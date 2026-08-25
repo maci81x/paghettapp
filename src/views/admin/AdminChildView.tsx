@@ -100,7 +100,7 @@ export default function AdminChildView({
 
       <PeriodBar v={period} set={setPeriod} />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <Btn style={{ flex: 1 }} grad={P.mintG} onClick={onIncome}>
           💝 Registra entrata
         </Btn>
@@ -108,10 +108,6 @@ export default function AdminChildView({
           🎁 Punti Bonus
         </Btn>
       </div>
-
-      <Btn full outline color={P.red} style={{ marginBottom: 12 }} onClick={onPenalty}>
-        ⚠️ Addebita penalità
-      </Btn>
 
       <MonthReportCard u={u} />
 
@@ -185,6 +181,13 @@ export default function AdminChildView({
           })
         )}
       </GlassCard>
+
+      <Btn full color={P.red} style={{ marginTop: 4 }} onClick={onPenalty}>
+        ⚠️ Addebita penalità a {u.n}
+      </Btn>
+      <p style={{ color: P.tx3, fontSize: 9, textAlign: "center", margin: "4px 0 10px" }}>
+        Scegli l'attività non fatta: toglie i suoi punti di penalità dal totale e dalla settimana.
+      </p>
 
       <AdminLogHistory u={u} acts={acts} onRevoke={onRevoke} onDelete={onDeleteLog} onDeduct={onDeduct} />
 

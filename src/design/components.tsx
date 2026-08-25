@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { CSSProperties, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import type { Period } from "../data/types";
-import { P, alpha, gls } from "./tokens";
+import { P, SAFE_BOTTOM, SAFE_TOP, alpha, gls } from "./tokens";
 
 /* ── Ring progressivo SVG ── */
 export function Ring({
@@ -318,7 +318,18 @@ export function Label({ children }: { children: ReactNode }) {
 export function Modal({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: P.overlay, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: P.overlay,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        paddingTop: `calc(16px + ${SAFE_TOP})`,
+        paddingBottom: `calc(16px + ${SAFE_BOTTOM})`,
+      }}
       onClick={onClose}
     >
       <div

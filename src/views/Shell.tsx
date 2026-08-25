@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useThemeMode } from "../hooks/useThemeMode";
 import GuideModal from "../modals/GuideModal";
-import { P, gls, screen } from "../design/tokens";
+import { P, SAFE_BOTTOM, gls, screen } from "../design/tokens";
 
 /** Layout comune: header, contenuto scrollabile, bottom nav fissa. */
 export default function Shell({
@@ -106,14 +106,14 @@ export default function Shell({
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: "auto", padding: 16, paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>{children}</div>
+      <div style={{ flex: 1, overflow: "auto", padding: 16, paddingBottom: `calc(80px + ${SAFE_BOTTOM})` }}>{children}</div>
 
       <div
         style={{
           display: "flex",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "5px 6px calc(10px + env(safe-area-inset-bottom))",
+          padding: `5px 6px calc(10px + ${SAFE_BOTTOM})`,
           borderTop: `1px solid ${P.gb}`,
           position: "fixed",
           bottom: 0,

@@ -1,7 +1,7 @@
 import type { PinKey, Users } from "../data/types";
 import { Avatar } from "../design/components";
 import { userColor, userGrad, userName } from "../design/theme";
-import { P, gls, screen } from "../design/tokens";
+import { P, SAFE_TOP, gls, screen } from "../design/tokens";
 
 const KEYS: (number | "⌫" | null)[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, "⌫"];
 
@@ -34,7 +34,7 @@ export default function PinEntry({
         };
 
   return (
-    <div style={{ ...screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, position: "relative" }}>
+    <div style={{ ...screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, paddingTop: SAFE_TOP, position: "relative" }}>
       <button onClick={onBack} style={{ position: "absolute", top: 16, left: 16, background: "none", border: "none", color: P.tx3, fontSize: 20, cursor: "pointer" }}>
         ‹
       </button>
