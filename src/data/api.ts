@@ -94,6 +94,8 @@ export interface MissionRow {
   active: boolean;
   team?: boolean | null;
   since?: string | null;
+  /** Aggiunta dalla migrazione `missions_completed_by`: assente finché non è applicata. */
+  completed_by?: Record<string, string> | null;
 }
 
 export interface IncomeRow {
@@ -190,6 +192,7 @@ export const toLog = (r: LogRow): LogEntry => ({
 export const toMission = (r: MissionRow, uid: UserId): Mission => ({
   id: r.id,
   name: r.name,
+  emoji: r.emoji || "🎯",
   desc: r.description ?? "",
   prog: r.progress?.[uid] ?? 0,
   tgt: r.target,
@@ -199,6 +202,8 @@ export const toMission = (r: MissionRow, uid: UserId): Mission => ({
   assignee: r.assigned_to.length > 1 ? "both" : ((r.assigned_to[0] as UserId) ?? "mia"),
   actIds: r.linked_activities ?? [],
   since: r.since ?? "",
+  progBy: (r.progress ?? {}) as Mission["progBy"],
+  completedBy: (r.completed_by ?? {}) as Mission["completedBy"],
 });
 
 export const toWish = (r: WishRow): Wish => ({
@@ -245,7 +250,7 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false };
+export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false };
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -269,6 +274,17 @@ export const probePiggyName = async () => {
   const { error } = await supabase.from("piggybanks").select("nickname").limit(1);
   schema.piggyName = !error;
   return schema.piggyName;
+};
+
+/**
+ * `missions.completed_by` è la guardia contro il doppio premio. Senza quella
+ * colonna i punti non vengono assegnati in automatico: premiare senza poterlo
+ * ricordare significherebbe premiare di nuovo al prossimo caricamento.
+ */
+export const probeMissionDone = async () => {
+  const { error } = await supabase.from("missions").select("completed_by").limit(1);
+  schema.missionDone = !error;
+  return schema.missionDone;
 };
 
 /** Idem per le colonne dello storico dei punti (`entry_kind`, `revoked`). */
@@ -492,6 +508,7 @@ const missionPayload = (m: Omit<Mission, "id">, targets: UserId[]) =>
   strip(
     {
       name: m.name,
+      emoji: m.emoji || "🎯",
       description: m.desc,
       points: m.pts,
       deadline: m.deadline || null,
@@ -516,6 +533,20 @@ export const updateMission = (id: number, m: Omit<Mission, "id">, targets: UserI
   wrap<MissionRow[]>(supabase.from("missions").update(missionPayload(m, targets)).eq("id", id).select());
 
 export const deleteMission = (id: number) => wrap<MissionRow[]>(supabase.from("missions").update({ active: false }).eq("id", id).select());
+
+/** Contatore manuale, per le missioni senza attività collegate. */
+export const setMissionProgress = (id: number, progress: Record<string, number>) =>
+  wrap<MissionRow[]>(supabase.from("missions").update({ progress }).eq("id", id).select());
+
+/** Segna chi è stato premiato: è la guardia contro il doppio premio. */
+export const setMissionCompleted = (id: number, completedBy: Record<string, string>) => {
+  if (!schema.missionDone) return Promise.resolve<Result<MissionRow[]>>({ data: [], error: null });
+  return wrap<MissionRow[]>(supabase.from("missions").update({ completed_by: completedBy }).eq("id", id).select());
+};
+
+/** Punti premio di una missione: log già approvato, come i punti bonus. */
+export const awardMissionPoints = (userId: string, points: number, missionName: string) =>
+  createActivityLog({ userId, actId: null, pts: points, cnt: 1, tod: nowTod(), note: `🎯 ${missionName}`, approved: true });
 
 /* ── salvadanai ── */
 

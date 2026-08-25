@@ -51,6 +51,8 @@ export interface LogEntry {
 export interface Mission {
   id: number;
   name: string;
+  /** Emoji della missione: il database ne garantisce sempre una. */
+  emoji: string;
   /** Descrizione dettagliata: cosa fare, come, perché. */
   desc: string;
   /** Contatore manuale: usato solo se la missione non è collegata ad attività. */
@@ -65,6 +67,17 @@ export interface Mission {
   actIds: number[];
   /** Giorno di creazione (ISO): contano solo i completamenti da qui in poi. */
   since: string;
+  /**
+   * Contatore manuale di ciascuna assegnataria, usato quando la missione non
+   * è collegata ad attività. `prog` è la fetta di chi sta guardando.
+   */
+  progBy?: Partial<Record<UserId, number>>;
+  /**
+   * Chi ha già ricevuto i punti, con il giorno: è la guardia contro il doppio
+   * premio. Assente finché la migrazione `missions_completed_by` non è
+   * applicata.
+   */
+  completedBy?: Partial<Record<UserId, string>>;
 }
 
 export interface Spesa {
@@ -249,6 +262,7 @@ export interface MissionDraft {
   mode: "add" | "edit";
   id?: number;
   name: string;
+  emoji: string;
   desc: string;
   tgt: number;
   pts: number;
@@ -256,6 +270,8 @@ export interface MissionDraft {
   deadline: string;
   to: UserId | "both";
   actIds: number[];
+  /** Conservato nella modifica: riscriverlo azzererebbe il progresso. */
+  since?: string;
 }
 
 export interface IncomeDraft {

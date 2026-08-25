@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import * as api from "../data/api";
 import { BONUS_ACT_ID, DB_FUND, toActivity, toInvest, toLog, toMission, toWish } from "../data/api";
 import { earnedBadges } from "../data/badges";
+import { toAward } from "../data/missions";
 import {
   DEDUCT_ACT,
   DEFAULT_PINS,
   FUNDS,
   FUND_NAME_MAX,
   GIFT_PCT,
+  MISSION_ACT,
   PERIOD_DAYS,
   SPLIT,
   USER_IDS,
@@ -61,6 +63,9 @@ const OPS = {
   createMission: api.createMission,
   updateMission: api.updateMission,
   deleteMission: api.deleteMission,
+  setMissionProgress: api.setMissionProgress,
+  setMissionCompleted: api.setMissionCompleted,
+  awardMissionPoints: api.awardMissionPoints,
   updatePiggybank: api.updatePiggybank,
   setPiggybankNote: api.setPiggybankNote,
   setPiggybankName: api.setPiggybankName,
@@ -272,7 +277,7 @@ export function useSupabase() {
   /* ── caricamento ── */
 
   const load = useCallback(async () => {
-    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras(), api.probePiggyName()]);
+    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras(), api.probePiggyName(), api.probeMissionDone()]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
@@ -823,7 +828,14 @@ export function useSupabase() {
             if (prev) next[uid] = { ...next[uid], miss: next[uid].miss.filter((m) => m.id !== id) };
             return;
           }
-          const entry: Mission = { ...mission, id, prog: prev?.prog ?? mission.prog, since: prev?.since ?? mission.since };
+          const entry: Mission = {
+            ...mission,
+            id,
+            prog: prev?.prog ?? mission.prog,
+            since: prev?.since ?? mission.since,
+            progBy: prev?.progBy,
+            completedBy: prev?.completedBy,
+          };
           next[uid] = { ...next[uid], miss: prev ? next[uid].miss.map((m) => (m.id === id ? entry : m)) : [...next[uid].miss, entry] };
         });
         return next;
@@ -843,6 +855,88 @@ export function useSupabase() {
   };
 
   /** L'id della missione è lo stesso per entrambe: la tolgo a tutte e due. */
+  /**
+   * Contatore manuale delle missioni senza attività collegate: senza questo
+   * `progress` non veniva mai scritto e la missione restava ferma a zero.
+   */
+  const bumpMission = async (uid: UserId, id: number, delta: number) => {
+    const current = USER_IDS.reduce<Record<string, number>>((acc, who) => {
+      const m = users[who].miss.find((x) => x.id === id);
+      if (m) Object.assign(acc, m.progBy ?? {});
+      return acc;
+    }, {});
+    const next = { ...current, [uid]: Math.max(0, (current[uid] ?? 0) + delta) };
+    setUsers((p) => {
+      const out = { ...p };
+      USER_IDS.forEach((who) => {
+        out[who] = { ...out[who], miss: out[who].miss.map((m) => (m.id === id ? { ...m, progBy: next, prog: next[who] ?? 0 } : m)) };
+      });
+      return out;
+    });
+    await send("setMissionProgress", [id, next]);
+  };
+
+  /**
+   * Punti premio di una missione arrivata all'obiettivo. Il premio è una voce
+   * approvata nello storico punti, come i punti bonus: entra nel totale e
+   * nella settimana, quindi può far salire lo scaglione della paghetta.
+   * `completedBy` sul database impedisce di premiare due volte, anche da due
+   * dispositivi diversi.
+   */
+  const awardMission = useCallback(
+    async (m: Mission, targets: UserId[]) => {
+      if (targets.length === 0) return;
+      const stamp = todayISO();
+      const completedBy = { ...(m.completedBy ?? {}), ...Object.fromEntries(targets.map((uid) => [uid, stamp])) };
+      setUsers((p) => {
+        const out = { ...p };
+        targets.forEach((uid) => {
+          out[uid] = {
+            ...out[uid],
+            totalPts: out[uid].totalPts + m.pts,
+            log: [
+              ...out[uid].log,
+              { id: Date.now() + Math.round(m.id), actId: MISSION_ACT, date: stamp, cnt: 1, note: `🎯 ${m.name}`, tod: nowTod(), pts: m.pts, ok: true },
+            ],
+          };
+        });
+        USER_IDS.forEach((uid) => {
+          out[uid] = { ...out[uid], miss: out[uid].miss.map((x) => (x.id === m.id ? { ...x, completedBy } : x)) };
+        });
+        return out;
+      });
+      // prima la guardia, poi i punti: se qui cade la rete la voce resta in
+      // coda, mentre premiare senza aver segnato nulla raddoppierebbe
+      await send("setMissionCompleted", [m.id, completedBy]);
+      for (const uid of targets) {
+        await send("awardMissionPoints", [uid, m.pts, m.name]);
+        await send("updateUser", [uid, { total_pts: users[uid].totalPts + m.pts }]);
+      }
+    },
+    [users, send],
+  );
+
+  /**
+   * Passa le missioni e premia quelle appena arrivate all'obiettivo. Gira come
+   * `syncBadges` a ogni cambio di stato. Senza la colonna `completed_by` non
+   * fa nulla: non c'è modo di ricordare il premio, quindi verrebbe ripetuto.
+   */
+  const syncMissions = () => {
+    if (!api.schema.missionDone) return [];
+    const seen = new Set<number>();
+    const awarded: { m: Mission; targets: UserId[] }[] = [];
+    USER_IDS.forEach((uid) => {
+      users[uid].miss.forEach((m) => {
+        if (seen.has(m.id)) return;
+        seen.add(m.id);
+        const targets = toAward(users, m);
+        if (targets.length > 0) awarded.push({ m, targets });
+      });
+    });
+    awarded.forEach(({ m, targets }) => void awardMission(m, targets));
+    return awarded;
+  };
+
   const delMission = async (_uid: UserId, id: number) => {
     setUsers((p) => {
       const next = { ...p };
@@ -981,6 +1075,9 @@ export function useSupabase() {
     syncBadges,
     upsertMission,
     delMission,
+    bumpMission,
+    syncMissions,
+    missionAwardsSupported: api.schema.missionDone,
     payments,
     paymentFor,
     duePreview,

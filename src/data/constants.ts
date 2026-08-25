@@ -100,10 +100,14 @@ export const BONUS_ACT = -1;
 /** actId riservato ai punti tolti a mano dall'admin. */
 export const DEDUCT_ACT = -2;
 
+/** actId riservato ai punti premio di una missione completata. */
+export const MISSION_ACT = -3;
+
 /** Etichetta delle voci di storico senza attività collegata. */
 export const MANUAL_ACT_LABEL: Record<number, string> = {
   [BONUS_ACT]: "🎁 Bonus",
   [DEDUCT_ACT]: "➖ Punti tolti",
+  [MISSION_ACT]: "🎯 Missione completata",
 };
 
 /** Parola usata per il periodo in cui vale il limite di completamenti. */
@@ -226,11 +230,10 @@ export const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 
 export const todayISO = () => isoDate(new Date());
 
 /** Giorni che mancano alla data ISO indicata: negativo se è già passata. */
-export const daysLeft = (iso: string) => {
+export const daysLeft = (iso: string, today = new Date()) => {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return 0;
   const target = new Date(y, m - 1, d).getTime();
-  const today = new Date();
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   return Math.round((target - start) / 86400000);
 };

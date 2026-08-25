@@ -17,7 +17,7 @@ import {
   tierPos,
   todayISO,
 } from "../../data/constants";
-import { missionProg } from "../../data/report";
+import { missionProgress } from "../../data/missions";
 import { nextMilestone } from "../../data/savings";
 import type { Activity, Fund, IncomeEntry, Payment, User, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
@@ -463,7 +463,7 @@ export default function HomeTab({
             🎯 Missioni <InfoTip text="Le missioni danno punti bonus quando le completi." />
           </p>
           {u.miss.map((m) => {
-            const prog = missionProg(u, m);
+            const prog = missionProgress(users, m, au).current;
             return (
               <div key={m.id} style={{ marginBottom: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>

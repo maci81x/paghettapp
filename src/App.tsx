@@ -20,9 +20,11 @@ export default function App() {
    * I badge si valutano sullo stato: qualsiasi azione rilevante (approvazione,
    * paghetta, spesa, acquisto di un desiderio) fa ripassare di qui.
    */
-  const { users, acts, syncBadges } = db;
+  const { users, acts, syncBadges, syncMissions } = db;
   useEffect(() => {
     if (db.loading) return;
+    // le missioni arrivate all'obiettivo pagano i punti prima che i badge li leggano
+    syncMissions();
     const fresh = syncBadges(acts.map((a) => a.id));
     if (fresh.length > 0) {
       const last = fresh[fresh.length - 1];

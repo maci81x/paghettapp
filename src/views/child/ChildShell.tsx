@@ -159,7 +159,7 @@ export default function ChildShell({
           />
         );
       case "miss":
-        return <MissionsTab u={u} users={usersApi.users} acts={actsApi.acts} matches={matchesApi.matches} weekPts={usersApi.weekPts} />;
+        return <MissionsTab u={u} au={au} users={usersApi.users} acts={actsApi.acts} matches={matchesApi.matches} grad={grad} weekPts={usersApi.weekPts} />;
       case "wallet":
         return (
           <WalletTab

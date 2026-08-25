@@ -85,6 +85,7 @@ export default function AdminShell({
     const targets: UserId[] = missDraft.to === "both" ? [...USER_IDS] : [missDraft.to];
     usersApi.upsertMission(missDraft.id, targets, {
       name: missDraft.name.trim(),
+      emoji: missDraft.emoji || "🎯",
       desc: missDraft.desc.trim(),
       prog: 0,
       tgt: missDraft.tgt,
@@ -93,7 +94,9 @@ export default function AdminShell({
       deadline: missDraft.deadline,
       assignee: missDraft.to,
       actIds: missDraft.actIds,
-      since: todayISO(),
+      // riscrivere `since` in modifica sposterebbe la data di partenza e
+      // cancellerebbe tutto il progresso già maturato
+      since: missDraft.since || todayISO(),
     });
     setMissDraft(null);
   };
@@ -164,13 +167,17 @@ export default function AdminShell({
             <AdminMissionsTab
               users={users}
               acts={actsApi.acts}
-              onNew={() => setMissDraft({ mode: "add", name: "", desc: "", tgt: 5, pts: 30, team: false, deadline: "", to: "mia", actIds: [] })}
+              awardsSupported={usersApi.missionAwardsSupported}
+              onBump={usersApi.bumpMission}
+              onNew={() => setMissDraft({ mode: "add", name: "", emoji: "🎯", desc: "", tgt: 5, pts: 30, team: false, deadline: "", to: "mia", actIds: [] })}
               onEdit={(m) =>
                 setMissDraft({
                   mode: "edit",
                   id: m.id,
                   name: m.name,
+                  emoji: m.emoji || "🎯",
                   desc: m.desc ?? "",
+                  since: m.since,
                   tgt: m.tgt,
                   pts: m.pts,
                   team: m.team,
@@ -323,6 +330,7 @@ export default function AdminShell({
           draft={missDraft}
           setDraft={(fn) => setMissDraft((d) => (d ? fn(d) : d))}
           acts={actsApi.acts}
+          names={{ mia: users.mia.n, samira: users.samira.n }}
           onSave={saveMission}
           onClose={() => setMissDraft(null)}
         />

@@ -1,19 +1,6 @@
 // estensione esplicita: così `node --test` esegue i test senza bundler
 import { FUNDS, SPLIT, monthKey, splitByPct } from "./constants.ts";
-import type { Fund, IncomeEntry, Mission, User } from "./types";
-
-/**
- * Progresso di una missione: se è collegata ad attività lo ricavo dai
- * completamenti approvati dalla creazione in poi, così un log rifiutato o
- * cancellato non lascia progresso fantasma. Senza collegamenti resta il
- * contatore manuale.
- */
-export const missionProg = (u: User, m: Mission) => {
-  const ids = m.actIds ?? [];
-  if (ids.length === 0) return m.prog;
-  const since = m.since ?? "";
-  return u.log.filter((l) => l.ok && ids.includes(l.actId) && l.date >= since).reduce((s, l) => s + l.cnt, 0);
-};
+import type { Fund, IncomeEntry, User } from "./types";
 
 /**
  * Storico entrate normalizzato: le paghette accreditate prima dell'arrivo di

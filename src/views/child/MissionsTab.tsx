@@ -1,80 +1,144 @@
 import { useState } from "react";
-import { daysLeft } from "../../data/constants";
-import { missionProg } from "../../data/report";
-import type { Activity, Match, Mission, User, Users } from "../../data/types";
-import { Avatar, GlassCard, InfoTip, Ring, SectionTitle } from "../../design/components";
+import { CATS, daysLeft } from "../../data/constants";
+import type { MissionState } from "../../data/missions";
+import { assignees, byState, missionProgress, missionState } from "../../data/missions";
+import type { Activity, Match, Mission, UserId, Users } from "../../data/types";
+import { Avatar, GlassCard, InfoTip, SectionTitle } from "../../design/components";
 import { userColor, userGrad, userName } from "../../design/theme";
 import { P, alpha } from "../../design/tokens";
+import { fmtDay } from "../../utils/dates";
 
-/** Countdown alla scadenza: verde >3gg, arancio 1-3gg, rosso scaduta. */
+/** Countdown alla scadenza: rosso sotto i 3 giorni, come chiede il colpo d'occhio. */
 function Deadline({ iso }: { iso: string }) {
   const d = daysLeft(iso);
-  const color = d < 0 ? P.red : d <= 3 ? P.gold : P.mint;
-  const label = d < 0 ? `Scaduta da ${-d}gg` : d === 0 ? "Scade oggi!" : `${d} giorn${d === 1 ? "o" : "i"} rimast${d === 1 ? "o" : "i"}`;
+  const urgent = d < 3;
+  const color = d < 0 ? P.red : urgent ? P.red : P.mint;
+  const label = d < 0 ? `Scaduta da ${-d}gg` : d === 0 ? "Scade oggi!" : `Scade il ${fmtDay(iso)}`;
   return (
-    <span style={{ background: color + "18", color, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
-      ⏳ {label}
-    </span>
+    <span style={{ background: alpha(color, 9), color, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>⏰ {label}</span>
   );
 }
 
 const LONG_DESC = 110;
 
-function MissionCard({ m, u, acts }: { m: Mission; u: User; acts: Activity[] }) {
-  const [open, setOpen] = useState(false);
+const STATE_STYLE: Record<MissionState, { border: string; label: string; color: string }> = {
+  active: { border: "", label: "", color: "" },
+  done: { border: P.mint, label: "🎉 Completata!", color: P.mint },
+  expired: { border: P.red, label: "⏰ Scaduta", color: P.red },
+};
+
+function MissionCard({ m, uid, users, acts, grad, collapsed }: { m: Mission; uid: UserId; users: Users; acts: Activity[]; grad: string; collapsed?: boolean }) {
+  const [open, setOpen] = useState(!collapsed);
+  const [readMore, setReadMore] = useState(false);
+
+  const prog = missionProgress(users, m, uid);
+  const state = missionState(m, prog.done);
+  const style = STATE_STYLE[state];
   const desc = m.desc ?? "";
   const long = desc.length > LONG_DESC;
-  const prog = missionProg(u, m);
-  const pct = Math.min(100, (prog / m.tgt) * 100);
   const linked = (m.actIds ?? []).map((id) => acts.find((a) => a.id === id)).filter((a): a is Activity => !!a);
-  const done = prog >= m.tgt;
+  const others = assignees(m).filter((x) => x !== uid);
+  // in individuale il confronto si mostra solo se la sorella ha già finito
+  const finishedOthers = m.team ? [] : others.filter((x) => (prog.byUser[x] ?? 0) >= m.tgt);
+  const pct = Math.round(prog.pct);
+  const awarded = !!m.completedBy?.[uid];
+
   return (
-    <GlassCard>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <div style={{ flex: 1 }}>
-          <p style={{ color: P.tx, fontSize: 14, fontWeight: 700, margin: 0 }}>{m.name}</p>
+    <GlassCard style={style.border ? { border: `1.5px solid ${alpha(style.border, 33)}`, background: `linear-gradient(135deg,${alpha(style.border, 4)},transparent)` } : undefined}>
+      <div
+        onClick={collapsed ? () => setOpen((v) => !v) : undefined}
+        style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: collapsed ? "pointer" : undefined }}
+      >
+        <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{m.emoji || "🎯"}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: P.tx, fontSize: 14, fontWeight: 800, margin: 0, letterSpacing: -0.2 }}>{m.name}</p>
           <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
-            <span style={{ background: alpha(P.acc, 9), color: P.acc, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
-              {m.team ? "👥 Squadra" : "👤 Individuale"}
+            <span
+              style={{
+                background: alpha(m.team ? P.blue : P.acc, 12),
+                color: m.team ? P.blue : P.acc,
+                padding: "2px 7px",
+                borderRadius: 6,
+                fontSize: 9,
+                fontWeight: 800,
+              }}
+            >
+              {m.team ? "🤝 Squadra" : "👤 Individuale"}
             </span>
-            <span style={{ background: alpha(P.gold, 9), color: P.gold, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>+{m.pts}pt</span>
-            {m.deadline ? <Deadline iso={m.deadline} /> : null}
-            {done && <span style={{ background: alpha(P.mint, 9), color: P.mint, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>✅ Completata</span>}
+            <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 800 }}>
+              🏆 +{m.pts}pt
+            </span>
+            {m.deadline && state !== "done" ? <Deadline iso={m.deadline} /> : null}
+            {style.label && (
+              <span style={{ background: alpha(style.color, 12), color: style.color, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 800 }}>
+                {style.label}
+                {state === "done" && m.completedBy?.[uid] ? ` ${fmtDay(m.completedBy[uid]!)}` : ""}
+              </span>
+            )}
           </div>
         </div>
-        <Ring pct={pct} size={48} stroke={4} color={done ? P.mint : P.acc}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: P.tx }}>
-            {prog}/{m.tgt}
-          </span>
-        </Ring>
+        {collapsed && <span style={{ color: P.tx3, fontSize: 11, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>}
       </div>
 
-      {desc && (
-        <p style={{ color: P.tx2, fontSize: 11, lineHeight: 1.5, margin: "8px 0 0" }}>
-          {long && !open ? `${desc.slice(0, LONG_DESC)}… ` : `${desc} `}
-          {long && (
-            <button
-              onClick={() => setOpen(!open)}
-              style={{ background: "none", border: "none", color: P.acc, fontSize: 10, fontWeight: 700, cursor: "pointer", padding: 0 }}
-            >
-              {open ? "meno" : "leggi tutto"}
-            </button>
+      {open && (
+        <>
+          <p style={{ color: P.tx3, fontSize: 10, margin: "8px 0 0", fontWeight: 600 }}>
+            {m.team ? "🤝 Collaborate per raggiungere l'obiettivo!" : "Solo per te"}
+          </p>
+
+          {desc && (
+            <p style={{ color: P.tx2, fontSize: 11, lineHeight: 1.5, margin: "6px 0 0" }}>
+              {long && !readMore ? `${desc.slice(0, LONG_DESC)}… ` : `${desc} `}
+              {long && (
+                <button
+                  onClick={() => setReadMore(!readMore)}
+                  style={{ background: "none", border: "none", color: P.acc, fontSize: 10, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                >
+                  {readMore ? "meno" : "leggi tutto"}
+                </button>
+              )}
+            </p>
           )}
-        </p>
-      )}
 
-      <div style={{ background: P.glass, borderRadius: 3, height: 6, marginTop: 8 }}>
-        <div style={{ background: done ? P.mintG : P.accG, borderRadius: 3, height: 6, width: `${pct}%`, transition: "width .5s" }} />
-      </div>
-      <p style={{ color: P.tx3, fontSize: 9, margin: "3px 0 0" }}>
-        {prog}/{m.tgt} completamenti
-        {linked.length > 0 && ` · avanza con: ${linked.map((a) => a.name).join(", ")}`}
-      </p>
+          {linked.length > 0 && (
+            <p style={{ color: P.tx2, fontSize: 10, margin: "8px 0 0", lineHeight: 1.5 }}>
+              <b style={{ color: P.tx }}>📋 Regole:</b> completa {m.tgt} volte{" "}
+              {linked.map((a) => `${CATS.find((c) => c.id === a.cat)?.i ?? ""} ${a.name}`).join(", ")}
+            </p>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "10px 0 4px" }}>
+            <span style={{ color: P.tx2, fontSize: 11, fontWeight: 700 }}>
+              {m.team ? "Insieme" : "Il tuo progresso"}: {prog.current}/{m.tgt}
+            </span>
+            <span style={{ color: prog.done ? P.mint : P.tx3, fontSize: 11, fontWeight: 800 }}>{pct}% completata</span>
+          </div>
+          <div style={{ background: P.glass, borderRadius: 6, height: 12, overflow: "hidden" }}>
+            <div style={{ background: prog.done ? P.mintG : grad, borderRadius: 6, height: 12, width: `${prog.pct}%`, transition: "width .5s" }} />
+          </div>
+
+          {m.team && (
+            <p style={{ color: P.tx3, fontSize: 10, margin: "5px 0 0" }}>
+              {assignees(m)
+                .map((who) => `${userName(users[who])}: ${prog.byUser[who] ?? 0}`)
+                .join(" • ")}
+            </p>
+          )}
+
+          {finishedOthers.length > 0 && (
+            <p style={{ color: P.gold, fontSize: 10, margin: "5px 0 0", fontWeight: 700 }}>
+              👏 {finishedOthers.map((x) => userName(users[x])).join(" e ")} ha già finito!
+            </p>
+          )}
+
+          {awarded && <p style={{ color: P.mint, fontSize: 10, margin: "5px 0 0", fontWeight: 700 }}>🏆 +{m.pts}pt già assegnati</p>}
+        </>
+      )}
     </GlassCard>
   );
 }
 
-function Side({ uid, users, pts }: { uid: "mia" | "samira"; users: Users; pts: number }) {
+function Side({ uid, users, pts }: { uid: UserId; users: Users; pts: number }) {
   const u = users[uid];
   return (
     <div style={{ textAlign: "center" }}>
@@ -87,22 +151,33 @@ function Side({ uid, users, pts }: { uid: "mia" | "samira"; users: Users; pts: n
 
 export default function MissionsTab({
   u,
+  au,
   users,
   acts,
   matches,
+  grad,
   weekPts,
 }: {
-  u: User;
+  u: Users[UserId];
+  au: UserId;
   users: Users;
   acts: Activity[];
   matches: Match[];
-  weekPts: (uid: "mia" | "samira") => number;
+  grad: string;
+  weekPts: (uid: UserId) => number;
 }) {
   const visible = matches.filter((m) => m.vis);
+
+  const rows = u.miss
+    .map((m) => ({ m, state: missionState(m, missionProgress(users, m, au).done) }))
+    .sort(byState);
+  const active = rows.filter((r) => r.state === "active");
+  const closed = rows.filter((r) => r.state !== "active");
+
   return (
     <div>
       <SectionTitle>
-        Missioni <InfoTip text="Completa le missioni per bonus! I match sono sfide tra sorelle." />
+        Missioni <InfoTip text="Le missioni di squadra si completano insieme: i vostri progressi si sommano. Quelle individuali le porti a termine da sola." />
       </SectionTitle>
 
       {u.miss.length === 0 ? (
@@ -110,7 +185,22 @@ export default function MissionsTab({
           <p style={{ color: P.tx3, fontSize: 12, textAlign: "center", padding: 16 }}>Nessuna missione attiva 🎯</p>
         </GlassCard>
       ) : (
-        u.miss.map((m) => <MissionCard key={m.id} m={m} u={u} acts={acts} />)
+        <>
+          {active.map(({ m }) => (
+            <MissionCard key={m.id} m={m} uid={au} users={users} acts={acts} grad={grad} />
+          ))}
+
+          {closed.length > 0 && (
+            <>
+              <p style={{ color: P.tx3, fontSize: 10, fontWeight: 800, letterSpacing: 0.4, margin: "14px 0 6px", textTransform: "uppercase" }}>
+                Concluse ({closed.length})
+              </p>
+              {closed.map(({ m }) => (
+                <MissionCard key={m.id} m={m} uid={au} users={users} acts={acts} grad={grad} collapsed />
+              ))}
+            </>
+          )}
+        </>
       )}
 
       {visible.length > 0 && (
