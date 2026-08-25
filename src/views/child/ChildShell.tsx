@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from "react";
 import { FREQ_UNIT, getLvl, nowTod } from "../../data/constants";
-import type { Activity, ChildTab, CompletionDraft, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
+import type { Activity, ChildTab, CompletionDraft, LogEntry, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
 import { Avatar, NavItem } from "../../design/components";
 import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
@@ -8,6 +8,7 @@ import type { MatchesApi } from "../../hooks/useMatches";
 import type { ActivitiesApi, UsersApi } from "../../hooks/useSupabase";
 import AvatarPicker from "../../modals/AvatarPicker";
 import CompletionModal from "../../modals/CompletionModal";
+import ConfirmModal from "../../modals/ConfirmModal";
 import ExtraIncomeModal from "../../modals/ExtraIncomeModal";
 import PinChangeModal from "../../modals/PinChangeModal";
 import SpesaModal from "../../modals/SpesaModal";
@@ -56,6 +57,7 @@ export default function ChildShell({
   const [pinModal, setPinModal] = useState(false);
   const [income, setIncome] = useState(false);
   const [wish, setWish] = useState<WishDraft | null>(null);
+  const [withdraw, setWithdraw] = useState<{ l: LogEntry; name: string } | null>(null);
 
   const u = usersApi.users[au];
   // colori e nome mostrati alla figlia: quelli che ha scelto lei, se li ha scelti
@@ -67,6 +69,14 @@ export default function ChildShell({
   const todayDone = (actId: number) => usersApi.todayDone(au, actId);
   const periodDone = (a: Activity) => usersApi.periodDone(au, a);
   const unconfirmed = usersApi.unconfirmedAllowances(au);
+
+  /** Card "In attesa di approvazione": stessa in Home e in Attività. */
+  const pendingProps = {
+    log: u.log,
+    acts: actsApi.acts,
+    onEditNote: (logId: number, note: string) => usersApi.editLogNote(au, logId, note),
+    onWithdraw: (l: LogEntry, name: string) => setWithdraw({ l, name }),
+  };
 
   /** Apre il modale di completamento con quante volte resta ancora disponibile. */
   const openCompletion = (a: Activity, remaining: number) =>
@@ -110,6 +120,7 @@ export default function ChildShell({
       case "home":
         return (
           <HomeTab
+            pending={pendingProps}
             u={u}
             au={au}
             users={usersApi.users}
@@ -132,6 +143,7 @@ export default function ChildShell({
       case "act":
         return (
           <ActivitiesTab
+            pending={pendingProps}
             acts={actsApi.acts}
             grad={grad}
             tp={tp}
@@ -220,6 +232,20 @@ export default function ChildShell({
           grad={grad}
           onConfirm={confirmComp}
           onClose={() => setComp(null)}
+        />
+      )}
+      {withdraw && (
+        <ConfirmModal
+          title="Ritirare l'invio?"
+          message={
+            <>
+              "{withdraw.name}" del {withdraw.l.date} sparisce e l'admin non la vedrà. Potrai sempre segnarla di nuovo.
+            </>
+          }
+          confirmLabel="Ritira"
+          danger
+          onConfirm={() => usersApi.withdrawLog(au, withdraw.l.id)}
+          onClose={() => setWithdraw(null)}
         />
       )}
       {avatar && (

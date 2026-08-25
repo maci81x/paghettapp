@@ -49,6 +49,7 @@ const OPS = {
   createActivityLog: api.createActivityLog,
   approveLog: api.approveLog,
   rejectLog: api.rejectLog,
+  updateLogNote: api.updateLogNote,
   revokeLog: api.revokeLog,
   deleteLog: api.deleteLog,
   deductPoints: api.deductPoints,
@@ -470,6 +471,24 @@ export function useSupabase() {
   };
 
   /**
+   * Correzione della nota da parte della ragazza. Solo finché la voce è in
+   * attesa: dopo l'approvazione lo storico non si tocca più.
+   */
+  const editLogNote = async (uid: UserId, logId: number, note: string) => {
+    const entry = users[uid].log.find((l) => l.id === logId);
+    if (!entry || entry.ok || entry.revoked) return;
+    patch(uid, (u) => ({ ...u, log: u.log.map((l) => (l.id === logId ? { ...l, note } : l)) }));
+    await send("updateLogNote", [logId, note]);
+  };
+
+  /** Ritiro di un invio sbagliato da parte della ragazza, prima dell'approvazione. */
+  const withdrawLog = async (uid: UserId, logId: number) => {
+    const entry = users[uid].log.find((l) => l.id === logId);
+    if (!entry || entry.ok || entry.revoked) return;
+    await reject(uid, logId);
+  };
+
+  /**
    * Annulla un'approvazione già data: i punti escono dal totale e — se la voce
    * non è ancora stata pagata — anche dalla settimana in corso, perché
    * `weekPts` somma solo i log approvati e non saldati. Le missioni collegate
@@ -866,6 +885,8 @@ export function useSupabase() {
     addBonus,
     approve,
     reject,
+    editLogNote,
+    withdrawLog,
     revoke,
     delLog,
     deductPoints,

@@ -1,8 +1,10 @@
 import { useState } from "react";
+import type { ComponentProps } from "react";
 import { CATS, FREQ_UNIT, PERIOD_WORD, TODS } from "../../data/constants";
 import type { Activity, Tod } from "../../data/types";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
+import PendingApprovalCard from "./PendingApprovalCard";
 
 type PtsFilter = "all" | "low" | "mid" | "high";
 
@@ -15,6 +17,7 @@ const PTS_FILTERS: { k: PtsFilter; l: string }[] = [
 ];
 
 export default function ActivitiesTab({
+  pending,
   acts,
   grad,
   tp,
@@ -23,6 +26,8 @@ export default function ActivitiesTab({
   todayByTod,
   onMark,
 }: {
+  /** Card "In attesa di approvazione": condivisa con l'altra scheda. */
+  pending: ComponentProps<typeof PendingApprovalCard>;
   acts: Activity[];
   grad: string;
   tp: number;
@@ -54,6 +59,8 @@ export default function ActivitiesTab({
           <InfoTip text="Segna le attività completate. Indica quante volte e quando. ⚡ = Sfida con punti doppi!" />
         </div>
       </div>
+
+      <PendingApprovalCard {...pending} />
 
       <div style={{ display: "flex", gap: 3, overflowX: "auto", marginBottom: 6, paddingBottom: 3 }}>
         <Pill active={cat === "all"} onClick={() => setCat("all")} color={P.acc} s>

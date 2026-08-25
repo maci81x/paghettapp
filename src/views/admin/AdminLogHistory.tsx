@@ -7,6 +7,9 @@ import { fmtDay } from "../../utils/dates";
 
 type Range = "week" | "prev" | "month" | "all";
 
+/** Righe mostrate per volta: con "Tutto" lo storico cresce senza limite. */
+const PAGE = 30;
+
 const RANGES: { k: Range; l: string }[] = [
   { k: "week", l: "Questa settimana" },
   { k: "prev", l: "Settimana scorsa" },
@@ -69,6 +72,7 @@ export default function AdminLogHistory({
   onDeduct: () => void;
 }) {
   const [range, setRange] = useState<Range>("week");
+  const [shown, setShown] = useState(PAGE);
 
   const nameOf = (l: LogEntry) => MANUAL_ACT_LABEL[l.actId] ?? acts.find((a) => a.id === l.actId)?.name ?? "Attività eliminata";
 
@@ -98,7 +102,16 @@ export default function AdminLogHistory({
 
       <div style={{ display: "flex", gap: 3, overflowX: "auto", marginBottom: 8, paddingBottom: 3 }}>
         {RANGES.map((r) => (
-          <Pill key={r.k} active={range === r.k} onClick={() => setRange(r.k)} color={P.acc} s>
+          <Pill
+            key={r.k}
+            active={range === r.k}
+            onClick={() => {
+              setRange(r.k);
+              setShown(PAGE);
+            }}
+            color={P.acc}
+            s
+          >
             {r.l}
           </Pill>
         ))}
@@ -117,7 +130,7 @@ export default function AdminLogHistory({
       {rows.length === 0 ? (
         <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 12 }}>Nessuna voce in questo periodo</p>
       ) : (
-        rows.map((l) => {
+        rows.slice(0, shown).map((l) => {
           const name = nameOf(l);
           const st = statusOf(l);
           const manual = l.actId === BONUS_ACT || l.actId === DEDUCT_ACT;
@@ -156,6 +169,14 @@ export default function AdminLogHistory({
             </div>
           );
         })
+      )}
+
+      {rows.length > shown && (
+        <div style={{ marginTop: 10 }}>
+          <Btn full outline color={P.acc} onClick={() => setShown((n) => n + PAGE)}>
+            Mostra altre {Math.min(PAGE, rows.length - shown)} · {rows.length - shown} rimaste
+          </Btn>
+        </div>
       )}
     </GlassCard>
   );

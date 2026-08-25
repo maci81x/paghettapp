@@ -412,6 +412,10 @@ export const approveLog = (logId: number) =>
 
 export const rejectLog = (logId: number) => wrap<LogRow[]>(supabase.from("activity_logs").delete().eq("id", logId).select());
 
+/** Correzione della nota da parte della ragazza, finché la voce è in attesa. */
+export const updateLogNote = (logId: number, note: string) =>
+  wrap<LogRow[]>(supabase.from("activity_logs").update({ note }).eq("id", logId).select());
+
 /**
  * Riallinea `users.total_pts` alla somma dei punti approvati.
  * Il totale è un contatore incrementale: dopo un annullamento o

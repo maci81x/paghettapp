@@ -122,6 +122,17 @@ export const MAX_LABEL: Record<Freq, string> = {
 
 export const FREQ_UNIT: Record<Freq, string> = { daily: "giorno", weekly: "settimana", monthly: "mese" };
 
+/** Ordine di lettura delle frequenze: prima ciò che torna ogni giorno. */
+const FREQ_ORDER: Record<Freq, number> = { daily: 0, weekly: 1, monthly: 2 };
+
+/**
+ * Ordine con cui l'admin scorre le attività: frequenza come chiave principale,
+ * penalità più pesante come secondaria (l'id spezza i pari, così l'elenco non
+ * cambia da un render all'altro).
+ */
+export const byFreqThenPenalty = (a: Activity, b: Activity) =>
+  FREQ_ORDER[a.freq] - FREQ_ORDER[b.freq] || a.pen - b.pen || a.id - b.id;
+
 /** Split fisso della paghetta. */
 export const SPLIT: Record<Fund, number> = { risparmio: 0.3, personale: 0.6, beneficenza: 0.1 };
 

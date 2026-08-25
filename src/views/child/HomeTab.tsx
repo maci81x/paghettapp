@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ComponentProps } from "react";
 import {
   BONUS_ACT,
   CATS,
@@ -22,6 +23,7 @@ import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
 import { userColor, userName } from "../../design/theme";
 import { P, alpha, gls } from "../../design/tokens";
 import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
+import PendingApprovalCard from "./PendingApprovalCard";
 import { fmtDay } from "../../utils/dates";
 
 const FUND_HOME_LABEL: Record<Fund, string> = {
@@ -31,6 +33,7 @@ const FUND_HOME_LABEL: Record<Fund, string> = {
 };
 
 export default function HomeTab({
+  pending,
   u,
   au,
   users,
@@ -49,6 +52,8 @@ export default function HomeTab({
   onIncome,
   onSpesa,
 }: {
+  /** Card "In attesa di approvazione": condivisa con l'altra scheda. */
+  pending: ComponentProps<typeof PendingApprovalCard>;
   u: User;
   au: UserId;
   users: Users;
@@ -130,6 +135,8 @@ export default function HomeTab({
           <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>🔥 {u.streak} giorni di fila</p>
         </div>
       </div>
+
+      <PendingApprovalCard {...pending} />
 
       {toConfirm && (
         <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.gold, 12)},transparent)`, border: `1.5px solid ${alpha(P.gold, 33)}` }}>
