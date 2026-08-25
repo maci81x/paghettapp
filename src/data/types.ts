@@ -18,6 +18,8 @@ export interface Category {
 export interface Activity {
   id: number;
   name: string;
+  /** Emoji propria dell'attività; senza, vale quella della categoria. */
+  emoji?: string;
   cat: string;
   pts: number;
   pen: number;
@@ -249,6 +251,7 @@ export interface ActivityDraft {
   mode: "add" | "edit";
   id?: number;
   name: string;
+  emoji: string;
   cat: string;
   pts: number;
   pen: number;

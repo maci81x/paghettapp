@@ -10,7 +10,17 @@ export const CATS: Category[] = [
   { id: "scuola", n: "Scuola", i: "📚", c: "#3b82f6" },
   { id: "lingue", n: "Lingue", i: "🌍", c: "#14b8a6" },
   { id: "salute", n: "Salute", i: "🥗", c: "#22c55e" },
+  { id: "crescita", n: "Crescita", i: "🌱", c: "#a78bfa" },
+  { id: "studio", n: "Studio", i: "📝", c: "#0ea5e9" },
+  { id: "famiglia", n: "Famiglia", i: "👨‍👩‍👧‍👧", c: "#fb7185" },
 ];
+
+/**
+ * Icona di un'attività: quella sua, se ce l'ha, altrimenti quella della
+ * categoria. La colonna `emoji` esisteva già sul database ma non veniva mai
+ * letta, quindi tutte le attività di una categoria si somigliavano.
+ */
+export const actIcon = (a: { emoji?: string; cat: string }) => a.emoji?.trim() || CATS.find((c) => c.id === a.cat)?.i || "⭐";
 
 export const INIT_ACTS: Activity[] = [
   { id: 1, name: "Rifarsi il letto", cat: "casa", pts: 3, pen: -5, freq: "daily", max: 1, ch: 0 },

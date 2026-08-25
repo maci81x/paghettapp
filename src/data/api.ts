@@ -161,6 +161,7 @@ export interface InvRow {
 export const toActivity = (r: ActRow): Activity => ({
   id: r.id,
   name: r.name,
+  emoji: r.emoji || undefined,
   cat: r.category,
   pts: r.points,
   pen: r.penalty ?? 0,
@@ -361,6 +362,7 @@ export const createActivity = (a: Omit<Activity, "id">) =>
         strip(
           {
             name: a.name,
+            emoji: a.emoji || "⭐",
             category: a.cat,
             points: a.pts,
             frequency: a.freq,
@@ -384,6 +386,7 @@ export const updateActivity = (id: number, a: Omit<Activity, "id">) =>
         strip(
           {
             name: a.name,
+            emoji: a.emoji || "⭐",
             category: a.cat,
             points: a.pts,
             frequency: a.freq,

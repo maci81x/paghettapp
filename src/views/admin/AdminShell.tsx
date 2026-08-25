@@ -141,12 +141,13 @@ export default function AdminShell({
           return (
             <AdminActivitiesTab
               acts={actsApi.acts}
-              onNew={() => setActDraft({ mode: "add", name: "", cat: "casa", pts: 3, pen: 0, freq: "daily", max: 1, ch: 0, duration: "" })}
+              onNew={() => setActDraft({ mode: "add", name: "", emoji: "", cat: "casa", pts: 3, pen: 0, freq: "daily", max: 1, ch: 0, duration: "" })}
               onEdit={(a) =>
                 setActDraft({
                   mode: "edit",
                   id: a.id,
                   name: a.name,
+                  emoji: a.emoji ?? "",
                   cat: a.cat,
                   pts: a.pts,
                   pen: a.pen,

@@ -475,6 +475,7 @@ export function useSupabase() {
     const n = parseInt(d.duration, 10);
     return {
       name: d.name.trim(),
+      emoji: d.emoji.trim() || undefined,
       cat: d.cat || "casa",
       pts: d.pts || 3,
       pen: d.pen || 0,

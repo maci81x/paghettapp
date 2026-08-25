@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATS, FREQ_UNIT, byFreqThenPenalty } from "../../data/constants";
+import { CATS, FREQ_UNIT, actIcon, byFreqThenPenalty } from "../../data/constants";
 import type { Activity } from "../../data/types";
 import { Btn, GlassCard, Pill } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
@@ -124,7 +124,6 @@ export default function AdminActivitiesTab({
       </div>
 
       {shown.map((a) => {
-        const cat = CATS.find((c) => c.id === a.cat);
         const checked = sel.includes(a.id);
         const pen = hasPen(a);
         return (
@@ -153,7 +152,7 @@ export default function AdminActivitiesTab({
             )}
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13 }}>{cat?.i}</span>
+                <span style={{ fontSize: 13 }}>{actIcon(a)}</span>
                 <span style={{ color: pen ? P.gold : P.tx, fontSize: 12, fontWeight: 600 }}>
                   {pen ? "⚠️ " : ""}
                   {a.name}

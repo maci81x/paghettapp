@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ComponentProps } from "react";
-import { CATS, FREQ_UNIT, PERIOD_WORD, TODS } from "../../data/constants";
+import { CATS, FREQ_UNIT, PERIOD_WORD, TODS, actIcon } from "../../data/constants";
 import type { Activity, Tod } from "../../data/types";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
@@ -82,7 +82,6 @@ export default function ActivitiesTab({
       </div>
 
       {filtered.map((a) => {
-        const c = CATS.find((x) => x.id === a.cat);
         const done = todayDone(a.id);
         const inPeriod = periodDone(a);
         const byTod = todayByTod(a.id);
@@ -91,7 +90,7 @@ export default function ActivitiesTab({
           <GlassCard key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", opacity: full ? 0.45 : 1, padding: 12 }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 14 }}>{c?.i}</span>
+                <span style={{ fontSize: 14 }}>{actIcon(a)}</span>
                 <span style={{ color: P.tx, fontSize: 12, fontWeight: 600 }}>{a.name}</span>
                 {a.ch ? <span style={{ background: alpha(P.gold, 13), color: P.gold, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>⚡</span> : null}
                 <span style={{ background: P.glass, color: P.tx3, padding: "1px 6px", borderRadius: 5, fontSize: 8 }}>{FREQ_SHORT[a.freq]}</span>

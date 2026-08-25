@@ -17,8 +17,17 @@ export default function ActivityEditModal({
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 12px" }}>{draft.mode === "add" ? "Nuova Attività" : "Modifica Attività"}</h3>
-      <Label>Nome</Label>
-      <Input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} style={{ marginBottom: 8 }} />
+      <Label>Emoji e nome</Label>
+      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+        <Input
+          value={draft.emoji}
+          maxLength={2}
+          placeholder="⭐"
+          onChange={(e) => setDraft((d) => ({ ...d, emoji: e.target.value }))}
+          style={{ width: 52, textAlign: "center", fontSize: 18, flexShrink: 0 }}
+        />
+        <Input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
         <div>
           <Label>Categoria</Label>
