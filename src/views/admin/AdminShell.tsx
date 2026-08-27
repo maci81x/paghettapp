@@ -317,6 +317,7 @@ export default function AdminShell({
         <ActivityPenaltyModal
           who={users[penaltyFor].n}
           acts={actsApi.acts}
+          doneToday={(actId) => usersApi.todayDone(penaltyFor, actId)}
           onSave={(act, note) => {
             usersApi.penalizeActivity(penaltyFor, act.id, act.pen, note);
             setPenaltyFor(null);

@@ -325,6 +325,9 @@ export default function HomeTab({
                     {cat?.i} {a.name}
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {/* `todo` contiene solo le attività non ancora segnate oggi:
+                        appena la segni sparisce di qui, avviso penalità compreso */}
+                    {a.pen < 0 && <span style={{ color: P.red, fontSize: 10, fontWeight: 700 }}>⚠️ {a.pen}pt</span>}
                     <span style={{ color: P.mint, fontWeight: 700 }}>+{a.pts}pt</span>
                     <span style={{ color: uc, fontSize: 10, fontWeight: 700 }}>✅ Fatto!</span>
                   </span>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATS, FREQ_UNIT, actIcon, byFreqThenPenalty } from "../../data/constants";
+import { FREQ_UNIT, actIcon, byFreqThenPenalty } from "../../data/constants";
 import type { Activity } from "../../data/types";
 import { Btn, GlassCard, Pill } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
@@ -29,6 +29,42 @@ const matches = (a: Activity, f: Filter) => {
   }
 };
 
+/** Icona-azione della riga: resta cliccabile anche in modalità selezione. */
+function RowAction({
+  icon,
+  title,
+  disabled,
+  onClick,
+}: {
+  icon: string;
+  title: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      title={title}
+      disabled={disabled}
+      // la card intera seleziona: qui fermo la propagazione o un tap su ✏️ spunterebbe la riga
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      style={{
+        background: "none",
+        border: "none",
+        fontSize: 15,
+        lineHeight: 1,
+        padding: "5px 3px",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.3 : 1,
+      }}
+    >
+      {icon}
+    </button>
+  );
+}
+
 export default function AdminActivitiesTab({
   acts,
   canHide,
@@ -52,11 +88,8 @@ export default function AdminActivitiesTab({
 }) {
   const [filter, setFilter] = useState<Filter>("visible");
 
-  const penalties = acts.filter(hasPen).sort((a, b) => a.pen - b.pen);
-  // la card in cima parte aperta solo quando c'è davvero qualcosa da guardare
-  const [openPen, setOpenPen] = useState(penalties.length > 0);
-
   const hiddenCount = acts.filter((a) => a.hidden).length;
+  const penCount = acts.filter(hasPen).length;
 
   // frequenza come chiave principale, penalità più pesante come secondaria
   const shown = acts
@@ -73,66 +106,62 @@ export default function AdminActivitiesTab({
 
   return (
     <div>
-      <GlassCard
-        style={{
-          background: penalties.length > 0 ? `linear-gradient(135deg,${alpha(P.gold, 8)},transparent)` : undefined,
-          border: penalties.length > 0 ? `1.5px solid ${alpha(P.gold, 22)}` : undefined,
-          padding: 12,
-        }}
-      >
+      {s.selecting && (
         <div
-          onClick={() => setOpenPen((v) => !v)}
-          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 5,
+            background: P.bg,
+            borderBottom: `1px solid ${P.gb}`,
+            padding: "8px 0 10px",
+            marginBottom: 8,
+          }}
         >
-          <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>⚠️ Attività con penalità</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ background: alpha(P.gold, 13), color: P.gold, borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>
-              {penalties.length}
-            </span>
-            <span style={{ color: P.tx3, fontSize: 11 }}>{openPen ? "▲" : "▼"}</span>
-          </div>
-        </div>
-        {openPen &&
-          (penalties.length === 0 ? (
-            <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: "10px 0 2px", margin: 0 }}>Nessuna attività con penalità</p>
-          ) : (
-            <div style={{ marginTop: 8 }}>
-              {penalties.map((a) => (
-                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", fontSize: 11 }}>
-                  <span style={{ color: P.tx, opacity: a.hidden ? 0.5 : 1 }}>
-                    {a.hidden ? "🙈 " : ""}
-                    {CATS.find((c) => c.id === a.cat)?.i} {a.name}
-                  </span>
-                  <span style={{ color: P.gold, fontWeight: 800 }}>{a.pen}pt</span>
-                </div>
-              ))}
-            </div>
-          ))}
-      </GlassCard>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>{s.selecting ? `${s.count} selezionate` : `${shown.length} attività`}</span>
-        <div style={{ display: "flex", gap: 6 }}>
-          {s.selecting ? (
-            <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            <span style={{ color: P.tx, fontWeight: 700, fontSize: 13 }}>{s.count} selezionate</span>
+            <div style={{ display: "flex", gap: 6 }}>
               <Btn small outline color={P.blue} onClick={s.toggleAll}>
                 {s.allSelected ? "Deseleziona tutte" : "Seleziona tutte"}
               </Btn>
               <Btn small outline color={P.tx3} onClick={s.exit}>
                 Annulla
               </Btn>
-            </>
-          ) : (
-            <>
-              <Btn small outline color={P.acc} onClick={s.start} disabled={shown.length === 0}>
-                ☑️ Seleziona
-              </Btn>
-              <Btn small grad={P.accG} onClick={onNew}>
-                + Nuova
-              </Btn>
-            </>
-          )}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <Btn
+              style={{ flex: 1 }}
+              small
+              outline
+              color={P.acc}
+              disabled={s.count === 0 || !canHide}
+              onClick={() => s.runOnSelection((ids) => onToggleHiddenMany(ids, !showRatherThanHide))}
+            >
+              {showRatherThanHide ? `👁️ Mostra (${s.count})` : `🙈 Nascondi (${s.count})`}
+            </Btn>
+            <Btn style={{ flex: 1 }} small color={P.red} disabled={s.count === 0} onClick={() => s.runOnSelection(onDeleteMany)}>
+              🗑️ Elimina ({s.count})
+            </Btn>
+          </div>
         </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>
+          {shown.length} attività
+          {penCount > 0 && filter !== "penalty" && <span style={{ color: P.gold, fontSize: 11, fontWeight: 600 }}> · ⚠️ {penCount} con penalità</span>}
+        </span>
+        {!s.selecting && (
+          <div style={{ display: "flex", gap: 6 }}>
+            <Btn small outline color={P.acc} onClick={s.start} disabled={shown.length === 0}>
+              ☑️ Seleziona
+            </Btn>
+            <Btn small grad={P.accG} onClick={onNew}>
+              + Nuova
+            </Btn>
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", gap: 3, overflowX: "auto", marginBottom: 10, paddingBottom: 3 }}>
@@ -140,6 +169,7 @@ export default function AdminActivitiesTab({
           <Pill key={f.k} active={filter === f.k} onClick={() => setFilter(f.k)} color={f.c} s>
             {f.l}
             {f.k === "hidden" && hiddenCount > 0 ? ` (${hiddenCount})` : ""}
+            {f.k === "penalty" && penCount > 0 ? ` (${penCount})` : ""}
           </Pill>
         ))}
       </div>
@@ -166,7 +196,8 @@ export default function AdminActivitiesTab({
               padding: 12,
               cursor: s.selecting ? "pointer" : undefined,
               opacity: off ? 0.5 : 1,
-              border: s.selecting && checked ? `1px solid ${alpha(P.acc, 40)}` : pen && !off ? `1px solid ${alpha(P.gold, 22)}` : undefined,
+              // il bordo ambra segnala la penalità; la selezione ha la precedenza
+              border: s.selecting && checked ? `1px solid ${alpha(P.acc, 40)}` : pen && !off ? `1px solid ${alpha(P.gold, 30)}` : undefined,
               background: s.selecting && checked ? alpha(P.acc, 7) : off ? alpha(P.tx3, 6) : pen ? alpha(P.gold, 4) : undefined,
             }}
           >
@@ -179,15 +210,12 @@ export default function AdminActivitiesTab({
                 style={{ width: 17, height: 17, accentColor: P.acc, flexShrink: 0, cursor: "pointer" }}
               />
             )}
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13 }}>{actIcon(a)}</span>
-                <span style={{ color: pen && !off ? P.gold : P.tx, fontSize: 12, fontWeight: 600, textDecoration: off ? "line-through" : undefined }}>
-                  {pen ? "⚠️ " : ""}
-                  {a.name}
-                </span>
+                <span style={{ color: P.tx, fontSize: 12, fontWeight: 600, textDecoration: off ? "line-through" : undefined }}>{a.name}</span>
                 {pen && (
-                  <span style={{ background: alpha(P.gold, 13), color: P.gold, padding: "1px 5px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
+                  <span style={{ background: alpha(P.red, 14), color: P.red, padding: "1px 5px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
                     {a.pen}pt
                   </span>
                 )}
@@ -201,54 +229,22 @@ export default function AdminActivitiesTab({
                 {a.duration ? ` · ⏱ ${a.duration}min` : ""}
               </span>
             </div>
-            {!s.selecting && (
-              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <button
-                  onClick={() => onToggleHidden(a)}
-                  disabled={!canHide}
-                  title={off ? "Mostra alle ragazze" : "Nascondi alle ragazze"}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 16,
-                    lineHeight: 1,
-                    padding: "4px 2px",
-                    cursor: canHide ? "pointer" : "default",
-                    opacity: canHide ? 1 : 0.3,
-                  }}
-                >
-                  {off ? "👁️‍🗨️" : "👁️"}
-                </button>
-                <Btn small color={P.blue} onClick={() => onEdit(a)}>
-                  ✏️
-                </Btn>
-                <Btn small color={P.red} onClick={() => onDelete(a)}>
-                  🗑
-                </Btn>
-              </div>
-            )}
+            {/* sempre visibili, anche durante la selezione multipla */}
+            <div style={{ display: "flex", gap: 2, flexShrink: 0, alignItems: "center" }}>
+              <RowAction icon="✏️" title="Modifica" onClick={() => onEdit(a)} />
+              <RowAction
+                icon={off ? "👁️‍🗨️" : "👁️"}
+                title={off ? "Mostra alle ragazze" : "Nascondi alle ragazze"}
+                disabled={!canHide}
+                onClick={() => onToggleHidden(a)}
+              />
+              <RowAction icon="🗑️" title="Elimina" onClick={() => onDelete(a)} />
+            </div>
           </GlassCard>
         );
       })}
 
       {shown.length === 0 && <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 16 }}>Nessuna attività con questo filtro</p>}
-
-      {s.selecting && (
-        <div style={{ position: "sticky", bottom: 8, marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-          <Btn
-            full
-            outline
-            color={P.acc}
-            disabled={s.count === 0 || !canHide}
-            onClick={() => s.runOnSelection((ids) => onToggleHiddenMany(ids, !showRatherThanHide))}
-          >
-            {showRatherThanHide ? `👁️ Mostra selezionate (${s.count})` : `🙈 Nascondi selezionate (${s.count})`}
-          </Btn>
-          <Btn full color={P.red} disabled={s.count === 0} onClick={() => s.runOnSelection(onDeleteMany)}>
-            🗑️ Elimina selezionate ({s.count})
-          </Btn>
-        </div>
-      )}
     </div>
   );
 }

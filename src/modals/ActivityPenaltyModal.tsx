@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CATS, actIcon } from "../data/constants";
+import { isPenalizable, penalizableToday, withPenalty } from "../data/penalty";
 import type { Activity } from "../data/types";
 import { Btn, Label, Modal, TextArea } from "../design/components";
 import { P, alpha } from "../design/tokens";
@@ -12,20 +13,25 @@ import { P, alpha } from "../design/tokens";
 export default function ActivityPenaltyModal({
   who,
   acts,
+  doneToday,
   onSave,
   onClose,
 }: {
   who: string;
   acts: Activity[];
+  /** Quante volte la figlia ha già segnato l'attività oggi. */
+  doneToday: (actId: number) => number;
   onSave: (act: Activity, note: string) => void;
   onClose: () => void;
 }) {
   const [pick, setPick] = useState<Activity | null>(null);
   const [note, setNote] = useState("");
 
-  const withPenalty = acts.filter((a) => a.pen < 0);
+  const penalizzabili = withPenalty(acts);
+  const addebitabili = penalizableToday(acts, doneToday);
+  const isDone = (a: Activity) => !isPenalizable(a, doneToday(a.id));
 
-  if (withPenalty.length === 0) {
+  if (penalizzabili.length === 0) {
     return (
       <Modal onClose={onClose}>
         <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 8px" }}>⚠️ Addebita penalità</h3>
@@ -74,31 +80,45 @@ export default function ActivityPenaltyModal({
       <Label>Nota (facoltativa)</Label>
       <TextArea rows={2} placeholder="Non fatto lunedì…" value={note} onChange={(e) => setNote(e.target.value)} style={{ marginBottom: 10 }} />
 
+      {addebitabili.length === 0 && (
+        <p style={{ fontSize: 11, color: P.mint, lineHeight: 1.5, margin: "0 0 10px" }}>
+          🎉 {who} ha già fatto oggi tutte le attività con penalità: non c'è niente da addebitare.
+        </p>
+      )}
+
       <div style={{ maxHeight: 260, overflow: "auto" }}>
-        {withPenalty.map((a) => (
-          <div
-            key={a.id}
-            onClick={() => setPick(a)}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 10px",
-              marginBottom: 5,
-              borderRadius: 10,
-              cursor: "pointer",
-              background: alpha(P.red, 6),
-              border: `1px solid ${alpha(P.red, 18)}`,
-            }}
-          >
-            <span style={{ color: P.tx, fontSize: 12, fontWeight: 600 }}>
-              {actIcon(a)} {a.name}
-              <span style={{ color: P.tx3, fontSize: 9, fontWeight: 500 }}> · {CATS.find((c) => c.id === a.cat)?.n ?? a.cat}</span>
-            </span>
-            <span style={{ color: P.red, fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{a.pen}pt</span>
-          </div>
-        ))}
+        {penalizzabili.map((a) => {
+          const done = isDone(a);
+          return (
+            <div
+              key={a.id}
+              onClick={done ? undefined : () => setPick(a)}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                marginBottom: 5,
+                borderRadius: 10,
+                cursor: done ? "default" : "pointer",
+                opacity: done ? 0.45 : 1,
+                background: done ? alpha(P.tx3, 6) : alpha(P.red, 6),
+                border: `1px solid ${done ? alpha(P.tx3, 18) : alpha(P.red, 18)}`,
+              }}
+            >
+              <span style={{ color: P.tx, fontSize: 12, fontWeight: 600, textDecoration: done ? "line-through" : undefined }}>
+                {actIcon(a)} {a.name}
+                <span style={{ color: P.tx3, fontSize: 9, fontWeight: 500 }}> · {CATS.find((c) => c.id === a.cat)?.n ?? a.cat}</span>
+              </span>
+              {done ? (
+                <span style={{ color: P.mint, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>già completata oggi</span>
+              ) : (
+                <span style={{ color: P.red, fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{a.pen}pt</span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <Btn full outline color={P.tx3} style={{ marginTop: 8 }} onClick={onClose}>

@@ -104,7 +104,13 @@ export default function ActivitiesTab({
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 10, color: P.mint }}>+{a.pts}pt</span>
                 {a.duration ? <span style={{ fontSize: 10, color: P.gold }}>⏱ {a.duration}min</span> : null}
-                {a.pen < 0 && <span style={{ fontSize: 10, color: P.red }}>{a.pen}pt</span>}
+                {/* fatta oggi = penalità non addebitabile: non ha senso continuare a minacciarla */}
+                {a.pen < 0 &&
+                  (done > 0 ? (
+                    <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>✅ nessun rischio</span>
+                  ) : (
+                    <span style={{ fontSize: 10, color: P.red }}>⚠️ {a.pen}pt se non la fai</span>
+                  ))}
                 <span style={{ fontSize: 10, color: P.tx3 }}>
                   ×{a.max}/{FREQ_UNIT[a.freq]}
                 </span>
