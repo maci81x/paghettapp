@@ -6,6 +6,7 @@ import type { Range } from "../../data/movements";
 import { RANGES, inRange } from "../../data/movements";
 import type { Activity, Mission, UserId, Users } from "../../data/types";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
+import { useSelection } from "../../hooks/useSelection";
 import { P, alpha } from "../../design/tokens";
 import { fmtDay } from "../../utils/dates";
 
@@ -25,6 +26,8 @@ export default function AdminMissionsTab({
   onBump,
   canHide,
   onToggleHidden,
+  onToggleHiddenMany,
+  onDeleteMany,
 }: {
   users: Users;
   acts: Activity[];
@@ -38,6 +41,9 @@ export default function AdminMissionsTab({
   /** false finché la migrazione `missions_hidden` non è applicata. */
   canHide: boolean;
   onToggleHidden: (m: Mission) => void;
+  onToggleHiddenMany: (ids: number[], hidden: boolean) => void;
+  /** Chiede conferma ed elimina: false se l'admin annulla. */
+  onDeleteMany: (ids: number[]) => boolean;
 }) {
   const [range, setRange] = useState<Range>("all");
 
@@ -56,6 +62,13 @@ export default function AdminMissionsTab({
   const active = rows.filter((r) => r.state === "active");
   const closed = rows.filter((r) => r.state !== "active");
 
+  // la selezione multipla lavora sulle missioni in corso: lo storico non si tocca in blocco
+  const s = useSelection(active.map(({ m }) => m));
+
+  // se ho selezionato solo missioni già nascoste, il pulsante utile è "mostra"
+  const pickedHidden = active.filter(({ m }) => s.isPicked(m.id) && m.hidden).length;
+  const showRatherThanHide = s.count > 0 && pickedHidden === s.count;
+
   /** Della missione conclusa conta il giorno del premio; se manca, la scadenza. */
   const closedDate = (m: Mission) => Object.values(m.completedBy ?? {})[0] ?? m.deadline ?? "";
   const closedInRange = closed.filter(({ m }) => range === "all" || inRange(closedDate(m), range));
@@ -65,7 +78,7 @@ export default function AdminMissionsTab({
     return a ? `${CATS.find((c) => c.id === a.cat)?.i ?? ""} ${a.name}` : null;
   };
 
-  const Card = ({ m, state }: { m: Mission; state: MissionState }) => {
+  const Card = ({ m, state, pickable = false }: { m: Mission; state: MissionState; pickable?: boolean }) => {
     const style = STATE_STYLE[state];
     const off = !!m.hidden;
     const manual = (m.actIds ?? []).length === 0;
@@ -73,8 +86,26 @@ export default function AdminMissionsTab({
     const left = m.deadline ? daysLeft(m.deadline) : null;
 
     return (
-      <GlassCard style={{ padding: 12, opacity: off ? 0.5 : 1, background: off ? alpha(P.tx3, 6) : undefined }}>
+      <GlassCard
+        onClick={pickable && s.selecting ? () => s.toggle(m.id) : undefined}
+        style={{
+          padding: 12,
+          opacity: off ? 0.5 : 1,
+          cursor: pickable && s.selecting ? "pointer" : undefined,
+          border: pickable && s.selecting && s.isPicked(m.id) ? `1px solid ${alpha(P.acc, 40)}` : undefined,
+          background: pickable && s.selecting && s.isPicked(m.id) ? alpha(P.acc, 7) : off ? alpha(P.tx3, 6) : undefined,
+        }}
+      >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+          {pickable && s.selecting && (
+            <input
+              type="checkbox"
+              checked={s.isPicked(m.id)}
+              onChange={() => s.toggle(m.id)}
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: 17, height: 17, accentColor: P.acc, flexShrink: 0, cursor: "pointer", marginTop: 2 }}
+            />
+          )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: 0, textDecoration: off ? "line-through" : undefined }}>
               {m.emoji || "🎯"} {m.name}
@@ -108,7 +139,7 @@ export default function AdminMissionsTab({
               )}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center", visibility: pickable && s.selecting ? "hidden" : undefined }}>
             <button
               onClick={() => onToggleHidden(m)}
               disabled={!canHide}
@@ -188,15 +219,50 @@ export default function AdminMissionsTab({
           {active.length} in corso
           <InfoTip text="I punti arrivano da soli quando il progresso tocca l'obiettivo: in squadra a entrambe, da sole a chi ha finito." />
         </span>
-        <Btn small grad={P.accG} onClick={onNew}>
-          + Nuova
-        </Btn>
+        <div style={{ display: "flex", gap: 6 }}>
+          {s.selecting ? (
+            <>
+              <Btn small outline color={P.blue} onClick={s.toggleAll}>
+                {s.allSelected ? "Deseleziona tutte" : "Seleziona tutte"}
+              </Btn>
+              <Btn small outline color={P.tx3} onClick={s.exit}>
+                Annulla
+              </Btn>
+            </>
+          ) : (
+            <>
+              <Btn small outline color={P.acc} onClick={s.start} disabled={active.length === 0}>
+                ☑️ Seleziona
+              </Btn>
+              <Btn small grad={P.accG} onClick={onNew}>
+                + Nuova
+              </Btn>
+            </>
+          )}
+        </div>
       </div>
 
       {active.length === 0 ? (
         <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 12 }}>Nessuna missione in corso</p>
       ) : (
-        active.map(({ m, state }) => <Card key={m.id} m={m} state={state} />)
+        active.map(({ m, state }) => <Card key={m.id} m={m} state={state} pickable />)
+      )}
+
+      {s.selecting && (
+        <div style={{ position: "sticky", bottom: 8, marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+          <Btn
+            full
+            outline
+            color={P.acc}
+            disabled={s.count === 0 || !canHide}
+            onClick={() => s.runOnSelection((ids) => onToggleHiddenMany(ids, !showRatherThanHide))}
+          >
+            {showRatherThanHide ? `👁️ Mostra selezionate (${s.count})` : `🙈 Nascondi selezionate (${s.count})`}
+          </Btn>
+          <Btn full color={P.red} disabled={s.count === 0} onClick={() => s.runOnSelection(onDeleteMany)}>
+            🗑️ Elimina selezionate ({s.count})
+          </Btn>
+        </div>
       )}
 
       {closed.length > 0 && (

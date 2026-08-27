@@ -3,6 +3,7 @@ import { CATS, FREQ_UNIT, actIcon, byFreqThenPenalty } from "../../data/constant
 import type { Activity } from "../../data/types";
 import { Btn, GlassCard, Pill } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
+import { useSelection } from "../../hooks/useSelection";
 
 const hasPen = (a: Activity) => a.pen < 0;
 
@@ -36,6 +37,7 @@ export default function AdminActivitiesTab({
   onDelete,
   onDeleteMany,
   onToggleHidden,
+  onToggleHiddenMany,
 }: {
   acts: Activity[];
   /** false finché la migrazione `activities_hidden` non è applicata. */
@@ -46,9 +48,8 @@ export default function AdminActivitiesTab({
   /** Chiede conferma ed elimina: true se l'eliminazione è avvenuta. */
   onDeleteMany: (ids: number[]) => boolean;
   onToggleHidden: (a: Activity) => void;
+  onToggleHiddenMany: (ids: number[], hidden: boolean) => void;
 }) {
-  const [selecting, setSelecting] = useState(false);
-  const [sel, setSel] = useState<number[]>([]);
   const [filter, setFilter] = useState<Filter>("visible");
 
   const penalties = acts.filter(hasPen).sort((a, b) => a.pen - b.pen);
@@ -63,22 +64,12 @@ export default function AdminActivitiesTab({
     .slice()
     .sort(byFreqThenPenalty);
 
-  const allSelected = shown.length > 0 && shown.every((a) => sel.includes(a.id));
-
-  const exit = () => {
-    setSelecting(false);
-    setSel([]);
-  };
-
-  const toggle = (id: number) => setSel((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-
   // "tutte" vuol dire quelle che si vedono: con un filtro attivo il resto non si tocca
-  const toggleAll = () => setSel(allSelected ? [] : shown.map((a) => a.id));
+  const s = useSelection(shown);
 
-  const removeSelected = () => {
-    if (sel.length === 0) return;
-    if (onDeleteMany(sel)) exit();
-  };
+  // se ho selezionato solo roba già nascosta, il pulsante utile è "mostra"
+  const pickedHidden = shown.filter((a) => s.isPicked(a.id) && a.hidden).length;
+  const showRatherThanHide = s.count > 0 && pickedHidden === s.count;
 
   return (
     <div>
@@ -120,21 +111,21 @@ export default function AdminActivitiesTab({
       </GlassCard>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>{selecting ? `${sel.length} selezionate` : `${shown.length} attività`}</span>
+        <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>{s.selecting ? `${s.count} selezionate` : `${shown.length} attività`}</span>
         <div style={{ display: "flex", gap: 6 }}>
-          {selecting ? (
+          {s.selecting ? (
             <>
-              <Btn small outline color={P.blue} onClick={toggleAll}>
-                {allSelected ? "Deseleziona tutte" : "Seleziona tutte"}
+              <Btn small outline color={P.blue} onClick={s.toggleAll}>
+                {s.allSelected ? "Deseleziona tutte" : "Seleziona tutte"}
               </Btn>
-              <Btn small outline color={P.tx3} onClick={exit}>
+              <Btn small outline color={P.tx3} onClick={s.exit}>
                 Annulla
               </Btn>
             </>
           ) : (
             <>
-              <Btn small outline color={P.red} onClick={() => setSelecting(true)} disabled={shown.length === 0}>
-                🗑️ Seleziona
+              <Btn small outline color={P.acc} onClick={s.start} disabled={shown.length === 0}>
+                ☑️ Seleziona
               </Btn>
               <Btn small grad={P.accG} onClick={onNew}>
                 + Nuova
@@ -160,32 +151,32 @@ export default function AdminActivitiesTab({
       )}
 
       {shown.map((a) => {
-        const checked = sel.includes(a.id);
+        const checked = s.isPicked(a.id);
         const pen = hasPen(a);
         const off = !!a.hidden;
         return (
           <GlassCard
             key={a.id}
-            onClick={selecting ? () => toggle(a.id) : undefined}
+            onClick={s.selecting ? () => s.toggle(a.id) : undefined}
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               gap: 8,
               padding: 12,
-              cursor: selecting ? "pointer" : undefined,
+              cursor: s.selecting ? "pointer" : undefined,
               opacity: off ? 0.5 : 1,
-              border: selecting && checked ? `1px solid ${alpha(P.red, 40)}` : pen && !off ? `1px solid ${alpha(P.gold, 22)}` : undefined,
-              background: selecting && checked ? alpha(P.red, 7) : off ? alpha(P.tx3, 6) : pen ? alpha(P.gold, 4) : undefined,
+              border: s.selecting && checked ? `1px solid ${alpha(P.acc, 40)}` : pen && !off ? `1px solid ${alpha(P.gold, 22)}` : undefined,
+              background: s.selecting && checked ? alpha(P.acc, 7) : off ? alpha(P.tx3, 6) : pen ? alpha(P.gold, 4) : undefined,
             }}
           >
-            {selecting && (
+            {s.selecting && (
               <input
                 type="checkbox"
                 checked={checked}
-                onChange={() => toggle(a.id)}
+                onChange={() => s.toggle(a.id)}
                 onClick={(e) => e.stopPropagation()}
-                style={{ width: 17, height: 17, accentColor: P.red, flexShrink: 0, cursor: "pointer" }}
+                style={{ width: 17, height: 17, accentColor: P.acc, flexShrink: 0, cursor: "pointer" }}
               />
             )}
             <div style={{ flex: 1 }}>
@@ -210,7 +201,7 @@ export default function AdminActivitiesTab({
                 {a.duration ? ` · ⏱ ${a.duration}min` : ""}
               </span>
             </div>
-            {!selecting && (
+            {!s.selecting && (
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <button
                   onClick={() => onToggleHidden(a)}
@@ -242,10 +233,19 @@ export default function AdminActivitiesTab({
 
       {shown.length === 0 && <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 16 }}>Nessuna attività con questo filtro</p>}
 
-      {selecting && (
-        <div style={{ position: "sticky", bottom: 8, marginTop: 12 }}>
-          <Btn full color={P.red} onClick={removeSelected} disabled={sel.length === 0}>
-            🗑️ Elimina selezionate ({sel.length})
+      {s.selecting && (
+        <div style={{ position: "sticky", bottom: 8, marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+          <Btn
+            full
+            outline
+            color={P.acc}
+            disabled={s.count === 0 || !canHide}
+            onClick={() => s.runOnSelection((ids) => onToggleHiddenMany(ids, !showRatherThanHide))}
+          >
+            {showRatherThanHide ? `👁️ Mostra selezionate (${s.count})` : `🙈 Nascondi selezionate (${s.count})`}
+          </Btn>
+          <Btn full color={P.red} disabled={s.count === 0} onClick={() => s.runOnSelection(onDeleteMany)}>
+            🗑️ Elimina selezionate ({s.count})
           </Btn>
         </div>
       )}

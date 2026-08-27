@@ -139,13 +139,28 @@ export default function AdminShell({
     const tabBody = () => {
       switch (tab) {
         case "approve":
-          return <ApproveTab users={users} acts={actsApi.acts} onApprove={usersApi.approve} onReject={usersApi.reject} />;
+          return (
+            <ApproveTab
+              users={users}
+              acts={actsApi.acts}
+              onApprove={usersApi.approve}
+              onReject={usersApi.reject}
+              onApproveMany={usersApi.approveMany}
+              onRejectMany={(picks) => {
+                // rejectLog cancella le righe: senza conferma non si torna indietro
+                if (!confirm(`Rifiutare ${picks.length} attività? Le voci verranno cancellate, non è reversibile.`)) return false;
+                void usersApi.rejectMany(picks);
+                return true;
+              }}
+            />
+          );
         case "acts":
           return (
             <AdminActivitiesTab
               acts={actsApi.acts}
               canHide={actsApi.canHideActs}
               onToggleHidden={(a) => actsApi.toggleActHidden(a.id, !a.hidden)}
+              onToggleHiddenMany={(ids, hidden) => void actsApi.toggleActHiddenMany(ids, hidden)}
               onNew={() => setActDraft({ mode: "add", name: "", emoji: "", cat: "casa", pts: 3, pen: 0, freq: "daily", max: 1, ch: 0, duration: "" })}
               onEdit={(a) =>
                 setActDraft({
@@ -177,6 +192,12 @@ export default function AdminShell({
             <AdminMissionsTab
               canHide={usersApi.canHideMiss}
               onToggleHidden={(m) => usersApi.toggleMissHidden(m.id, !m.hidden)}
+              onToggleHiddenMany={(ids, hidden) => void usersApi.toggleMissHiddenMany(ids, hidden)}
+              onDeleteMany={(ids) => {
+                if (!confirm(`Eliminare ${ids.length} missioni? Non è reversibile.`)) return false;
+                void usersApi.delMissions(ids);
+                return true;
+              }}
               users={users}
               acts={actsApi.acts}
               awardsSupported={usersApi.missionAwardsSupported}

@@ -535,6 +535,14 @@ export function useSupabase() {
     await send("toggleActivityHidden", [id, hidden]);
   };
 
+  /** Nascondi/mostra in blocco: una sola scrittura sullo stato. */
+  const toggleActHiddenMany = async (ids: number[], hidden: boolean) => {
+    if (!api.schema.activityHidden || ids.length === 0) return;
+    const set = new Set(ids);
+    setActs((p) => p.map((a) => (set.has(a.id) ? { ...a, hidden } : a)));
+    for (const id of ids) await send("toggleActivityHidden", [id, hidden]);
+  };
+
   /** Eliminazione multipla: una sola scrittura sullo stato, una chiamata per attività. */
   const delActs = async (ids: number[]) => {
     if (ids.length === 0) return;
@@ -571,6 +579,57 @@ export function useSupabase() {
   const reject = async (uid: UserId, logId: number) => {
     patch(uid, (u) => ({ ...u, log: u.log.filter((l) => l.id !== logId) }));
     await send("rejectLog", [logId]);
+  };
+
+  /**
+   * Approvazione in blocco. I punti si sommano una volta sola per figlia e
+   * `total_pts` si scrive una volta sola alla fine: N approvazioni fanno N
+   * `approveLog` più al massimo due `updateUser`, non N.
+   */
+  const approveMany = async (picks: { uid: UserId; logId: number }[]) => {
+    const fresh = picks.filter(({ uid, logId }) => users[uid].log.some((l) => l.id === logId && !l.ok));
+    if (fresh.length === 0) return;
+
+    const gained = {} as Record<UserId, number>;
+    USER_IDS.forEach((uid) => {
+      gained[uid] = fresh
+        .filter((f) => f.uid === uid)
+        .reduce((s, f) => s + (users[uid].log.find((l) => l.id === f.logId)?.pts ?? 0), 0);
+    });
+
+    setUsers((p) => {
+      const next = { ...p };
+      USER_IDS.forEach((uid) => {
+        const ids = fresh.filter((f) => f.uid === uid).map((f) => f.logId);
+        if (ids.length === 0) return;
+        next[uid] = {
+          ...next[uid],
+          log: next[uid].log.map((l) => (ids.includes(l.id) ? { ...l, ok: true } : l)),
+          totalPts: next[uid].totalPts + gained[uid],
+        };
+      });
+      return next;
+    });
+
+    for (const { logId } of fresh) await send("approveLog", [logId]);
+    for (const uid of USER_IDS) {
+      if (gained[uid] !== 0) await send("updateUser", [uid, { total_pts: users[uid].totalPts + gained[uid] }]);
+    }
+  };
+
+  /** Rifiuto in blocco: `rejectLog` cancella la riga, quindi non è reversibile. */
+  const rejectMany = async (picks: { uid: UserId; logId: number }[]) => {
+    if (picks.length === 0) return;
+    setUsers((p) => {
+      const next = { ...p };
+      USER_IDS.forEach((uid) => {
+        const ids = picks.filter((f) => f.uid === uid).map((f) => f.logId);
+        if (ids.length === 0) return;
+        next[uid] = { ...next[uid], log: next[uid].log.filter((l) => !ids.includes(l.id)) };
+      });
+      return next;
+    });
+    for (const { logId } of picks) await send("rejectLog", [logId]);
   };
 
   /**
@@ -989,6 +1048,34 @@ export function useSupabase() {
     await send("toggleMissionHidden", [id, hidden]);
   };
 
+  /** Nascondi/mostra missioni in blocco. */
+  const toggleMissHiddenMany = async (ids: number[], hidden: boolean) => {
+    if (!api.schema.missionHidden || ids.length === 0) return;
+    const set = new Set(ids);
+    setUsers((p) => {
+      const next = { ...p };
+      USER_IDS.forEach((uid) => {
+        next[uid] = { ...next[uid], miss: next[uid].miss.map((m) => (set.has(m.id) ? { ...m, hidden } : m)) };
+      });
+      return next;
+    });
+    for (const id of ids) await send("toggleMissionHidden", [id, hidden]);
+  };
+
+  /** Eliminazione multipla di missioni: valgono per entrambe le figlie. */
+  const delMissions = async (ids: number[]) => {
+    if (ids.length === 0) return;
+    const set = new Set(ids);
+    setUsers((p) => {
+      const next = { ...p };
+      USER_IDS.forEach((uid) => {
+        next[uid] = { ...next[uid], miss: next[uid].miss.filter((m) => !set.has(m.id)) };
+      });
+      return next;
+    });
+    for (const id of ids) await send("deleteMission", [id]);
+  };
+
   /** L'id della missione è lo stesso per entrambe: la tolgo a tutte e due. */
   /**
    * Contatore manuale delle missioni senza attività collegate: senza questo
@@ -1180,10 +1267,13 @@ export function useSupabase() {
     delAct,
     delActs,
     toggleActHidden,
+    toggleActHiddenMany,
     addLog,
     addBonus,
     approve,
     reject,
+    approveMany,
+    rejectMany,
     editLogNote,
     withdrawLog,
     revoke,
@@ -1218,6 +1308,8 @@ export function useSupabase() {
     syncBadges,
     upsertMission,
     toggleMissHidden,
+    toggleMissHiddenMany,
+    delMissions,
     /** false finché la migrazione `missions_hidden` non è applicata. */
     canHideMiss: api.schema.missionHidden,
     delMission,
