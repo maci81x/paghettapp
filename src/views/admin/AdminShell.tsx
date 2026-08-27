@@ -144,6 +144,8 @@ export default function AdminShell({
           return (
             <AdminActivitiesTab
               acts={actsApi.acts}
+              canHide={actsApi.canHideActs}
+              onToggleHidden={(a) => actsApi.toggleActHidden(a.id, !a.hidden)}
               onNew={() => setActDraft({ mode: "add", name: "", emoji: "", cat: "casa", pts: 3, pen: 0, freq: "daily", max: 1, ch: 0, duration: "" })}
               onEdit={(a) =>
                 setActDraft({

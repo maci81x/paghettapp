@@ -54,6 +54,7 @@ const OPS = {
   createActivity: api.createActivity,
   updateActivity: api.updateActivity,
   deleteActivity: api.deleteActivity,
+  toggleActivityHidden: api.toggleActivityHidden,
   createActivityLog: api.createActivityLog,
   approveLog: api.approveLog,
   rejectLog: api.rejectLog,
@@ -280,7 +281,16 @@ export function useSupabase() {
   /* ── caricamento ── */
 
   const load = useCallback(async () => {
-    await Promise.all([api.probeSchema(), api.probePinRpc(), api.probeIncomeConfirm(), api.probeLogExtras(), api.probePiggyName(), api.probeMissionDone(), api.probeInterest()]);
+    await Promise.all([
+      api.probeSchema(),
+      api.probePinRpc(),
+      api.probeIncomeConfirm(),
+      api.probeLogExtras(),
+      api.probePiggyName(),
+      api.probeMissionDone(),
+      api.probeInterest(),
+      api.probeActivityHidden(),
+    ]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
@@ -470,6 +480,12 @@ export function useSupabase() {
 
   const findAct = (id: number) => acts.find((a) => a.id === id);
 
+  /**
+   * Attività proposte alle ragazze: le nascoste restano in `acts` — l'admin le
+   * vede e lo storico continua a risolverne il nome — ma spariscono da qui.
+   */
+  const visibleActs = acts.filter((a) => !a.hidden);
+
   /* ── attività ── */
 
   const draftToActivity = (d: ActivityDraft): Omit<Activity, "id"> => {
@@ -504,6 +520,17 @@ export function useSupabase() {
   const delAct = async (id: number) => {
     setActs((p) => p.filter((a) => a.id !== id));
     await send("deleteActivity", [id]);
+  };
+
+  /**
+   * Nasconde o rimostra un'attività: toggle rapido, senza conferma.
+   * Se la colonna non c'è ancora non tento nemmeno la scrittura, altrimenti
+   * finirebbe in coda offline a fallire per sempre.
+   */
+  const toggleActHidden = async (id: number, hidden: boolean) => {
+    if (!api.schema.activityHidden) return;
+    setActs((p) => p.map((a) => (a.id === id ? { ...a, hidden } : a)));
+    await send("toggleActivityHidden", [id, hidden]);
   };
 
   /** Eliminazione multipla: una sola scrittura sullo stato, una chiamata per attività. */
@@ -1113,6 +1140,9 @@ export function useSupabase() {
     reload: load,
     users,
     acts,
+    visibleActs,
+    /** false finché la migrazione `activities_hidden` non è applicata. */
+    canHideActs: api.schema.activityHidden,
     pins,
     penalizeActivity,
     todayPts,
@@ -1128,6 +1158,7 @@ export function useSupabase() {
     updateAct,
     delAct,
     delActs,
+    toggleActHidden,
     addLog,
     addBonus,
     approve,

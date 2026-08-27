@@ -60,6 +60,8 @@ export interface ActRow {
   penalty?: number | null;
   challenge?: boolean | null;
   challenge_points?: number | null;
+  /** Aggiunta dalla migrazione `activities_hidden`: assente finché non è applicata. */
+  hidden?: boolean | null;
 }
 
 export interface LogRow {
@@ -170,6 +172,7 @@ export const toActivity = (r: ActRow): Activity => ({
   ch: r.challenge ? 1 : 0,
   chPts: r.challenge_points ?? 0,
   duration: r.duration ?? undefined,
+  hidden: !!r.hidden,
 });
 
 /**
@@ -253,7 +256,7 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false, interest: false };
+export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false, interest: false, activityHidden: false };
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -306,6 +309,13 @@ export const probeLogExtras = async () => {
   const { error } = await supabase.from("activity_logs").select("entry_kind").limit(1);
   schema.logExtras = !error;
   return schema.logExtras;
+};
+
+/** Idem per `activities.hidden`: senza la colonna il toggle resta spento. */
+export const probeActivityHidden = async () => {
+  const { error } = await supabase.from("activities").select("hidden").limit(1);
+  schema.activityHidden = !error;
+  return schema.activityHidden;
 };
 
 /** Toglie dal payload le colonne indicate quando `when` è vero. */
@@ -406,6 +416,17 @@ export const updateActivity = (id: number, a: Omit<Activity, "id">) =>
 
 /** Soft delete: la riga resta per non rompere i log già registrati. */
 export const deleteActivity = (id: number) => wrap<ActRow[]>(supabase.from("activities").update({ active: false }).eq("id", id).select());
+
+/**
+ * Nasconde o rimostra un'attività. Non è un'eliminazione: la riga resta e
+ * l'admin continua a vederla, semplicemente sparisce dalle liste delle ragazze.
+ */
+export const toggleActivityHidden = (id: number, hidden: boolean) => {
+  if (!schema.activityHidden) {
+    return Promise.resolve<Result<ActRow[]>>({ data: null, error: "la colonna activities.hidden non è ancora stata creata" });
+  }
+  return wrap<ActRow[]>(supabase.from("activities").update({ hidden }).eq("id", id).select());
+};
 
 /* ── log dei completamenti ── */
 

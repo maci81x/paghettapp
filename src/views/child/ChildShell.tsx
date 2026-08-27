@@ -135,7 +135,7 @@ export default function ChildShell({
             grad={grad}
             tp={tp}
             wp={wp}
-            acts={actsApi.acts}
+            acts={actsApi.visibleActs}
             todayDone={todayDone}
             weekPtsOf={usersApi.weekPts}
             paid={usersApi.paymentFor(au)}
@@ -152,7 +152,7 @@ export default function ChildShell({
         return (
           <ActivitiesTab
             pending={pendingProps}
-            acts={actsApi.acts}
+            acts={actsApi.visibleActs}
             penalties={penaltiesOf(u.log)}
             grad={grad}
             tp={tp}

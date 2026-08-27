@@ -37,6 +37,12 @@ export default function MissionEditModal({
   const teamPossible = draft.to === "both";
   const team = draft.team && teamPossible;
   const left = draft.deadline ? daysLeft(draft.deadline) : null;
+  /**
+   * Un'attività nascosta non si può collegare a una missione nuova, ma se era
+   * già collegata resta in elenco: così la missione in corso continua a
+   * contarla e l'admin può comunque staccarla.
+   */
+  const linkable = acts.filter((a) => !a.hidden || draft.actIds.includes(a.id));
 
   return (
     <Modal onClose={onClose}>
@@ -131,9 +137,10 @@ export default function MissionEditModal({
 
       <Label>Attività collegate</Label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxHeight: 120, overflowY: "auto", marginBottom: 4 }}>
-        {acts.map((a) => (
+        {linkable.map((a) => (
           <Pill key={a.id} active={draft.actIds.includes(a.id)} color={CATS.find((c) => c.id === a.cat)?.c ?? P.acc} onClick={() => toggleAct(a.id)} s>
-            {draft.actIds.includes(a.id) ? "☑" : "☐"} {CATS.find((c) => c.id === a.cat)?.i} {a.name}
+            {draft.actIds.includes(a.id) ? "☑" : "☐"} {a.hidden ? "🙈 " : ""}
+            {CATS.find((c) => c.id === a.cat)?.i} {a.name}
           </Pill>
         ))}
       </div>

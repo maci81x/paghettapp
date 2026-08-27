@@ -29,6 +29,11 @@ export interface Activity {
   chPts?: number;
   /** Durata indicativa in minuti: mostrata alle ragazze, non vincolante. */
   duration?: number;
+  /**
+   * Nascosta: resta nell'elenco dell'admin ma non viene più proposta alle
+   * ragazze. Diverso dall'eliminazione, che toglie la riga da ogni lista.
+   */
+  hidden?: boolean;
 }
 
 /**

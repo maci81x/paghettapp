@@ -6,31 +6,60 @@ import { P, alpha } from "../../design/tokens";
 
 const hasPen = (a: Activity) => a.pen < 0;
 
+type Filter = "all" | "visible" | "hidden" | "penalty";
+
+const FILTERS: { k: Filter; l: string; c: string }[] = [
+  { k: "all", l: "Tutte", c: P.acc },
+  { k: "visible", l: "👁️ Visibili", c: P.acc },
+  { k: "hidden", l: "🙈 Nascoste", c: P.tx3 },
+  { k: "penalty", l: "⚠️ Solo con penalità", c: P.gold },
+];
+
+const matches = (a: Activity, f: Filter) => {
+  switch (f) {
+    case "visible":
+      return !a.hidden;
+    case "hidden":
+      return !!a.hidden;
+    case "penalty":
+      return hasPen(a);
+    case "all":
+      return true;
+  }
+};
+
 export default function AdminActivitiesTab({
   acts,
+  canHide,
   onNew,
   onEdit,
   onDelete,
   onDeleteMany,
+  onToggleHidden,
 }: {
   acts: Activity[];
+  /** false finché la migrazione `activities_hidden` non è applicata. */
+  canHide: boolean;
   onNew: () => void;
   onEdit: (a: Activity) => void;
   onDelete: (a: Activity) => void;
   /** Chiede conferma ed elimina: true se l'eliminazione è avvenuta. */
   onDeleteMany: (ids: number[]) => boolean;
+  onToggleHidden: (a: Activity) => void;
 }) {
   const [selecting, setSelecting] = useState(false);
   const [sel, setSel] = useState<number[]>([]);
-  const [onlyPen, setOnlyPen] = useState(false);
+  const [filter, setFilter] = useState<Filter>("visible");
 
   const penalties = acts.filter(hasPen).sort((a, b) => a.pen - b.pen);
   // la card in cima parte aperta solo quando c'è davvero qualcosa da guardare
   const [openPen, setOpenPen] = useState(penalties.length > 0);
 
+  const hiddenCount = acts.filter((a) => a.hidden).length;
+
   // frequenza come chiave principale, penalità più pesante come secondaria
   const shown = acts
-    .filter((a) => !onlyPen || hasPen(a))
+    .filter((a) => matches(a, filter))
     .slice()
     .sort(byFreqThenPenalty);
 
@@ -79,7 +108,8 @@ export default function AdminActivitiesTab({
             <div style={{ marginTop: 8 }}>
               {penalties.map((a) => (
                 <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", fontSize: 11 }}>
-                  <span style={{ color: P.tx }}>
+                  <span style={{ color: P.tx, opacity: a.hidden ? 0.5 : 1 }}>
+                    {a.hidden ? "🙈 " : ""}
                     {CATS.find((c) => c.id === a.cat)?.i} {a.name}
                   </span>
                   <span style={{ color: P.gold, fontWeight: 800 }}>{a.pen}pt</span>
@@ -114,18 +144,25 @@ export default function AdminActivitiesTab({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
-        <Pill active={!onlyPen} onClick={() => setOnlyPen(false)} color={P.acc} s>
-          Tutte
-        </Pill>
-        <Pill active={onlyPen} onClick={() => setOnlyPen(true)} color={P.gold} s>
-          ⚠️ Solo con penalità
-        </Pill>
+      <div style={{ display: "flex", gap: 3, overflowX: "auto", marginBottom: 10, paddingBottom: 3 }}>
+        {FILTERS.map((f) => (
+          <Pill key={f.k} active={filter === f.k} onClick={() => setFilter(f.k)} color={f.c} s>
+            {f.l}
+            {f.k === "hidden" && hiddenCount > 0 ? ` (${hiddenCount})` : ""}
+          </Pill>
+        ))}
       </div>
+
+      {!canHide && (
+        <p style={{ color: P.gold, fontSize: 10, margin: "-4px 0 10px", lineHeight: 1.4 }}>
+          ⚠️ Per nascondere le attività serve la migrazione <code>activities_hidden</code>: finché non la esegui il toggle resta spento.
+        </p>
+      )}
 
       {shown.map((a) => {
         const checked = sel.includes(a.id);
         const pen = hasPen(a);
+        const off = !!a.hidden;
         return (
           <GlassCard
             key={a.id}
@@ -137,8 +174,9 @@ export default function AdminActivitiesTab({
               gap: 8,
               padding: 12,
               cursor: selecting ? "pointer" : undefined,
-              border: selecting && checked ? `1px solid ${alpha(P.red, 40)}` : pen ? `1px solid ${alpha(P.gold, 22)}` : undefined,
-              background: selecting && checked ? alpha(P.red, 7) : pen ? alpha(P.gold, 4) : undefined,
+              opacity: off ? 0.5 : 1,
+              border: selecting && checked ? `1px solid ${alpha(P.red, 40)}` : pen && !off ? `1px solid ${alpha(P.gold, 22)}` : undefined,
+              background: selecting && checked ? alpha(P.red, 7) : off ? alpha(P.tx3, 6) : pen ? alpha(P.gold, 4) : undefined,
             }}
           >
             {selecting && (
@@ -153,7 +191,7 @@ export default function AdminActivitiesTab({
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13 }}>{actIcon(a)}</span>
-                <span style={{ color: pen ? P.gold : P.tx, fontSize: 12, fontWeight: 600 }}>
+                <span style={{ color: pen && !off ? P.gold : P.tx, fontSize: 12, fontWeight: 600, textDecoration: off ? "line-through" : undefined }}>
                   {pen ? "⚠️ " : ""}
                   {a.name}
                 </span>
@@ -163,6 +201,9 @@ export default function AdminActivitiesTab({
                   </span>
                 )}
                 {a.ch ? <span style={{ background: alpha(P.gold, 13), color: P.gold, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>⚡</span> : null}
+                {off && (
+                  <span style={{ background: alpha(P.tx3, 20), color: P.tx2, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>NASCOSTA</span>
+                )}
               </div>
               <span style={{ fontSize: 10, color: P.tx3 }}>
                 +{a.pts}pt · max ×{a.max}/{FREQ_UNIT[a.freq]}
@@ -170,7 +211,23 @@ export default function AdminActivitiesTab({
               </span>
             </div>
             {!selecting && (
-              <div style={{ display: "flex", gap: 4 }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <button
+                  onClick={() => onToggleHidden(a)}
+                  disabled={!canHide}
+                  title={off ? "Mostra alle ragazze" : "Nascondi alle ragazze"}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: 16,
+                    lineHeight: 1,
+                    padding: "4px 2px",
+                    cursor: canHide ? "pointer" : "default",
+                    opacity: canHide ? 1 : 0.3,
+                  }}
+                >
+                  {off ? "👁️‍🗨️" : "👁️"}
+                </button>
                 <Btn small color={P.blue} onClick={() => onEdit(a)}>
                   ✏️
                 </Btn>
@@ -183,7 +240,7 @@ export default function AdminActivitiesTab({
         );
       })}
 
-      {shown.length === 0 && <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 16 }}>Nessuna attività con penalità</p>}
+      {shown.length === 0 && <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 16 }}>Nessuna attività con questo filtro</p>}
 
       {selecting && (
         <div style={{ position: "sticky", bottom: 8, marginTop: 12 }}>
