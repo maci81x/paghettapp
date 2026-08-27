@@ -99,6 +99,8 @@ export interface MissionRow {
   since?: string | null;
   /** Aggiunta dalla migrazione `missions_completed_by`: assente finché non è applicata. */
   completed_by?: Record<string, string> | null;
+  /** Aggiunta dalla migrazione `missions_hidden`: assente finché non è applicata. */
+  hidden?: boolean | null;
 }
 
 export interface IncomeRow {
@@ -210,6 +212,7 @@ export const toMission = (r: MissionRow, uid: UserId): Mission => ({
   since: r.since ?? "",
   progBy: (r.progress ?? {}) as Mission["progBy"],
   completedBy: (r.completed_by ?? {}) as Mission["completedBy"],
+  hidden: !!r.hidden,
 });
 
 export const toWish = (r: WishRow): Wish => ({
@@ -256,7 +259,7 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false, interest: false, activityHidden: false };
+export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false, interest: false, activityHidden: false, missionHidden: false };
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -316,6 +319,13 @@ export const probeActivityHidden = async () => {
   const { error } = await supabase.from("activities").select("hidden").limit(1);
   schema.activityHidden = !error;
   return schema.activityHidden;
+};
+
+/** Idem per `missions.hidden`. */
+export const probeMissionHidden = async () => {
+  const { error } = await supabase.from("missions").select("hidden").limit(1);
+  schema.missionHidden = !error;
+  return schema.missionHidden;
 };
 
 /** Toglie dal payload le colonne indicate quando `when` è vero. */
@@ -586,6 +596,17 @@ export const createMission = (m: Omit<Mission, "id">, targets: UserId[]) =>
 
 export const updateMission = (id: number, m: Omit<Mission, "id">, targets: UserId[]) =>
   wrap<MissionRow[]>(supabase.from("missions").update(missionPayload(m, targets)).eq("id", id).select());
+
+/**
+ * Nasconde o rimostra una missione. Non è un'eliminazione: la riga resta,
+ * il progresso non si azzera e l'admin continua a vederla.
+ */
+export const toggleMissionHidden = (id: number, hidden: boolean) => {
+  if (!schema.missionHidden) {
+    return Promise.resolve<Result<MissionRow[]>>({ data: null, error: "la colonna missions.hidden non è ancora stata creata" });
+  }
+  return wrap<MissionRow[]>(supabase.from("missions").update({ hidden }).eq("id", id).select());
+};
 
 export const deleteMission = (id: number) => wrap<MissionRow[]>(supabase.from("missions").update({ active: false }).eq("id", id).select());
 

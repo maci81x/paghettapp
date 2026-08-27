@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CATS, daysLeft } from "../../data/constants";
 import type { MissionState } from "../../data/missions";
-import { assignees, byState, missionProgress, missionState } from "../../data/missions";
+import { assignees, byState, missionProgress, missionState, visibleMissions } from "../../data/missions";
 import type { Activity, Match, Mission, UserId, Users } from "../../data/types";
 import { Avatar, GlassCard, InfoTip, SectionTitle } from "../../design/components";
 import { userColor, userGrad, userName } from "../../design/theme";
@@ -168,7 +168,8 @@ export default function MissionsTab({
 }) {
   const visible = matches.filter((m) => m.vis);
 
-  const rows = u.miss
+  const miss = visibleMissions(u);
+  const rows = miss
     .map((m) => ({ m, state: missionState(m, missionProgress(users, m, au).done) }))
     .sort(byState);
   const active = rows.filter((r) => r.state === "active");
@@ -180,7 +181,7 @@ export default function MissionsTab({
         Missioni <InfoTip text="Le missioni di squadra si completano insieme: i vostri progressi si sommano. Quelle individuali le porti a termine da sola." />
       </SectionTitle>
 
-      {u.miss.length === 0 ? (
+      {miss.length === 0 ? (
         <GlassCard>
           <p style={{ color: P.tx3, fontSize: 12, textAlign: "center", padding: 16 }}>Nessuna missione attiva 🎯</p>
         </GlassCard>

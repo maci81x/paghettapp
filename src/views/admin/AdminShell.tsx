@@ -175,6 +175,8 @@ export default function AdminShell({
         case "miss":
           return (
             <AdminMissionsTab
+              canHide={usersApi.canHideMiss}
+              onToggleHidden={(m) => usersApi.toggleMissHidden(m.id, !m.hidden)}
               users={users}
               acts={actsApi.acts}
               awardsSupported={usersApi.missionAwardsSupported}

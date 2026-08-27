@@ -18,7 +18,7 @@ import {
   todayISO,
 } from "../../data/constants";
 import { monthlyInterest } from "../../data/interest";
-import { missionProgress } from "../../data/missions";
+import { missionProgress, visibleMissions } from "../../data/missions";
 import { nextMilestone } from "../../data/savings";
 import type { Activity, Fund, IncomeEntry, Payment, User, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, InfoTip, Ring } from "../../design/components";
@@ -418,12 +418,12 @@ export default function HomeTab({
         ))}
       </GlassCard>
 
-      {u.miss.length > 0 && (
+      {visibleMissions(u).length > 0 && (
         <GlassCard>
           <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>
             🎯 Missioni <InfoTip text="Le missioni danno punti bonus quando le completi." />
           </p>
-          {u.miss.map((m) => {
+          {visibleMissions(u).map((m) => {
             const prog = missionProgress(users, m, au).current;
             return (
               <div key={m.id} style={{ marginBottom: 6 }}>

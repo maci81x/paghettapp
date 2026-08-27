@@ -16,6 +16,12 @@ export const ownProgress = (u: User, m: Mission, uid: UserId): number => {
 };
 
 /** Le ragazze a cui la missione è assegnata. */
+/**
+ * Missioni mostrate alle ragazze: le nascoste restano in `u.miss` — l'admin le
+ * vede e il progresso non si perde — ma spariscono da qui.
+ */
+export const visibleMissions = (u: User): Mission[] => u.miss.filter((m) => !m.hidden);
+
 export const assignees = (m: Mission): UserId[] => (m.assignee === "both" ? [...USER_IDS] : [m.assignee]);
 
 export interface MissionProgress {

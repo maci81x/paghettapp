@@ -85,6 +85,11 @@ export interface Mission {
    * applicata.
    */
   completedBy?: Partial<Record<UserId, string>>;
+  /**
+   * Nascosta: resta nell'elenco dell'admin, con il suo progresso, ma non
+   * viene più mostrata alle ragazze. Diverso dall'eliminazione.
+   */
+  hidden?: boolean;
 }
 
 export interface Spesa {

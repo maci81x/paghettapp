@@ -23,6 +23,8 @@ export default function AdminMissionsTab({
   onEdit,
   onDelete,
   onBump,
+  canHide,
+  onToggleHidden,
 }: {
   users: Users;
   acts: Activity[];
@@ -33,6 +35,9 @@ export default function AdminMissionsTab({
   onDelete: (uid: UserId, id: number) => void;
   /** Contatore manuale delle missioni senza attività collegate. */
   onBump: (uid: UserId, id: number, delta: number) => void;
+  /** false finché la migrazione `missions_hidden` non è applicata. */
+  canHide: boolean;
+  onToggleHidden: (m: Mission) => void;
 }) {
   const [range, setRange] = useState<Range>("all");
 
@@ -62,15 +67,16 @@ export default function AdminMissionsTab({
 
   const Card = ({ m, state }: { m: Mission; state: MissionState }) => {
     const style = STATE_STYLE[state];
+    const off = !!m.hidden;
     const manual = (m.actIds ?? []).length === 0;
     const linked = (m.actIds ?? []).map(actName).filter(Boolean);
     const left = m.deadline ? daysLeft(m.deadline) : null;
 
     return (
-      <GlassCard style={{ padding: 12 }}>
+      <GlassCard style={{ padding: 12, opacity: off ? 0.5 : 1, background: off ? alpha(P.tx3, 6) : undefined }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: 0 }}>
+            <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: 0, textDecoration: off ? "line-through" : undefined }}>
               {m.emoji || "🎯"} {m.name}
             </p>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>
@@ -92,6 +98,9 @@ export default function AdminMissionsTab({
               <span style={{ background: alpha(style.color, 12), color: style.color, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
                 {style.label}
               </span>
+              {off && (
+                <span style={{ background: alpha(P.tx3, 20), color: P.tx2, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>NASCOSTA</span>
+              )}
               {m.deadline && (
                 <span style={{ color: left !== null && left < 3 ? P.red : P.tx3, fontSize: 9, fontWeight: 600, padding: "1px 4px" }}>
                   ⏰ {fmtDay(m.deadline)}
@@ -99,7 +108,23 @@ export default function AdminMissionsTab({
               )}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
+            <button
+              onClick={() => onToggleHidden(m)}
+              disabled={!canHide}
+              title={off ? "Mostra alle ragazze" : "Nascondi alle ragazze"}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: 16,
+                lineHeight: 1,
+                padding: "4px 2px",
+                cursor: canHide ? "pointer" : "default",
+                opacity: canHide ? 1 : 0.3,
+              }}
+            >
+              {off ? "👁️‍🗨️" : "👁️"}
+            </button>
             <Btn small color={P.blue} onClick={() => onEdit(m)}>
               ✏️
             </Btn>

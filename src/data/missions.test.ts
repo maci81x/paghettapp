@@ -1,7 +1,7 @@
 // node --test src/data/missions.test.ts
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assignees, byState, missionProgress, missionState, ownProgress, toAward } from "./missions.ts";
+import { assignees, byState, missionProgress, missionState, ownProgress, toAward, visibleMissions } from "./missions.ts";
 import type { LogEntry, Mission, User, Users } from "./types.ts";
 
 const TODAY = new Date(2026, 7, 20); // 20 agosto 2026
@@ -124,4 +124,25 @@ test("da sole il premio va solo a chi ha finito", () => {
 test("nessun premio prima dell'obiettivo", () => {
   const us = users([log(1, 6, "2026-08-10", 9)], [log(2, 6, "2026-08-11", 9)]);
   assert.deepEqual(toAward(us, mission({ team: false })), []);
+});
+
+test("le missioni nascoste spariscono per le ragazze ma restano nel modello", () => {
+  const aperta = mission({ id: 1 });
+  const nascosta = mission({ id: 2, hidden: true });
+  const u = { miss: [aperta, nascosta] } as User;
+
+  assert.deepEqual(
+    visibleMissions(u).map((m) => m.id),
+    [1],
+    "la ragazza vede solo quella visibile",
+  );
+  assert.equal(u.miss.length, 2, "l'admin continua a vederle entrambe");
+
+  // il progresso non viene toccato: rimostrandola riprende da dov'era
+  assert.equal(nascosta.prog, aperta.prog);
+});
+
+test("senza il campo hidden le missioni restano tutte visibili", () => {
+  const u = { miss: [mission({ id: 1 }), mission({ id: 2 })] } as User;
+  assert.equal(visibleMissions(u).length, 2);
 });

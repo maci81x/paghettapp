@@ -67,6 +67,7 @@ const OPS = {
   createMission: api.createMission,
   updateMission: api.updateMission,
   deleteMission: api.deleteMission,
+  toggleMissionHidden: api.toggleMissionHidden,
   setMissionProgress: api.setMissionProgress,
   setMissionCompleted: api.setMissionCompleted,
   awardMissionPoints: api.awardMissionPoints,
@@ -290,6 +291,7 @@ export function useSupabase() {
       api.probeMissionDone(),
       api.probeInterest(),
       api.probeActivityHidden(),
+      api.probeMissionHidden(),
     ]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
@@ -949,6 +951,8 @@ export function useSupabase() {
             since: prev?.since ?? mission.since,
             progBy: prev?.progBy,
             completedBy: prev?.completedBy,
+            // `missionPayload` non tocca `hidden`: lo conservo anche in locale
+            hidden: prev?.hidden ?? mission.hidden,
           };
           next[uid] = { ...next[uid], miss: prev ? next[uid].miss.map((m) => (m.id === id ? entry : m)) : [...next[uid].miss, entry] };
         });
@@ -966,6 +970,23 @@ export function useSupabase() {
       });
       return next;
     });
+  };
+
+  /**
+   * Nasconde o rimostra una missione. L'id è lo stesso per entrambe le figlie,
+   * quindi il toggle vale per tutte e due. Se la colonna non c'è ancora non
+   * tento la scrittura, altrimenti finirebbe in coda offline a fallire.
+   */
+  const toggleMissHidden = async (id: number, hidden: boolean) => {
+    if (!api.schema.missionHidden) return;
+    setUsers((p) => {
+      const next = { ...p };
+      USER_IDS.forEach((uid) => {
+        next[uid] = { ...next[uid], miss: next[uid].miss.map((m) => (m.id === id ? { ...m, hidden } : m)) };
+      });
+      return next;
+    });
+    await send("toggleMissionHidden", [id, hidden]);
   };
 
   /** L'id della missione è lo stesso per entrambe: la tolgo a tutte e due. */
@@ -1196,6 +1217,9 @@ export function useSupabase() {
     buyWish,
     syncBadges,
     upsertMission,
+    toggleMissHidden,
+    /** false finché la migrazione `missions_hidden` non è applicata. */
+    canHideMiss: api.schema.missionHidden,
     delMission,
     bumpMission,
     syncMissions,
