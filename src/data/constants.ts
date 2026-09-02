@@ -201,6 +201,25 @@ export const giftNote = (from: string, reason: string) => `${GIFT_MARK} Da ${fro
 export const isGiftNote = (note: string) => note.startsWith(`${GIFT_MARK} Da `);
 
 /**
+ * Nota di un accredito di paghetta, con dentro la settimana saldata.
+ *
+ * La tabella `income` non ha una colonna per la settimana e il solo
+ * `created_at` non basta: pagando mercoledì la settimana scorsa, ricostruire
+ * la settimana dalla data dell'accredito la sposterebbe su quella in corso.
+ * Come per i regali, il dato viaggia nella nota — nessuna migrazione, e le
+ * righe vecchie continuano a leggersi con il vecchio fallback.
+ */
+export const ALLOWANCE_NOTE = "Paghetta settimanale";
+
+export const allowanceNote = (week: string) => `${ALLOWANCE_NOTE} ${week}`;
+
+/** Settimana scritta nella nota di un accredito; "" se la nota è di prima. */
+export const allowanceWeek = (note: string | null | undefined): string => {
+  const m = /(\d{4}-\d{2}-\d{2})/.exec(note ?? "");
+  return m ? m[1] : "";
+};
+
+/**
  * Divide un importo secondo le frazioni indicate (0-1).
  * Risparmio e beneficenza sono arrotondati al centesimo, il resto va al personale:
  * così la somma delle tre quote è sempre esattamente l'importo di partenza.

@@ -1,4 +1,5 @@
 import type { User } from "./types";
+import { getWeekPts } from "./weekBounds.ts";
 
 /**
  * Badge meritati in base allo stato attuale.
@@ -6,7 +7,7 @@ import type { User } from "./types";
  */
 export const earnedBadges = (u: User, actIds: number[]): string[] => {
   const out: string[] = [];
-  const weekPts = u.log.filter((l) => l.ok && !l.paid).reduce((s, l) => s + l.pts, 0);
+  const weekPts = getWeekPts(u.log);
   if (weekPts >= 500 || (u.pays ?? []).some((p) => p.pts >= 500)) out.push("first_15");
   if (u.streak >= 10) out.push("streak_10");
   if (u.streak >= 30) out.push("streak_30");

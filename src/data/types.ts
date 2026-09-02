@@ -253,6 +253,8 @@ export interface CompletionDraft {
   freq: string;
   note: string;
   tod: Tod;
+  /** Giorno dell'attività in ISO: solo oggi o ieri, la scelta è nel modale. */
+  date: string;
   /** Durata prevista in minuti, se l'admin l'ha indicata. */
   duration?: number;
 }

@@ -1,7 +1,14 @@
-import { TODS } from "../data/constants";
+import { TODS, isoDate, todayISO } from "../data/constants";
 import type { CompletionDraft } from "../data/types";
 import { Btn, Label, Modal, Pill, TextArea } from "../design/components";
 import { P, gls } from "../design/tokens";
+
+/** Ieri in formato ISO: l'unico giorno passato che le ragazze possono segnare. */
+const yesterdayISO = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return isoDate(d);
+};
 
 export default function CompletionModal({
   draft,
@@ -19,6 +26,11 @@ export default function CompletionModal({
   onClose: () => void;
 }) {
   const step = (n: number) => setDraft((d) => ({ ...d, cnt: Math.min(d.maxCnt, Math.max(1, d.cnt + n)) }));
+  // solo oggi o ieri: più indietro lo storico lo corregge l'admin
+  const days = [
+    { iso: todayISO(), l: "📅 Oggi" },
+    { iso: yesterdayISO(), l: "📅 Ieri" },
+  ];
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>{draft.actName}</h3>
@@ -40,6 +52,15 @@ export default function CompletionModal({
           max {draft.maxCnt}/{draft.freq}
         </span>
       </div>
+      <Label>Che giorno?</Label>
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {days.map((d) => (
+          <Pill key={d.iso} active={draft.date === d.iso} onClick={() => setDraft((x) => ({ ...x, date: d.iso }))} color={color}>
+            {d.l}
+          </Pill>
+        ))}
+      </div>
+
       <Label>Quando?</Label>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         {TODS.map((t) => (

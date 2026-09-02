@@ -1,29 +1,39 @@
 import { useState } from "react";
-import { FUNDS, fundName, getTier, hasFundNames } from "../../data/constants";
+import { FUNDS, fundName, getTier, getWeekStart, hasFundNames } from "../../data/constants";
 import type { Fund, Payment, User } from "../../data/types";
-import { Btn, GlassCard, InfoTip } from "../../design/components";
+import { prevWeekStart } from "../../data/weekBounds";
+import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
 import { fmtDay, fmtDayTime } from "../../utils/dates";
 
 /** Registro della paghetta settimanale: anteprima dello split e conferma del pagamento. */
 export default function AdminAllowanceCard({
   u,
-  due,
-  paid,
+  dueFor,
+  paidFor,
   namesRequired,
   onPay,
   onUndo,
 }: {
   u: User;
-  due: { pts: number; amount: number; split: Record<Fund, number> };
-  /** Accredito della settimana corrente, se già fatto. */
-  paid?: Payment;
+  /** Anteprima dell'accredito di una settimana, dal lunedì ISO che la identifica. */
+  dueFor: (week: string) => { pts: number; amount: number; split: Record<Fund, number> };
+  /** Accredito già registrato per quella settimana, se c'è. */
+  paidFor: (week: string) => Payment | undefined;
   /** Falso finché il database non ha la colonna dei nomi: non si può pretenderli. */
   namesRequired: boolean;
-  onPay: () => void;
+  onPay: (week: string) => void;
   onUndo: (week: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // la paghetta si registra quasi sempre a settimana finita: bisogna poter dire quale si sta chiudendo
+  const weeks = [
+    { iso: getWeekStart(), l: "Questa settimana" },
+    { iso: prevWeekStart(), l: "Scorsa settimana" },
+  ];
+  const [week, setWeek] = useState(weeks[0].iso);
+  const due = dueFor(week);
+  const paid = paidFor(week);
   const tier = getTier(due.pts);
   // i salvadanai li battezza la ragazza: senza nomi l'accredito finirebbe in
   // contenitori che per lei non hanno ancora un'identità
@@ -35,9 +45,17 @@ export default function AdminAllowanceCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>
           📤 Paghetta settimanale
-          <InfoTip text="L'accredito divide l'importo fra i tre salvadanai e azzera i punti della settimana. Una settimana si paga una volta sola." />
+          <InfoTip text="L'accredito divide l'importo fra i tre salvadanai. I punti restano nella settimana in cui le attività sono state fatte: una settimana si paga una volta sola." />
         </p>
         {paid && <span style={{ color: P.mint, fontSize: 11, fontWeight: 700 }}>✓ Pagata €{paid.amount.toFixed(2)}</span>}
+      </div>
+
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {weeks.map((w) => (
+          <Pill key={w.iso} active={week === w.iso} onClick={() => setWeek(w.iso)} color={P.gold}>
+            {w.l}
+          </Pill>
+        ))}
       </div>
 
       {paid ? (
@@ -63,7 +81,7 @@ export default function AdminAllowanceCard({
         </p>
       ) : !open ? (
         <Btn full grad={P.goldG} onClick={() => setOpen(true)}>
-          📤 Registra paghetta settimanale
+          📤 Registra la paghetta della settimana del {week}
         </Btn>
       ) : (
         <div>
@@ -82,11 +100,11 @@ export default function AdminAllowanceCard({
           ))}
 
           <p style={{ color: P.tx3, fontSize: 9, margin: "8px 0 10px" }}>
-            Dopo il pagamento i punti della settimana ripartono da zero e {u.n} riceve la richiesta di conferma.
+            I punti restano nella settimana in cui sono stati fatti; quella nuova riparte da zero il lunedì. Dopo il pagamento {u.n} riceve la richiesta di conferma.
           </p>
 
           <div style={{ display: "flex", gap: 8 }}>
-            <Btn style={{ flex: 1 }} grad={P.mintG} onClick={onPay} disabled={due.amount <= 0}>
+            <Btn style={{ flex: 1 }} grad={P.mintG} onClick={() => onPay(week)} disabled={due.amount <= 0}>
               ✅ Conferma pagamento
             </Btn>
             <Btn outline color={P.tx3} onClick={() => setOpen(false)}>

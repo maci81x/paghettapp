@@ -17,6 +17,8 @@ import {
   USER_IDS,
   getTier,
   getWeekStart,
+  allowanceNote,
+  allowanceWeek,
   giftNote,
   isGiftNote,
   isoDate,
@@ -27,6 +29,7 @@ import {
   todayISO,
   weekStartOf,
 } from "../data/constants";
+import { fromISO, getWeekPts, weekLogs } from "../data/weekBounds";
 import { clearPending, loadCache, loadPending, queuePending, savePending, saveCache } from "../data/storage";
 import type { PendingOp } from "../data/storage";
 import type {
@@ -230,7 +233,8 @@ function buildSnapshot(rows: {
         const prev = idx > 0 ? allowances[idx - 1].created_at : "";
         return {
           id: row.id,
-          week: weekStartOf(new Date(row.created_at)),
+          // la settimana saldata sta nella nota; le righe di prima ricadono sul giorno dell'accredito
+          week: allowanceWeek(row.note) || weekStartOf(new Date(row.created_at)),
           date: isoDate(new Date(row.created_at)),
           pts: row.week_pts ?? 0,
           amount: Number(row.amount),
@@ -420,7 +424,17 @@ export function useSupabase() {
 
   const todayPts = (uid: UserId) => users[uid].log.filter((l) => l.date === todayISO() && l.ok).reduce((s, l) => s + l.pts, 0);
 
-  const weekPts = (uid: UserId) => users[uid].log.filter((l) => l.ok && !l.paid).reduce((s, l) => s + l.pts, 0);
+  /**
+   * Punti della settimana in corso (lunedì-domenica), calcolati dalla *data
+   * dell'attività*: non è più un contatore che l'approvazione o l'accredito
+   * spostano. Un'attività di martedì approvata mercoledì pesa nella settimana
+   * di martedì, e una della settimana scorsa approvata oggi non entra in
+   * questa. Per una settimana diversa da quella corrente c'è `weekPtsOn`.
+   */
+  const weekPts = (uid: UserId) => getWeekPts(users[uid].log);
+
+  /** Punti di una settimana qualunque, dal lunedì ISO che la identifica. */
+  const weekPtsOn = (uid: UserId, week: string) => getWeekPts(users[uid].log, fromISO(week));
 
   // una voce annullata dall'admin è già decisa: non torna in coda di approvazione
   const pendingCnt = (uid: UserId) => users[uid].log.filter((l) => !l.ok && !l.revoked).length;
@@ -553,9 +567,10 @@ export function useSupabase() {
 
   /* ── completamenti ── */
 
-  const addLog = async (uid: UserId, actId: number, cnt: number, note: string, tod: Tod, pts: number) => {
-    const row = await send<api.LogRow>("createActivityLog", [{ userId: uid, actId, pts, cnt, tod, note }]);
-    const entry: LogEntry = row ? toLog(row) : { id: Date.now(), actId, date: todayISO(), cnt, note, tod, pts, ok: false };
+  /** `date` è il giorno dell'attività: oggi o ieri, mai più indietro (solo l'admin tocca lo storico). */
+  const addLog = async (uid: UserId, actId: number, cnt: number, note: string, tod: Tod, pts: number, date = todayISO()) => {
+    const row = await send<api.LogRow>("createActivityLog", [{ userId: uid, actId, pts, cnt, tod, note, date }]);
+    const entry: LogEntry = row ? toLog(row) : { id: Date.now(), actId, date, cnt, note, tod, pts, ok: false };
     patch(uid, (u) => ({ ...u, log: [...u.log, entry] }));
   };
 
@@ -651,10 +666,10 @@ export function useSupabase() {
   };
 
   /**
-   * Annulla un'approvazione già data: i punti escono dal totale e — se la voce
-   * non è ancora stata pagata — anche dalla settimana in corso, perché
-   * `weekPts` somma solo i log approvati e non saldati. Le missioni collegate
-   * si aggiornano da sole: il loro progresso guarda i log approvati.
+   * Annulla un'approvazione già data: i punti escono dal totale e dalla
+   * settimana in cui cade la data della voce, perché `weekPts` somma i log
+   * approvati di quella settimana. Le missioni collegate si aggiornano da
+   * sole: il loro progresso guarda i log approvati.
    */
   const revoke = async (uid: UserId, logId: number) => {
     const entry = users[uid].log.find((l) => l.id === logId);
@@ -1176,20 +1191,22 @@ export function useSupabase() {
 
   const paymentFor = (uid: UserId, week = getWeekStart()) => payments(uid).find((p) => p.week === week);
 
-  const duePreview = (uid: UserId) => {
-    const pts = weekPts(uid);
+  /** Anteprima dell'accredito di una settimana: di default quella in corso. */
+  const duePreview = (uid: UserId, week = getWeekStart()) => {
+    const pts = weekPtsOn(uid, week);
     const amount = getTier(pts).r;
     return { pts, amount, split: splitAllowance(amount) };
   };
 
-  const payWeek = async (uid: UserId) => {
-    const week = getWeekStart();
+  const payWeek = async (uid: UserId, week = getWeekStart()) => {
     if (paymentFor(uid, week)) return false;
-    const { pts, amount, split } = duePreview(uid);
-    const logIds = users[uid].log.filter((l) => l.ok && !l.paid).map((l) => l.id);
+    const { pts, amount, split } = duePreview(uid, week);
+    // si saldano solo le voci di *quella* settimana: pagare mercoledì la
+    // settimana scorsa non deve marcare come pagati i punti di questa
+    const logIds = weekLogs(users[uid].log, fromISO(week)).filter((l) => l.ok && !l.paid).map((l) => l.id);
 
     const row = await send<api.IncomeRow>("createIncome", [
-      { userId: uid, type: "allowance", amount, note: "Paghetta settimanale", quote: split, tier: amount, weekPts: pts },
+      { userId: uid, type: "allowance", amount, note: allowanceNote(week), quote: split, tier: amount, weekPts: pts },
     ]);
     if (logIds.length > 0) await send("markLogsPaid", [logIds, true]);
     for (const f of FUNDS) await send("updatePiggybank", [uid, f, split[f]]);
@@ -1211,7 +1228,7 @@ export function useSupabase() {
           id,
           date: todayISO(),
           amount,
-          source: "Paghetta settimanale",
+          source: allowanceNote(week),
           split: { risparmio: SPLIT.risparmio * 100, personale: SPLIT.personale * 100, beneficenza: SPLIT.beneficenza * 100 },
           type: "paghetta" as const,
           confirmed,
@@ -1255,6 +1272,7 @@ export function useSupabase() {
     penalizeActivity,
     todayPts,
     weekPts,
+    weekPtsOn,
     pendingCnt,
     allPending,
     todayDone,

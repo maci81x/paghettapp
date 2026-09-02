@@ -449,6 +449,22 @@ export const fetchActivityLogs = (userId?: string, options?: { since?: Date; pai
   return wrap<LogRow[]>(q);
 };
 
+/**
+ * Istante da scrivere in `created_at` per una voce datata a un giorno passato.
+ * L'ora è quella attuale, così due voci dello stesso giorno restano in ordine.
+ *
+ * ponytail: la data dell'attività vive in `created_at`, che l'app ha sempre
+ * letto come "quando la ragazza ha segnato l'attività" (l'istante
+ * dell'approvazione ha già la sua colonna, `approved_at`). Serve una data
+ * dell'attività separata dall'inserimento? Allora una colonna `activity_date`
+ * con la solita probe, e `toLog` la preferisce a `created_at`.
+ */
+const backdate = (iso: string): string => {
+  const now = new Date();
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+};
+
 export const createActivityLog = (d: {
   userId: string;
   actId: number | null;
@@ -458,6 +474,8 @@ export const createActivityLog = (d: {
   note: string;
   approved?: boolean;
   kind?: LogKind;
+  /** Giorno dell'attività (ISO), se diverso da oggi: le ragazze possono segnare anche ieri. */
+  date?: string;
 }) =>
   wrap<LogRow[]>(
     supabase
@@ -472,6 +490,8 @@ export const createActivityLog = (d: {
           note: d.note,
           approved: d.approved ?? false,
           entry_kind: d.kind ?? (d.actId === null ? "bonus" : null),
+          // senza data esplicita decide il default della colonna: now()
+          ...(d.date && d.date !== isoDate(new Date()) ? { created_at: backdate(d.date) } : {}),
         }, ["entry_kind"]),
       )
       .select(),

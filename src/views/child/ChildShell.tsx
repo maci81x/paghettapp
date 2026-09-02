@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import { FREQ_UNIT, fundName, getLvl, hasFundNames, nowTod, penaltiesOf } from "../../data/constants";
+import { FREQ_UNIT, fundName, getLvl, hasFundNames, nowTod, penaltiesOf, todayISO } from "../../data/constants";
 import type { Activity, ChildTab, CompletionDraft, Fund, LogEntry, Period, SpesaDraft, UserId, Wish, WishDraft } from "../../data/types";
 import { Avatar, NavItem } from "../../design/components";
 import { bgSizeFor, userColor, userGrad, userName } from "../../design/theme";
@@ -95,6 +95,7 @@ export default function ChildShell({
       freq: FREQ_UNIT[a.freq],
       note: "",
       tod: nowTod(),
+      date: todayISO(),
       duration: a.duration,
     });
 
@@ -103,7 +104,7 @@ export default function ChildShell({
     if (!comp) return;
     const a = actsApi.findAct(comp.actId);
     if (!a) return;
-    usersApi.addLog(au, a.id, comp.cnt, comp.note, comp.tod, a.pts * comp.cnt);
+    usersApi.addLog(au, a.id, comp.cnt, comp.note, comp.tod, a.pts * comp.cnt, comp.date);
     setComp(null);
   };
 

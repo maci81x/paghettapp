@@ -117,11 +117,11 @@ export default function AdminShell({
           weekPts={usersApi.weekPts(view)}
           period={period}
           setPeriod={setPeriod}
-          due={usersApi.duePreview(view)}
-          paid={usersApi.paymentFor(view)}
-          onPay={() => usersApi.payWeek(view)}
+          dueFor={(week) => usersApi.duePreview(view, week)}
+          paidFor={(week) => usersApi.paymentFor(view, week)}
+          onPay={(week) => usersApi.payWeek(view, week)}
           onUndoPay={(week) => {
-            if (confirm("Annullare l'accredito di questa settimana?")) usersApi.undoPayment(view, week);
+            if (confirm(`Annullare l'accredito della settimana del ${week}?`)) usersApi.undoPayment(view, week);
           }}
           onApprove={usersApi.approve}
           onReject={usersApi.reject}

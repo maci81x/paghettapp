@@ -1,7 +1,7 @@
 // node --test src/utils/dates.test.ts
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getWeekStart, monthKey, periodStart, todayISO } from "../data/constants.ts";
+import { allowanceNote, allowanceWeek, getWeekStart, monthKey, periodStart, todayISO } from "../data/constants.ts";
 import { fmtDay, fmtDayTime } from "./dates.ts";
 
 test("il giorno si legge sia da una data sia da un timestamp", () => {
@@ -26,4 +26,11 @@ test("il periodo di validità del limite dipende dalla frequenza", () => {
   // un'attività settimanale resta disponibile per tutta la settimana
   assert.ok(periodStart("weekly") <= todayISO());
   assert.ok(periodStart("monthly") <= todayISO());
+});
+
+test("la settimana saldata si rilegge dalla nota dell'accredito", () => {
+  assert.equal(allowanceWeek(allowanceNote("2026-08-24")), "2026-08-24");
+  // le righe scritte prima di questa nota non portano la settimana: chi legge fa il fallback
+  assert.equal(allowanceWeek("Paghetta settimanale"), "");
+  assert.equal(allowanceWeek(null), "");
 });
