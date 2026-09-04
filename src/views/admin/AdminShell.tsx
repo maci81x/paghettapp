@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { USER_IDS, todayISO } from "../../data/constants";
 import type { ActivityDraft, AdminTab, LogEntry, MatchDraft, MissionDraft, Period, PinKey, UserId } from "../../data/types";
+import { prevWeekStart } from "../../data/weekBounds";
 import { Avatar, NavItem, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
 import type { MatchesApi } from "../../hooks/useMatches";
@@ -119,7 +120,12 @@ export default function AdminShell({
           setPeriod={setPeriod}
           dueFor={(week) => usersApi.duePreview(view, week)}
           paidFor={(week) => usersApi.paymentFor(view, week)}
-          onPay={(week) => usersApi.payWeek(view, week)}
+          blockFor={(week) => usersApi.payBlock(view, week)}
+          payableWeeks={usersApi.payableWeeks(view)}
+          onPay={async (week) => {
+            const res = await usersApi.payWeek(view, week);
+            if (!res.ok) alert(res.error);
+          }}
           onUndoPay={(week) => {
             if (confirm(`Annullare l'accredito della settimana del ${week}?`)) usersApi.undoPayment(view, week);
           }}
@@ -240,11 +246,14 @@ export default function AdminShell({
               users={users}
               period={period}
               setPeriod={setPeriod}
-              duePreview={usersApi.duePreview}
-              paymentFor={(uid) => usersApi.paymentFor(uid)}
-              onPay={usersApi.payWeek}
+              duePreview={(uid) => usersApi.duePreview(uid, prevWeekStart())}
+              paymentFor={(uid) => usersApi.paymentFor(uid, prevWeekStart())}
+              onPay={async (uid) => {
+                const res = await usersApi.payWeek(uid, prevWeekStart());
+                if (!res.ok) alert(res.error);
+              }}
               onUndo={(uid, week) => {
-                if (confirm("Annullare l'accredito di questa settimana?")) usersApi.undoPayment(uid, week);
+                if (confirm(`Annullare l'accredito della settimana del ${week}?`)) usersApi.undoPayment(uid, week);
               }}
               onIncome={setIncomeFor}
             />

@@ -60,3 +60,33 @@ export const weekLogs = <T extends WeekLog>(logs: T[], today: Date = new Date())
   const { from, to } = weekRange(today);
   return logs.filter((l) => l.date >= from && l.date <= to);
 };
+
+/** Domenica della settimana che comincia il lunedì `week`, in formato ISO. */
+export const weekEnd = (week: string): string => isoDate(getWeekBounds(fromISO(week)).end);
+
+/**
+ * La settimana è finita? La paghetta si registra solo su settimane concluse:
+ * pagare il martedì la settimana in corso userebbe i punti di due giorni e
+ * chiuderebbe la settimana a metà, senza poterla più ripagare.
+ */
+export const isWeekOver = (week: string, today: Date = new Date()): boolean => isoDate(today) > weekEnd(week);
+
+/** Etichetta leggibile di una settimana: "25/08 – 31/08". */
+export const weekLabel = (week: string): string => {
+  const day = (iso: string) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+  return `${day(week)} – ${day(weekEnd(week))}`;
+};
+
+/**
+ * Le ultime `count` settimane già concluse, dalla più recente.
+ * La settimana in corso non c'è: non è ancora pagabile.
+ */
+export const pastWeeks = (count: number, today: Date = new Date()): string[] => {
+  const out: string[] = [];
+  const d = getWeekBounds(today).start;
+  for (let i = 0; i < count; i++) {
+    d.setDate(d.getDate() - 7);
+    out.push(isoDate(d));
+  }
+  return out;
+};

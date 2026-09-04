@@ -107,16 +107,20 @@ export function Pill({
   color = P.acc,
   onClick,
   s,
+  disabled,
 }: {
   children: ReactNode;
   active?: boolean;
   color?: string;
   onClick?: () => void;
   s?: boolean;
+  /** Scelta mostrata ma non selezionabile: resta visibile perché si capisca che esiste. */
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       style={{
         background: active ? color + "1a" : "transparent",
         color: active ? color : P.tx3,
@@ -125,7 +129,8 @@ export function Pill({
         padding: s ? "3px 10px" : "5px 14px",
         fontSize: s ? 10 : 11,
         fontWeight: 600,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.45 : 1,
         whiteSpace: "nowrap",
         flexShrink: 0,
         transition: "all .2s",

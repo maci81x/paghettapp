@@ -26,6 +26,8 @@ export default function AdminChildView({
   setPeriod,
   dueFor,
   paidFor,
+  blockFor,
+  payableWeeks,
   onPay,
   onUndoPay,
   onApprove,
@@ -50,6 +52,10 @@ export default function AdminChildView({
   dueFor: (week: string) => { pts: number; amount: number; split: Record<Fund, number> };
   /** Accredito già registrato per quella settimana, se c'è. */
   paidFor: (week: string) => Payment | undefined;
+  /** Perché quella settimana non è pagabile, in chiaro; null se lo è. */
+  blockFor: (week: string) => string | null;
+  /** Settimane concluse e ancora da saldare, dalla più recente. */
+  payableWeeks: string[];
   onPay: (week: string) => void;
   onUndoPay: (week: string) => void;
   onApprove: (uid: UserId, logId: number) => void;
@@ -114,7 +120,16 @@ export default function AdminChildView({
 
       <p style={{ color: P.tx, fontSize: 15, fontWeight: 700, margin: "16px 0 10px", letterSpacing: -0.3 }}>💰 Paghetta &amp; Risparmi</p>
 
-      <AdminAllowanceCard u={u} dueFor={dueFor} paidFor={paidFor} namesRequired={namesRequired} onPay={onPay} onUndo={onUndoPay} />
+      <AdminAllowanceCard
+        u={u}
+        dueFor={dueFor}
+        paidFor={paidFor}
+        blockFor={blockFor}
+        payable={payableWeeks}
+        namesRequired={namesRequired}
+        onPay={onPay}
+        onUndo={onUndoPay}
+      />
 
       <Suspense fallback={<p style={{ color: P.tx3, fontSize: 12, textAlign: "center", padding: 16 }}>Carico il grafico…</p>}>
         <AdminSavingsCard uid={uid} u={u} />

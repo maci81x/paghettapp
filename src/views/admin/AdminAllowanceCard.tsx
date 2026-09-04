@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FUNDS, fundName, getTier, getWeekStart, hasFundNames } from "../../data/constants";
 import type { Fund, Payment, User } from "../../data/types";
-import { prevWeekStart } from "../../data/weekBounds";
+import { prevWeekStart, weekLabel } from "../../data/weekBounds";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
 import { fmtDay, fmtDayTime } from "../../utils/dates";
@@ -11,6 +11,8 @@ export default function AdminAllowanceCard({
   u,
   dueFor,
   paidFor,
+  blockFor,
+  payable,
   namesRequired,
   onPay,
   onUndo,
@@ -20,24 +22,30 @@ export default function AdminAllowanceCard({
   dueFor: (week: string) => { pts: number; amount: number; split: Record<Fund, number> };
   /** Accredito già registrato per quella settimana, se c'è. */
   paidFor: (week: string) => Payment | undefined;
+  /** Perché quella settimana non è pagabile, in chiaro; null se lo è. */
+  blockFor: (week: string) => string | null;
+  /** Settimane concluse e ancora da saldare, dalla più recente. */
+  payable: string[];
   /** Falso finché il database non ha la colonna dei nomi: non si può pretenderli. */
   namesRequired: boolean;
   onPay: (week: string) => void;
   onUndo: (week: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  // la paghetta si registra quasi sempre a settimana finita: bisogna poter dire quale si sta chiudendo
-  const weeks = [
-    { iso: getWeekStart(), l: "Questa settimana" },
-    { iso: prevWeekStart(), l: "Scorsa settimana" },
-  ];
-  const [week, setWeek] = useState(weeks[0].iso);
+  // si paga solo una settimana finita: quella in corso resta in elenco, spenta,
+  // perché si veda che esiste e perché si capisca da quando sarà pagabile
+  const current = getWeekStart();
+  const prev = prevWeekStart();
+  const [week, setWeek] = useState(prev);
+  // arretrati: settimane concluse più vecchie della scorsa e mai saldate
+  const older = payable.filter((w) => w < prev);
   const due = dueFor(week);
   const paid = paidFor(week);
+  const blocked = blockFor(week);
   const tier = getTier(due.pts);
   // i salvadanai li battezza la ragazza: senza nomi l'accredito finirebbe in
   // contenitori che per lei non hanno ancora un'identità
-  const blocked = namesRequired && !hasFundNames(u);
+  const noNames = namesRequired && !hasFundNames(u);
   const history = (u.pays ?? []).slice(0, 4);
 
   return (
@@ -50,17 +58,47 @@ export default function AdminAllowanceCard({
         {paid && <span style={{ color: P.mint, fontSize: 11, fontWeight: 700 }}>✓ Pagata €{paid.amount.toFixed(2)}</span>}
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-        {weeks.map((w) => (
-          <Pill key={w.iso} active={week === w.iso} onClick={() => setWeek(w.iso)} color={P.gold}>
-            {w.l}
-          </Pill>
-        ))}
+      <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+        <Pill disabled color={P.gold}>
+          Questa settimana
+        </Pill>
+        <Pill active={week === prev} onClick={() => setWeek(prev)} color={P.gold}>
+          Scorsa settimana
+        </Pill>
+        {older.length > 0 && (
+          <select
+            value={older.includes(week) ? week : ""}
+            onChange={(e) => e.target.value && setWeek(e.target.value)}
+            style={{
+              background: "transparent",
+              color: older.includes(week) ? P.gold : P.tx3,
+              border: `1.5px solid ${older.includes(week) ? P.gold + "55" : "transparent"}`,
+              borderRadius: 20,
+              padding: "5px 10px",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <option value="">📅 Settimana precedente</option>
+            {older.map((w) => (
+              <option key={w} value={w}>
+                {weekLabel(w)}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
+      <p style={{ color: P.tx3, fontSize: 9, margin: "0 0 10px" }}>
+        {week === current
+          ? "⏳ La settimana finisce domenica — potrai registrare la paghetta da lunedì."
+          : `Settimana ${weekLabel(week)} · si registra solo a settimana conclusa.`}
+      </p>
 
       {paid ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>
+            <b style={{ color: P.gold, display: "block", marginBottom: 2 }}>{blocked}</b>
             Settimana del {paid.week} · {paid.pts}pt ·{" "}
             {paid.confirmed ? (
               <b style={{ color: P.mint }}>✅ Ricevuta il {fmtDayTime(paid.confirmedAt ?? paid.date)}</b>
@@ -72,7 +110,7 @@ export default function AdminAllowanceCard({
             Annulla
           </Btn>
         </div>
-      ) : blocked ? (
+      ) : noNames ? (
         <p style={{ color: P.gold, fontSize: 12, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
           ⚠️ {u.n} non ha ancora dato un nome ai salvadanai. Chiedi a {u.n} di farlo prima!
           <span style={{ display: "block", color: P.tx3, fontSize: 10, fontWeight: 400, marginTop: 4 }}>
@@ -80,8 +118,8 @@ export default function AdminAllowanceCard({
           </span>
         </p>
       ) : !open ? (
-        <Btn full grad={P.goldG} onClick={() => setOpen(true)}>
-          📤 Registra la paghetta della settimana del {week}
+        <Btn full grad={P.goldG} onClick={() => setOpen(true)} disabled={!!blocked}>
+          📤 Registra la paghetta del {weekLabel(week)}
         </Btn>
       ) : (
         <div>
@@ -104,7 +142,7 @@ export default function AdminAllowanceCard({
           </p>
 
           <div style={{ display: "flex", gap: 8 }}>
-            <Btn style={{ flex: 1 }} grad={P.mintG} onClick={() => onPay(week)} disabled={due.amount <= 0}>
+            <Btn style={{ flex: 1 }} grad={P.mintG} onClick={() => onPay(week)} disabled={due.amount <= 0 || !!blocked}>
               ✅ Conferma pagamento
             </Btn>
             <Btn outline color={P.tx3} onClick={() => setOpen(false)}>

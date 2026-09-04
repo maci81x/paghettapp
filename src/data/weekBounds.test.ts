@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { isoDate, weekStartOf } from "./constants.ts";
-import { fromISO, getWeekBounds, getWeekPts, prevWeekStart, weekLogs, weekRange } from "./weekBounds.ts";
+import { fromISO, getWeekBounds, getWeekPts, isWeekOver, pastWeeks, prevWeekStart, weekEnd, weekLabel, weekLogs, weekRange } from "./weekBounds.ts";
 
 /** 2026-09-02 è un mercoledì: la sua settimana va da lunedì 31/08 a domenica 06/09. */
 const WED = new Date(2026, 8, 2, 15, 30);
@@ -90,4 +90,28 @@ test("weekLogs restituisce le voci della settimana, approvate o no", () => {
 test("fromISO resta sullo stesso giorno del calendario", () => {
   assert.equal(isoDate(fromISO("2026-03-29")), "2026-03-29"); // notte del cambio ora legale
   assert.equal(isoDate(fromISO("2026-10-25")), "2026-10-25");
+});
+
+test("weekEnd dà la domenica della settimana", () => {
+  assert.equal(weekEnd("2026-08-31"), "2026-09-06");
+  assert.equal(weekEnd("2026-12-28"), "2027-01-03"); // a cavallo dell'anno
+});
+
+test("una settimana è conclusa solo dal lunedì dopo", () => {
+  // settimana 31/08–06/09
+  assert.equal(isWeekOver("2026-08-31", WED), false); // mercoledì: ancora in corso
+  assert.equal(isWeekOver("2026-08-31", fromISO("2026-09-06")), false); // domenica: ultimo giorno
+  assert.equal(isWeekOver("2026-08-31", fromISO("2026-09-07")), true); // lunedì: conclusa
+  assert.equal(isWeekOver("2026-08-24", WED), true); // quella prima è conclusa da un pezzo
+});
+
+test("pastWeeks elenca solo settimane concluse, dalla più recente", () => {
+  assert.deepEqual(pastWeeks(3, WED), ["2026-08-24", "2026-08-17", "2026-08-10"]);
+  // la settimana in corso non compare mai
+  assert.equal(pastWeeks(8, WED).includes("2026-08-31"), false);
+  pastWeeks(8, WED).forEach((w) => assert.equal(isWeekOver(w, WED), true, `${w} non è conclusa`));
+});
+
+test("weekLabel mostra lunedì e domenica in giorno/mese", () => {
+  assert.equal(weekLabel("2026-08-24"), "24/08 – 30/08");
 });

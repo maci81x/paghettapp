@@ -29,7 +29,8 @@ import {
   todayISO,
   weekStartOf,
 } from "../data/constants";
-import { fromISO, getWeekPts, weekLogs } from "../data/weekBounds";
+import { fromISO, getWeekPts, isWeekOver, pastWeeks, weekLogs } from "../data/weekBounds";
+import { fmtDay } from "../utils/dates";
 import { clearPending, loadCache, loadPending, queuePending, savePending, saveCache } from "../data/storage";
 import type { PendingOp } from "../data/storage";
 import type {
@@ -233,8 +234,9 @@ function buildSnapshot(rows: {
         const prev = idx > 0 ? allowances[idx - 1].created_at : "";
         return {
           id: row.id,
-          // la settimana saldata sta nella nota; le righe di prima ricadono sul giorno dell'accredito
-          week: allowanceWeek(row.note) || weekStartOf(new Date(row.created_at)),
+          // la settimana saldata sta nella sua colonna; senza, nella nota; per le
+          // righe più vecchie di entrambe resta il lunedì del giorno di accredito
+          week: row.week_start ?? allowanceWeek(row.note) ?? weekStartOf(new Date(row.created_at)),
           date: isoDate(new Date(row.created_at)),
           pts: row.week_pts ?? 0,
           amount: Number(row.amount),
@@ -296,6 +298,8 @@ export function useSupabase() {
       api.probeInterest(),
       api.probeActivityHidden(),
       api.probeMissionHidden(),
+      api.probeActivityDate(),
+      api.probeIncomeWeek(),
     ]);
     const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
       api.fetchUsers(),
@@ -1198,15 +1202,34 @@ export function useSupabase() {
     return { pts, amount, split: splitAllowance(amount) };
   };
 
+  /**
+   * Perché quella settimana non si può pagare, in chiaro; `null` se si può.
+   *
+   * Sono due condizioni distinte e nessuna delle due basta da sola: la
+   * settimana in corso non è ancora finita, e una già saldata non va saldata di
+   * nuovo. La verifica sta qui e non solo nella UI, perché `payWeek` è
+   * raggiungibile anche dalla dashboard e dalla scheda della figlia.
+   */
+  const payBlock = (uid: UserId, week: string): string | null => {
+    if (!isWeekOver(week)) return "⏳ La settimana finisce domenica — potrai registrare la paghetta da lunedì.";
+    const done = paymentFor(uid, week);
+    if (done) return `⚠️ Paghetta già registrata per questa settimana (€${done.amount.toFixed(2)} il ${fmtDay(done.date)})`;
+    return null;
+  };
+
+  /** Settimane concluse ancora da saldare, dalla più recente: sono le sole pagabili. */
+  const payableWeeks = (uid: UserId, count = 8): string[] => pastWeeks(count).filter((w) => !paymentFor(uid, w));
+
   const payWeek = async (uid: UserId, week = getWeekStart()) => {
-    if (paymentFor(uid, week)) return false;
+    const blocked = payBlock(uid, week);
+    if (blocked) return { ok: false as const, error: blocked };
     const { pts, amount, split } = duePreview(uid, week);
     // si saldano solo le voci di *quella* settimana: pagare mercoledì la
     // settimana scorsa non deve marcare come pagati i punti di questa
     const logIds = weekLogs(users[uid].log, fromISO(week)).filter((l) => l.ok && !l.paid).map((l) => l.id);
 
     const row = await send<api.IncomeRow>("createIncome", [
-      { userId: uid, type: "allowance", amount, note: allowanceNote(week), quote: split, tier: amount, weekPts: pts },
+      { userId: uid, type: "allowance", amount, note: allowanceNote(week), quote: split, tier: amount, weekPts: pts, weekStart: week },
     ]);
     if (logIds.length > 0) await send("markLogsPaid", [logIds, true]);
     for (const f of FUNDS) await send("updatePiggybank", [uid, f, split[f]]);
@@ -1236,7 +1259,7 @@ export function useSupabase() {
         ...(u.income ?? []),
       ],
     }));
-    return true;
+    return { ok: true as const };
   };
 
   const undoPayment = async (uid: UserId, week: string) => {
@@ -1337,6 +1360,8 @@ export function useSupabase() {
     payments,
     paymentFor,
     duePreview,
+    payBlock,
+    payableWeeks,
     payWeek,
     undoPayment,
   };

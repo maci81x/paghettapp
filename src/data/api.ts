@@ -78,6 +78,12 @@ export interface LogRow {
   /** Aggiunte dalla migrazione `activity_logs_kind_revoked`: assenti finché non è applicata. */
   entry_kind?: LogKind | null;
   revoked?: boolean | null;
+  /**
+   * Giorno dell'attività, dalla migrazione `activity_date_and_income_week`.
+   * È questa la data su cui si contano i punti del giorno e della settimana:
+   * `created_at` dice solo quando la riga è stata scritta.
+   */
+  activity_date?: string | null;
 }
 
 /** Natura di una voce senza attività collegata. */
@@ -119,6 +125,8 @@ export interface IncomeRow {
   /** Aggiunte dalla migrazione `income_confirmed`: assenti finché non è applicata. */
   confirmed?: boolean | null;
   confirmed_at?: string | null;
+  /** Lunedì della settimana saldata, dalla migrazione `activity_date_and_income_week`. */
+  week_start?: string | null;
 }
 
 export interface ExpenseRow {
@@ -187,7 +195,8 @@ export const logKind = (r: LogRow): LogKind =>
 export const toLog = (r: LogRow): LogEntry => ({
   id: r.id,
   actId: r.activity_id ?? (logKind(r) === "deduct" ? DEDUCT_ACT_ID : BONUS_ACT_ID),
-  date: isoDate(new Date(r.created_at)),
+  // senza la colonna della data attività resta il giorno di creazione della riga
+  date: r.activity_date ?? isoDate(new Date(r.created_at)),
   cnt: r.times,
   note: r.note ?? "",
   tod: DB_TOD[r.moment] ?? "mattina",
@@ -259,7 +268,18 @@ const wrap = async <T>(p: PromiseLike<{ data: T | null; error: PostgrestError | 
  * note dei salvadanai, salvadanaio del desiderio) potrebbero non esserci
  * ancora: le rilevo una volta e, se mancano, le lascio fuori dalle scritture.
  */
-export const schema = { extended: false, incomeConfirm: false, logExtras: false, piggyName: false, missionDone: false, interest: false, activityHidden: false, missionHidden: false };
+export const schema = {
+  extended: false,
+  incomeConfirm: false,
+  logExtras: false,
+  piggyName: false,
+  missionDone: false,
+  interest: false,
+  activityHidden: false,
+  missionHidden: false,
+  activityDate: false,
+  incomeWeek: false,
+};
 
 export const probeSchema = async () => {
   const { error } = await supabase.from("activities").select("penalty").limit(1);
@@ -326,6 +346,24 @@ export const probeMissionHidden = async () => {
   const { error } = await supabase.from("missions").select("hidden").limit(1);
   schema.missionHidden = !error;
   return schema.missionHidden;
+};
+
+/**
+ * `activity_logs.activity_date` è il giorno dell'attività. Senza la colonna la
+ * data si legge da `created_at`, e per segnare ieri si scrive lì l'istante
+ * arretrato: funziona, ma sporca il momento di creazione della riga.
+ */
+export const probeActivityDate = async () => {
+  const { error } = await supabase.from("activity_logs").select("activity_date").limit(1);
+  schema.activityDate = !error;
+  return schema.activityDate;
+};
+
+/** Idem per `income.week_start`: senza, la settimana saldata si legge dalla nota. */
+export const probeIncomeWeek = async () => {
+  const { error } = await supabase.from("income").select("week_start").limit(1);
+  schema.incomeWeek = !error;
+  return schema.incomeWeek;
 };
 
 /** Toglie dal payload le colonne indicate quando `when` è vero. */
@@ -453,11 +491,9 @@ export const fetchActivityLogs = (userId?: string, options?: { since?: Date; pai
  * Istante da scrivere in `created_at` per una voce datata a un giorno passato.
  * L'ora è quella attuale, così due voci dello stesso giorno restano in ordine.
  *
- * ponytail: la data dell'attività vive in `created_at`, che l'app ha sempre
- * letto come "quando la ragazza ha segnato l'attività" (l'istante
- * dell'approvazione ha già la sua colonna, `approved_at`). Serve una data
- * dell'attività separata dall'inserimento? Allora una colonna `activity_date`
- * con la solita probe, e `toLog` la preferisce a `created_at`.
+ * Serve solo finché `activity_date` non esiste: con la colonna il giorno
+ * dell'attività ha un posto suo e `created_at` torna a essere solo l'istante di
+ * creazione della riga.
  */
 const backdate = (iso: string): string => {
   const now = new Date();
@@ -476,12 +512,13 @@ export const createActivityLog = (d: {
   kind?: LogKind;
   /** Giorno dell'attività (ISO), se diverso da oggi: le ragazze possono segnare anche ieri. */
   date?: string;
-}) =>
-  wrap<LogRow[]>(
+}) => {
+  const day = d.date || isoDate(new Date());
+  return wrap<LogRow[]>(
     supabase
       .from("activity_logs")
       .insert(
-        stripIf(!schema.logExtras, {
+        stripIf(!schema.activityDate, stripIf(!schema.logExtras, {
           user_id: d.userId,
           activity_id: d.actId,
           points: d.pts,
@@ -490,12 +527,15 @@ export const createActivityLog = (d: {
           note: d.note,
           approved: d.approved ?? false,
           entry_kind: d.kind ?? (d.actId === null ? "bonus" : null),
-          // senza data esplicita decide il default della colonna: now()
-          ...(d.date && d.date !== isoDate(new Date()) ? { created_at: backdate(d.date) } : {}),
-        }, ["entry_kind"]),
+          activity_date: day,
+          // ripiego finché `activity_date` non esiste: il giorno passato si
+          // scrive in `created_at`, che senza quella colonna è l'unica data
+          ...(!schema.activityDate && day !== isoDate(new Date()) ? { created_at: backdate(day) } : {}),
+        }, ["entry_kind"]), ["activity_date"]),
       )
       .select(),
   );
+};
 
 export const approveLog = (logId: number) =>
   wrap<LogRow[]>(
@@ -691,25 +731,28 @@ export const createIncome = (d: {
   quote?: Record<Fund, number>;
   tier?: number;
   weekPts?: number;
+  /** Lunedì della settimana saldata: solo per la paghetta. */
+  weekStart?: string;
 }) =>
   wrap<IncomeRow[]>(
     supabase
       .from("income")
       .insert(
         // solo la paghetta va confermata: le entrate extra le registra già la ragazza
-        stripIf(!schema.incomeConfirm, {
+        stripIf(!schema.incomeWeek, stripIf(!schema.incomeConfirm, {
           user_id: d.userId,
           type: d.type,
           amount: d.amount,
           note: d.note,
           tier: d.tier ?? null,
           week_pts: d.weekPts ?? null,
+          week_start: d.weekStart ?? null,
           split_personal: d.quote?.personale ?? null,
           split_savings: d.quote?.risparmio ?? null,
           split_charity: d.quote?.beneficenza ?? null,
           confirmed: d.type !== "allowance",
           confirmed_at: d.type !== "allowance" ? new Date().toISOString() : null,
-        }, ["confirmed", "confirmed_at"]),
+        }, ["confirmed", "confirmed_at"]), ["week_start"]),
       )
       .select(),
   );

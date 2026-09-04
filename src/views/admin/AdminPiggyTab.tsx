@@ -1,4 +1,5 @@
 import { FUNDS, FUND_LABEL, PERIOD_MONTHS, SPLIT, USER_IDS, YIELD_YEAR, fundName } from "../../data/constants";
+import { prevWeekStart, weekLabel } from "../../data/weekBounds";
 import type { Fund, Payment, Period, UserId, Users } from "../../data/types";
 import { Btn, GlassCard, InfoTip, PeriodBar } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
@@ -77,7 +78,10 @@ export default function AdminPiggyTab({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <p style={{ color: P.tx, fontSize: 12, fontWeight: 700, margin: 0 }}>
-                    💸 Paghetta settimana <InfoTip text={`Accredito diviso ${SPLIT_LABEL}. Una settimana si paga una volta sola.`} />
+                    💸 Paghetta {weekLabel(prevWeekStart())}{" "}
+                    <InfoTip
+                      text={`Accredito diviso ${SPLIT_LABEL}. Si registra la settimana appena conclusa, una volta sola. Per gli arretrati apri la scheda della figlia.`}
+                    />
                   </p>
                   <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0" }}>
                     {due.pts}pt → <b style={{ color: P.gold }}>€{due.amount.toFixed(2)}</b> · {FUNDS.map((k) => `€${due.split[k].toFixed(2)}`).join(" / ")}
