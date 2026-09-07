@@ -769,6 +769,20 @@ export const createGift = async (d: { userId: string; amount: number; note: stri
   return createIncome({ ...payload, type: "extra" });
 };
 
+/**
+ * Paghetta già registrata per quella settimana? È il controllo che si fa
+ * appena prima di accreditare: la copia locale può essere vecchia, o
+ * l'accredito può essere partito da un altro dispositivo. Senza la colonna
+ * `week_start` la domanda non è rispondibile e resta la sola guardia locale.
+ */
+export const allowanceForWeek = async (userId: string, weekStart: string): Promise<Result<IncomeRow | null>> => {
+  if (!schema.incomeWeek) return { data: null, error: null };
+  const res = await wrap<IncomeRow[]>(
+    supabase.from("income").select("*").eq("user_id", userId).eq("type", "allowance").eq("week_start", weekStart).limit(1),
+  );
+  return res.error ? { data: null, error: res.error } : { data: res.data?.[0] ?? null, error: null };
+};
+
 export const deleteIncome = (id: number) => wrap<IncomeRow[]>(supabase.from("income").delete().eq("id", id).select());
 
 /** La ragazza conferma di aver ricevuto la paghetta. */

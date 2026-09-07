@@ -296,13 +296,36 @@ export const weekStartOf = (date: Date) => {
 /** Lunedì della settimana corrente, in formato ISO. */
 export const getWeekStart = () => weekStartOf(new Date());
 
-/**
- * Primo giorno del periodo in cui vale il limite di completamenti.
- * Un'attività settimanale con max 1 va segnata una volta a settimana, non una
- * volta al giorno: il conteggio parte da qui.
- */
-export const periodStart = (freq: Freq) => {
-  if (freq === "weekly") return getWeekStart();
-  if (freq === "monthly") return `${monthKey(0)}-01`;
-  return todayISO();
+/** "2026-09-07" → Date locale: `new Date(iso)` la leggerebbe come UTC. */
+export const parseISODate = (iso: string): Date => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
 };
+
+/**
+ * Giorni in cui vale il limite di completamenti dell'attività, intorno alla
+ * data indicata. Un'attività settimanale con max 1 va segnata una volta a
+ * settimana, non una volta al giorno: il conteggio guarda tutto l'intervallo.
+ *
+ * L'intervallo ha anche una fine, e non è un dettaglio: da quando si può
+ * segnare un'attività di ieri, un conteggio aperto in avanti non fermerebbe
+ * nessuno: le voci di ieri cadono prima dell'inizio del periodo di oggi,
+ * quindi non consumerebbero mai un limite.
+ */
+export const periodRange = (freq: Freq, date = todayISO()): { from: string; to: string } => {
+  if (freq === "weekly") {
+    const from = weekStartOf(parseISODate(date));
+    const end = parseISODate(from);
+    end.setDate(end.getDate() + 6);
+    return { from, to: isoDate(end) };
+  }
+  if (freq === "monthly") {
+    const [y, m] = date.split("-").map(Number);
+    // il giorno 0 del mese dopo è l'ultimo di questo
+    return { from: `${date.slice(0, 7)}-01`, to: isoDate(new Date(y, m, 0)) };
+  }
+  return { from: date, to: date };
+};
+
+/** Primo giorno del periodo in cui vale il limite di completamenti. */
+export const periodStart = (freq: Freq) => periodRange(freq).from;

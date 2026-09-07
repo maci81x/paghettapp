@@ -15,6 +15,7 @@ export default function CompletionModal({
   setDraft,
   color,
   grad,
+  remainingOn,
   onConfirm,
   onClose,
 }: {
@@ -22,15 +23,22 @@ export default function CompletionModal({
   setDraft: (fn: (d: CompletionDraft) => CompletionDraft) => void;
   color: string;
   grad: string;
+  /** Quante volte l'attività può ancora essere segnata in quel giorno. */
+  remainingOn: (date: string) => number;
   onConfirm: () => void;
   onClose: () => void;
 }) {
   const step = (n: number) => setDraft((d) => ({ ...d, cnt: Math.min(d.maxCnt, Math.max(1, d.cnt + n)) }));
-  // solo oggi o ieri: più indietro lo storico lo corregge l'admin
+  // solo oggi o ieri: più indietro lo storico lo corregge l'admin.
+  // ogni giorno ha il suo limite, quindi ognuno porta quante volte gli restano
   const days = [
     { iso: todayISO(), l: "📅 Oggi" },
     { iso: yesterdayISO(), l: "📅 Ieri" },
-  ];
+  ].map((d) => ({ ...d, room: remainingOn(d.iso) }));
+
+  /** Cambiando giorno cambia il massimo: il contatore si riporta dentro il nuovo limite. */
+  const pickDay = (iso: string, room: number) =>
+    setDraft((d) => ({ ...d, date: iso, maxCnt: Math.max(1, room), cnt: Math.min(d.cnt, Math.max(1, room)) }));
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>{draft.actName}</h3>
@@ -55,11 +63,14 @@ export default function CompletionModal({
       <Label>Che giorno?</Label>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         {days.map((d) => (
-          <Pill key={d.iso} active={draft.date === d.iso} onClick={() => setDraft((x) => ({ ...x, date: d.iso }))} color={color}>
+          <Pill key={d.iso} active={draft.date === d.iso} onClick={() => pickDay(d.iso, d.room)} color={color} disabled={d.room < 1}>
             {d.l}
           </Pill>
         ))}
       </div>
+      {days.some((d) => d.room < 1) && (
+        <p style={{ fontSize: 9, color: P.tx3, margin: "-4px 0 10px" }}>I giorni spenti li avevi già segnati tutte le volte che potevi.</p>
+      )}
 
       <Label>Quando?</Label>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>

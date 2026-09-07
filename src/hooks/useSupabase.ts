@@ -23,7 +23,7 @@ import {
   isGiftNote,
   isoDate,
   nowTod,
-  periodStart,
+  periodRange,
   splitAllowance,
   splitByPct,
   todayISO,
@@ -452,10 +452,13 @@ export function useSupabase() {
    * Completamenti nel periodo in cui vale il limite dell'attività: un'attività
    * settimanale con max 1 va segnata una volta a settimana, non una al giorno.
    * Le voci annullate non contano: l'attività torna disponibile.
+   *
+   * `date` è il giorno che si sta segnando: per un'attività fatta ieri vale il
+   * limite di ieri, altrimenti segnarla in ritardo aggirerebbe il massimo.
    */
-  const periodDone = (uid: UserId, act: Activity) => {
-    const from = periodStart(act.freq);
-    return users[uid].log.filter((l) => l.actId === act.id && l.date >= from && !l.revoked).reduce((s, l) => s + l.cnt, 0);
+  const periodDone = (uid: UserId, act: Activity, date = todayISO()) => {
+    const { from, to } = periodRange(act.freq, date);
+    return users[uid].log.filter((l) => l.actId === act.id && l.date >= from && l.date <= to && !l.revoked).reduce((s, l) => s + l.cnt, 0);
   };
 
   const todayByTod = (uid: UserId, actId: number) => {
@@ -1217,11 +1220,35 @@ export function useSupabase() {
     return null;
   };
 
-  /** Settimane concluse ancora da saldare, dalla più recente: sono le sole pagabili. */
-  const payableWeeks = (uid: UserId, count = 8): string[] => pastWeeks(count).filter((w) => !paymentFor(uid, w));
+  /**
+   * Lo stesso controllo, ma chiesto al database appena prima di accreditare.
+   * `payBlock` guarda la copia locale, che può essere vecchia o non aver mai
+   * visto l'accredito fatto dall'altro telefono: senza questa seconda domanda
+   * la paghetta doppia resta possibile. Offline la risposta non arriva e vale
+   * la sola guardia locale — l'indice unico sul database chiude comunque.
+   */
+  const payBlockRemote = async (uid: UserId, week: string): Promise<string | null> => {
+    const res = await api.allowanceForWeek(uid, week);
+    if (!res.data) return null;
+    return `⚠️ Paghetta già registrata per la settimana del ${fmtDay(week)} (€${Number(res.data.amount).toFixed(2)})`;
+  };
+
+  /**
+   * Settimane concluse ancora da saldare, dalla più recente: sono le sole
+   * pagabili. Alle ultime `count` si aggiungono quelle, anche più vecchie,
+   * che hanno ancora punti approvati e non saldati — un arretrato non deve
+   * uscire dall'elenco solo perché è passato troppo tempo.
+   */
+  const payableWeeks = (uid: UserId, count = 8): string[] => {
+    const weeks = new Set(pastWeeks(count));
+    users[uid].log.filter((l) => l.ok && !l.paid).forEach((l) => weeks.add(weekStartOf(fromISO(l.date))));
+    return [...weeks]
+      .filter((w) => isWeekOver(w) && !paymentFor(uid, w))
+      .sort((a, b) => b.localeCompare(a));
+  };
 
   const payWeek = async (uid: UserId, week = getWeekStart()) => {
-    const blocked = payBlock(uid, week);
+    const blocked = payBlock(uid, week) ?? (await payBlockRemote(uid, week));
     if (blocked) return { ok: false as const, error: blocked };
     const { pts, amount, split } = duePreview(uid, week);
     // si saldano solo le voci di *quella* settimana: pagare mercoledì la

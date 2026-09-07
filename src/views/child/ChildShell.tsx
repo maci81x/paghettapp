@@ -72,6 +72,9 @@ export default function ChildShell({
   const lvl = getLvl(u.totalPts);
   const todayDone = (actId: number) => usersApi.todayDone(au, actId);
   const periodDone = (a: Activity) => usersApi.periodDone(au, a);
+
+  /** Quante volte l'attività può ancora essere segnata nel giorno indicato. */
+  const remainingOn = (a: Activity, date: string) => Math.max(0, a.max - usersApi.periodDone(au, a, date));
   const unconfirmed = usersApi.unconfirmedAllowances(au);
   const interest = useInterest(au, u.w.risparmio);
   // senza la colonna sul database i nomi non sono salvabili: non li chiediamo
@@ -99,12 +102,22 @@ export default function ChildShell({
       duration: a.duration,
     });
 
-  /** Ogni conferma crea una voce nuova nel log: la stessa attività può essere rifatta più tardi. */
+  /**
+   * Ogni conferma crea una voce nuova nel log: la stessa attività può essere
+   * rifatta più tardi. Il limite si ricontrolla qui sul giorno scelto, perché
+   * fra l'apertura del modale e la conferma la ragazza può aver cambiato
+   * giorno, e ogni giorno ha il suo massimo.
+   */
   const confirmComp = () => {
     if (!comp) return;
     const a = actsApi.findAct(comp.actId);
     if (!a) return;
-    usersApi.addLog(au, a.id, comp.cnt, comp.note, comp.tod, a.pts * comp.cnt, comp.date);
+    const cnt = Math.min(comp.cnt, remainingOn(a, comp.date));
+    if (cnt < 1) {
+      setComp(null);
+      return;
+    }
+    usersApi.addLog(au, a.id, cnt, comp.note, comp.tod, a.pts * cnt, comp.date);
     setComp(null);
   };
 
@@ -243,6 +256,10 @@ export default function ChildShell({
           setDraft={(fn) => setComp((d) => (d ? fn(d) : d))}
           color={uc}
           grad={grad}
+          remainingOn={(date) => {
+            const a = actsApi.findAct(comp.actId);
+            return a ? remainingOn(a, date) : 0;
+          }}
           onConfirm={confirmComp}
           onClose={() => setComp(null)}
         />
