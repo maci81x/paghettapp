@@ -1,8 +1,9 @@
-import { CATS, USER_IDS, daysLeft } from "../data/constants";
+import { CATS, USER_IDS, daysLeft, prizeLabel } from "../data/constants";
 import type { Activity, MissionDraft, UserId } from "../data/types";
 import { Btn, Input, Label, Modal, Pill, TextArea } from "../design/components";
 import { P, alpha } from "../design/tokens";
 import { fmtDay } from "../utils/dates";
+import { parseAmount } from "../utils/money";
 
 const EMOJI = ["🎯", "🌱", "📚", "🍳", "🧹", "🐕", "💪", "🎨", "🌍", "❤️", "⭐", "🔥"];
 
@@ -17,6 +18,7 @@ export default function MissionEditModal({
   setDraft,
   acts,
   names,
+  euroSupported,
   onSave,
   onClose,
 }: {
@@ -25,6 +27,8 @@ export default function MissionEditModal({
   acts: Activity[];
   /** Nomi mostrati alle figlie, per l'anteprima. */
   names: Record<UserId, string>;
+  /** false finché la migrazione `missions_bonus_amount` non è applicata: premio solo in punti. */
+  euroSupported: boolean;
   onSave: () => void;
   onClose: () => void;
 }) {
@@ -43,6 +47,11 @@ export default function MissionEditModal({
    * contarla e l'admin può comunque staccarla.
    */
   const linkable = acts.filter((a) => !a.hidden || draft.actIds.includes(a.id));
+  const euro = parseAmount(draft.euro);
+  // il campo punti resta solo per le missioni che premiavano già in punti
+  const showPts = !euroSupported || draft.pts > 0;
+  const euroInvalid = euroSupported && draft.euro.trim() !== "" && euro === null;
+  const noPrize = (euro ?? 0) <= 0 && draft.pts <= 0;
 
   return (
     <Modal onClose={onClose}>
@@ -126,11 +135,31 @@ export default function MissionEditModal({
           <Label>Obiettivo (quante volte)</Label>
           <Input type="number" min={1} value={draft.tgt} onChange={(e) => setDraft((d) => ({ ...d, tgt: Math.max(1, +e.target.value) }))} />
         </div>
-        <div>
-          <Label>Punti premio</Label>
-          <Input type="number" value={draft.pts} onChange={(e) => setDraft((d) => ({ ...d, pts: +e.target.value }))} />
-        </div>
+        {euroSupported && (
+          <div>
+            <Label>Premio in euro (€)</Label>
+            <Input
+              inputMode="decimal"
+              placeholder="es. 2,00"
+              value={draft.euro}
+              onChange={(e) => setDraft((d) => ({ ...d, euro: e.target.value }))}
+              style={{ borderColor: euroInvalid ? P.red : undefined }}
+            />
+          </div>
+        )}
+        {showPts && (
+          <div>
+            <Label>{euroSupported ? "Punti premio (missione di prima)" : "Punti premio"}</Label>
+            <Input type="number" min={0} value={draft.pts} onChange={(e) => setDraft((d) => ({ ...d, pts: Math.max(0, +e.target.value) }))} />
+          </div>
+        )}
       </div>
+      <p style={{ fontSize: 9, color: P.tx3, margin: "-4px 0 8px", lineHeight: 1.45 }}>
+        {euroSupported
+          ? "Il premio in euro va nei salvadanai con lo split 30/60/10, come la paghetta: vale anche per chi ha già superato i 500 punti."
+          : "Esegui la migrazione 20261014_missions_bonus_amount.sql per premiare in euro invece che in punti."}
+        {euroSupported && draft.pts > 0 && " Questa missione premiava in punti: puoi lasciarli o azzerarli e mettere un premio in euro."}
+      </p>
 
       <Label>Scadenza (facoltativa)</Label>
       <Input type="date" value={draft.deadline} onChange={(e) => setDraft((d) => ({ ...d, deadline: e.target.value }))} style={{ marginBottom: 8 }} />
@@ -171,7 +200,7 @@ export default function MissionEditModal({
                 {team ? "🤝 Squadra" : "👤 Individuale"}
               </span>
               <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
-                🏆 +{draft.pts}pt
+                🏆 {prizeLabel({ pts: draft.pts, euro: euro ?? undefined })}
               </span>
               {draft.deadline && (
                 <span
@@ -204,7 +233,7 @@ export default function MissionEditModal({
       </div>
 
       <div style={{ display: "flex", gap: 8 }}>
-        <Btn style={{ flex: 1 }} grad={P.mintG} onClick={onSave} disabled={!draft.name.trim()}>
+        <Btn style={{ flex: 1 }} grad={P.mintG} onClick={onSave} disabled={!draft.name.trim() || euroInvalid || noPrize}>
           {draft.mode === "add" ? "Crea" : "Salva"}
         </Btn>
         <Btn style={{ flex: 1 }} outline color={P.tx3} onClick={onClose}>

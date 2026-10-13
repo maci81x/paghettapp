@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { USER_IDS, hasFundNames, todayISO } from "../../data/constants";
+import { USER_IDS, hasFundNames, todayISO, isPending } from "../../data/constants";
+import { parseAmount } from "../../utils/money";
 import type { ActivityDraft, AdminTab, LogEntry, MatchDraft, MissionDraft, Period, PinKey, UserId } from "../../data/types";
 import { prevWeekStart } from "../../data/weekBounds";
 import { Avatar, NavItem, Pill } from "../../design/components";
@@ -19,6 +20,7 @@ import MissionEditModal from "../../modals/MissionEditModal";
 import PiggyActionModal from "../../modals/PiggyActionModal";
 import type { PiggyActionDraft } from "../../modals/PiggyActionModal";
 import PinChangeModal from "../../modals/PinChangeModal";
+import RejectModal from "../../modals/RejectModal";
 import Shell from "../Shell";
 import AdminActivitiesTab from "./AdminActivitiesTab";
 import AdminAllowancesTab from "./AdminAllowancesTab";
@@ -74,6 +76,7 @@ export default function AdminShell({
   const [missDraft, setMissDraft] = useState<MissionDraft | null>(null);
   const [pinTarget, setPinTarget] = useState<PinKey | null>(null);
   const [importing, setImporting] = useState(false);
+  const [rejecting, setRejecting] = useState<{ picks: { uid: UserId; logId: number }[]; what: string } | null>(null);
   const [incomeFor, setIncomeFor] = useState<UserId | null>(null);
   const [bonusFor, setBonusFor] = useState<UserId | null>(null);
   const [deductFor, setDeductFor] = useState<UserId | null>(null);
@@ -106,6 +109,8 @@ export default function AdminShell({
       prog: 0,
       tgt: missDraft.tgt,
       pts: missDraft.pts,
+      // vuoto = nessun premio in euro: la missione resta (o nasce) a punti
+      euro: parseAmount(missDraft.euro) ?? undefined,
       team: missDraft.team,
       deadline: missDraft.deadline,
       assignee: missDraft.to,
@@ -122,7 +127,33 @@ export default function AdminShell({
     (a, b) => b.week.localeCompare(a.week) || a.uid.localeCompare(b.uid),
   );
 
-  const pendingPhotos = USER_IDS.reduce((n, uid) => n + users[uid].log.filter((l) => l.photo && !l.ok && !l.revoked).length, 0);
+  /**
+   * Ogni ✗ passa di qui. Con il rifiuto non distruttivo si chiede la nota;
+   * senza la migrazione si rifiuta come prima, cancellando la voce.
+   */
+  const askReject = (uid: UserId, logId: number) => {
+    if (!usersApi.rejectNoteSupported) {
+      usersApi.reject(uid, logId);
+      return;
+    }
+    const l = users[uid].log.find((x) => x.id === logId);
+    const name = actsApi.acts.find((a) => a.id === l?.actId)?.name ?? "Attività";
+    setRejecting({ picks: [{ uid, logId }], what: `${name} di ${users[uid].n}${l ? ` del ${fmtDay(l.date)}` : ""}` });
+  };
+
+  const askRejectMany = (picks: { uid: UserId; logId: number }[]) => {
+    if (!usersApi.rejectNoteSupported) {
+      // senza la migrazione rejectLog cancella le righe: senza conferma non si torna indietro
+      if (!confirm(`Rifiutare ${picks.length} attività? Le voci verranno cancellate, non è reversibile.`)) return false;
+      void usersApi.rejectMany(picks);
+      return true;
+    }
+    const who = [...new Set(picks.map((p) => users[p.uid].n))].join(" e ");
+    setRejecting({ picks, what: `${picks.length} attività di ${who}: la stessa nota vale per tutte.` });
+    return true;
+  };
+
+  const pendingPhotos = USER_IDS.reduce((n, uid) => n + users[uid].log.filter((l) => l.photo && isPending(l)).length, 0);
   /** Numerino accanto al nome della scheda: cosa aspetta l'admin lì dentro. */
   const tabCount = (id: AdminTab) => (id === "dash" || id === "pays" ? toClose.length : id === "approve" ? usersApi.allPending : id === "photos" ? pendingPhotos : 0);
 
@@ -138,6 +169,14 @@ export default function AdminShell({
         const res = await usersApi.payWeek(uid, week, override);
         return res.ok ? null : res.error;
       }}
+      onCloseOutside={
+        usersApi.paidOutsideSupported
+          ? async (uid, week) => {
+              const res = await usersApi.closeWeekOutside(uid, week);
+              return res.ok ? null : res.error;
+            }
+          : undefined
+      }
     />
   );
 
@@ -164,7 +203,7 @@ export default function AdminShell({
             if (confirm(`Annullare l'accredito della settimana del ${week}?`)) usersApi.undoPayment(view, week);
           }}
           onApprove={usersApi.approve}
-          onReject={usersApi.reject}
+          onReject={askReject}
           onRevoke={(log, name) => setLogAction({ uid: view, log, name, mode: "revoke" })}
           onDeleteLog={(log, name) => setLogAction({ uid: view, log, name, mode: "delete" })}
           onDeduct={() => setDeductFor(view)}
@@ -197,7 +236,7 @@ export default function AdminShell({
           );
         case "photos":
           return (
-            <AdminPhotosTab users={users} acts={actsApi.acts} supported={usersApi.photosSupported} onApprove={usersApi.approve} onReject={usersApi.reject} />
+            <AdminPhotosTab users={users} acts={actsApi.acts} supported={usersApi.photosSupported} onApprove={usersApi.approve} onReject={askReject} />
           );
         case "tx":
           return <AdminTransactionsTab users={users} />;
@@ -207,14 +246,9 @@ export default function AdminShell({
               users={users}
               acts={actsApi.acts}
               onApprove={usersApi.approve}
-              onReject={usersApi.reject}
+              onReject={askReject}
               onApproveMany={usersApi.approveMany}
-              onRejectMany={(picks) => {
-                // rejectLog cancella le righe: senza conferma non si torna indietro
-                if (!confirm(`Rifiutare ${picks.length} attività? Le voci verranno cancellate, non è reversibile.`)) return false;
-                void usersApi.rejectMany(picks);
-                return true;
-              }}
+              onRejectMany={askRejectMany}
             />
           );
         case "acts":
@@ -266,7 +300,22 @@ export default function AdminShell({
               acts={actsApi.acts}
               awardsSupported={usersApi.missionAwardsSupported}
               onBump={usersApi.bumpMission}
-              onNew={() => setMissDraft({ mode: "add", name: "", emoji: "🎯", desc: "", tgt: 5, pts: 30, team: false, deadline: "", to: "mia", actIds: [] })}
+              onNew={() =>
+                setMissDraft({
+                  mode: "add",
+                  name: "",
+                  emoji: "🎯",
+                  desc: "",
+                  tgt: 5,
+                  // le nuove premiano in euro; senza la migrazione si resta ai punti
+                  pts: usersApi.missionEuroSupported ? 0 : 30,
+                  euro: usersApi.missionEuroSupported ? "2,00" : "",
+                  team: false,
+                  deadline: "",
+                  to: "mia",
+                  actIds: [],
+                })
+              }
               onEdit={(m) =>
                 setMissDraft({
                   mode: "edit",
@@ -277,6 +326,7 @@ export default function AdminShell({
                   since: m.since,
                   tgt: m.tgt,
                   pts: m.pts,
+                  euro: m.euro ? m.euro.toFixed(2).replace(".", ",") : "",
                   team: m.team,
                   deadline: m.deadline ?? "",
                   to: m.assignee ?? "mia",
@@ -365,6 +415,18 @@ export default function AdminShell({
         {body()}
       </Shell>
 
+      {rejecting && (
+        <RejectModal
+          what={rejecting.what}
+          count={rejecting.picks.length}
+          onConfirm={(note) => {
+            const { picks } = rejecting;
+            if (picks.length === 1) void usersApi.reject(picks[0].uid, picks[0].logId, note);
+            else void usersApi.rejectMany(picks, note);
+          }}
+          onClose={() => setRejecting(null)}
+        />
+      )}
       {importing && (
         <ImportActivitiesModal
           existingNames={actsApi.acts.map((a) => a.name)}
@@ -459,6 +521,7 @@ export default function AdminShell({
           setDraft={(fn) => setMissDraft((d) => (d ? fn(d) : d))}
           acts={actsApi.acts}
           names={{ mia: users.mia.n, samira: users.samira.n }}
+          euroSupported={usersApi.missionEuroSupported}
           onSave={saveMission}
           onClose={() => setMissDraft(null)}
         />

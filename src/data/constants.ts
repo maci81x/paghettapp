@@ -120,6 +120,24 @@ export const MISSION_ACT = -3;
  */
 export const isPenalty = (l: { pts: number; actId: number }) => l.pts < 0 && l.actId >= 0;
 
+/**
+ * Voce in attesa dell'admin: né approvata, né annullata, né rifiutata.
+ * Le rifiutate restano nello storico con il motivo, ma non tornano in coda.
+ */
+export const isPending = (l: { ok: boolean; revoked?: boolean; rejected?: boolean }) => !l.ok && !l.revoked && !l.rejected;
+
+/** Etichetta del premio di una missione: euro per le nuove, punti per quelle di prima. */
+export const prizeLabel = (m: { pts: number; euro?: number }) => {
+  const parts: string[] = [];
+  if (m.euro && m.euro > 0) parts.push(`€${m.euro.toFixed(2)}`);
+  if (m.pts > 0) parts.push(`+${m.pts} pt`);
+  return parts.join(" + ") || "—";
+};
+
+/** Nota dell'entrata con cui si paga il premio in euro di una missione. */
+export const MISSION_MARK = "🎯";
+export const missionNote = (name: string) => `${MISSION_MARK} Missione: ${name.trim()}`;
+
 /** Penalità addebitate, dalla più recente. */
 export const penaltiesOf = <T extends { pts: number; actId: number; revoked?: boolean }>(log: T[], limit = 5) =>
   log.filter((l) => isPenalty(l) && !l.revoked).slice(-limit).reverse();

@@ -1,4 +1,4 @@
-import { TODS, USER_IDS } from "../../data/constants";
+import { TODS, USER_IDS, isPending } from "../../data/constants";
 import type { Activity, LogEntry, UserId, Users } from "../../data/types";
 import { Btn, GlassCard } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
@@ -32,7 +32,7 @@ export default function ApproveTab({
 }) {
   const pending: Pending[] = USER_IDS.flatMap((uid) =>
     users[uid].log
-      .filter((l) => !l.ok && !l.revoked)
+      .filter(isPending)
       .map((l) => ({ id: l.id, uid, l, a: acts.find((x) => x.id === l.actId) })),
   ).filter((x): x is Pending => !!x.a);
 

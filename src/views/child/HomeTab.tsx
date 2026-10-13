@@ -95,7 +95,7 @@ export default function HomeTab({
 
   // riepilogo di oggi: cosa ha segnato, in ordine di inserimento
   const doneToday = u.log
-    .filter((l) => l.date === todayISO() && !l.revoked)
+    .filter((l) => l.date === todayISO() && !l.revoked && !l.rejected)
     .map((l) => ({ l, a: acts.find((x) => x.id === l.actId) }));
 
   // classifica settimanale fra sorelle

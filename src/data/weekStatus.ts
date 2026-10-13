@@ -6,14 +6,17 @@ import { isWeekOver } from "./weekBounds.ts";
  *   in_corso      → la settimana corrente, non ancora chiudibile;
  *   da_confermare → finita, importo calcolato dal tier, in attesa dell'admin;
  *   confermata    → l'admin ha confermato l'importo del tier;
- *   modificata    → l'admin ha cambiato l'importo prima di confermare.
+ *   modificata    → l'admin ha cambiato l'importo prima di confermare;
+ *   fuori_app     → saldata in contanti prima che l'app la registrasse:
+ *                   chiusa, ma niente è entrato nei salvadanai.
  *
  * Non c'è un'approvazione automatica: una settimana resta da confermare
  * finché l'admin non la chiude.
  */
-export type WeekStatus = "in_corso" | "da_confermare" | "confermata" | "modificata";
+export type WeekStatus = "in_corso" | "da_confermare" | "confermata" | "modificata" | "fuori_app";
 
 export const weekStatus = (week: string, pay: Payment | undefined, today: Date = new Date()): WeekStatus => {
+  if (pay?.outside) return "fuori_app";
   if (pay) return pay.tier !== undefined && Math.abs(pay.tier - pay.amount) > 0.004 ? "modificata" : "confermata";
   return isWeekOver(week, today) ? "da_confermare" : "in_corso";
 };
@@ -23,4 +26,5 @@ export const WEEK_STATUS_LABEL: Record<WeekStatus, string> = {
   da_confermare: "🟠 Da confermare",
   confermata: "✅ Confermata",
   modificata: "✏️ Modificata",
+  fuori_app: "💵 Pagata fuori app",
 };

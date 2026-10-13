@@ -160,8 +160,8 @@ export default function AdminAllowanceCard({
               <span style={{ color: P.tx2 }}>
                 {p.week} · {p.pts}pt
               </span>
-              <span style={{ color: p.confirmed ? P.mint : P.gold }}>
-                €{p.amount.toFixed(2)} · {p.confirmed ? `✅ ${fmtDay(p.confirmedAt ?? p.date)}` : "⏳ in attesa"}
+              <span style={{ color: p.outside ? P.tx3 : p.confirmed ? P.mint : P.gold }}>
+                {p.outside ? "💵 pagata fuori app" : `€${p.amount.toFixed(2)} · ${p.confirmed ? `✅ ${fmtDay(p.confirmedAt ?? p.date)}` : "⏳ in attesa"}`}
               </span>
             </div>
           ))}

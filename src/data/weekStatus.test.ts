@@ -37,3 +37,7 @@ test("pagata con un importo diverso dal tier è modificata", () => {
 test("le paghette di prima, senza tier, restano confermate", () => {
   assert.equal(weekStatus("2026-08-31", pay(5), WED), "confermata");
 });
+
+test("una settimana chiusa fuori app ha uno stato suo, anche se l'importo è diverso dal tier", () => {
+  assert.equal(weekStatus("2026-08-31", { ...pay(0, 5), outside: true }, WED), "fuori_app");
+});

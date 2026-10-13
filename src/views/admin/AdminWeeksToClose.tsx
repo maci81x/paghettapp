@@ -29,6 +29,7 @@ export default function AdminWeeksToClose({
   dueFor,
   blockedFor,
   onConfirm,
+  onCloseOutside,
 }: {
   users: Users;
   /** Dalla più recente; più ragazze possono avere la stessa settimana. */
@@ -38,6 +39,11 @@ export default function AdminWeeksToClose({
   blockedFor: (uid: UserId) => string | null;
   /** Registra la paghetta: restituisce l'errore in chiaro, o null se è andata. */
   onConfirm: (uid: UserId, week: string, override?: { amount: number; note: string }) => Promise<string | null>;
+  /**
+   * Chiude la settimana senza accreditare niente: era già stata pagata in
+   * contanti. Assente finché il database non sa registrarlo.
+   */
+  onCloseOutside?: (uid: UserId, week: string) => Promise<string | null>;
 }) {
   const [edit, setEdit] = useState<{ key: string; amount: string; note: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -53,6 +59,22 @@ export default function AdminWeeksToClose({
     setBusy(null);
     if (res) setErr(res);
     else setEdit(null);
+  };
+
+  const closeOutside = async (r: WeekToClose) => {
+    if (!onCloseOutside) return;
+    const due = dueFor(r.uid, r.week);
+    if (
+      !confirm(
+        `Segnare la settimana ${weekLabel(r.week)} di ${users[r.uid].n} come già pagata fuori app? Non entra niente nei salvadanai (il tier sarebbe stato €${due.amount.toFixed(2)}).`,
+      )
+    )
+      return;
+    setBusy(keyOf(r));
+    setErr(null);
+    const res = await onCloseOutside(r.uid, r.week);
+    setBusy(null);
+    if (res) setErr(res);
   };
 
   const confirmAll = async () => {
@@ -162,6 +184,26 @@ export default function AdminWeeksToClose({
                   ✏️ Modifica
                 </Btn>
               </div>
+            )}
+            {onCloseOutside && !editing && (
+              <button
+                disabled={busy !== null}
+                onClick={() => void closeOutside(r)}
+                style={{
+                  marginTop: 6,
+                  minHeight: 36,
+                  width: "100%",
+                  background: "transparent",
+                  border: "none",
+                  color: P.tx3,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                  cursor: busy !== null ? "default" : "pointer",
+                }}
+              >
+                💵 Già pagata in contanti fuori app
+              </button>
             )}
           </div>
         );

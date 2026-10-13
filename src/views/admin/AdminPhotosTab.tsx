@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { LogPhotoThumb, PhotoViewer } from "../../components/LogPhoto";
-import { USER_IDS } from "../../data/constants";
+import { USER_IDS, isPending } from "../../data/constants";
 import type { Activity, LogEntry, UserId, Users } from "../../data/types";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
@@ -46,7 +46,7 @@ export default function AdminPhotosTab({
 
   const shots: Shot[] = USER_IDS.flatMap((uid) =>
     users[uid].log
-      .filter((l) => l.photo && !l.revoked && (!onlyPending || !l.ok))
+      .filter((l) => l.photo && !l.revoked && (!onlyPending || isPending(l)))
       .map((l) => ({ uid, l, name: acts.find((a) => a.id === l.actId)?.name ?? "Attività" })),
   ).sort((a, b) => b.l.date.localeCompare(a.l.date) || b.l.id - a.l.id);
 
@@ -59,7 +59,7 @@ export default function AdminPhotosTab({
         <Pill active={!onlyPending} onClick={() => setOnlyPending(false)} color={P.acc}>
           🖼️ Tutte
         </Pill>
-        <InfoTip text="Tocca una foto per vederla grande. Approvare dà i punti dell'attività; rifiutare cancella l'attività insieme alla foto." />
+        <InfoTip text="Tocca una foto per vederla grande. Approvare dà i punti dell'attività. Rifiutare chiede un motivo e lascia attività e foto nello storico (senza la migrazione del rifiuto, invece, le cancella)." />
       </div>
 
       {shots.length === 0 ? (
@@ -76,6 +76,7 @@ export default function AdminPhotosTab({
                 <LogPhotoThumb logId={sh.l.id} size="100%" onClick={() => setViewing(sh)} />
                 <span style={{ position: "absolute", top: 4, left: 4, fontSize: 13 }}>{users[sh.uid].av}</span>
                 {sh.l.ok && <span style={{ position: "absolute", top: 4, right: 4, fontSize: 12 }}>✅</span>}
+                {sh.l.rejected && <span style={{ position: "absolute", top: 4, right: 4, fontSize: 12 }}>❌</span>}
               </div>
               <p style={{ color: P.tx, fontSize: 10, fontWeight: 600, margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {sh.name}
@@ -94,7 +95,11 @@ export default function AdminPhotosTab({
           title={`${users[viewing.uid].n} · ${viewing.name} · ${fmtDay(viewing.l.date)}`}
           onClose={() => setViewing(null)}
           actions={
-            viewing.l.ok ? undefined : (
+            !isPending(viewing.l) ? (
+              viewing.l.rejected ? (
+                <p style={{ color: P.red, fontSize: 11, margin: 0 }}>❌ Rifiutata{viewing.l.adminNote ? `: ${viewing.l.adminNote}` : ""}</p>
+              ) : undefined
+            ) : (
               <div style={{ display: "flex", gap: 8 }}>
                 <Btn
                   style={{ flex: 1, minHeight: 48 }}

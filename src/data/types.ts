@@ -55,6 +55,9 @@ export interface LogEntry {
   revoked?: boolean;
   /** true quando la ragazza ha allegato una foto-prova (l'immagine si legge a parte). */
   photo?: boolean;
+  /** Rifiutata dall'admin: resta a storico, senza punti, con il motivo. */
+  rejected?: boolean;
+  adminNote?: string;
 }
 
 export interface Mission {
@@ -67,7 +70,13 @@ export interface Mission {
   /** Contatore manuale: usato solo se la missione non è collegata ad attività. */
   prog: number;
   tgt: number;
+  /** Premio in punti: quello delle missioni di prima. Le nuove hanno 0. */
   pts: number;
+  /**
+   * Premio in euro, versato nei salvadanai con lo split 30/60/10. Assente
+   * nelle missioni create prima: quelle continuano a premiare in punti.
+   */
+  euro?: number;
   team: boolean;
   /** Scadenza ISO YYYY-MM-DD ("" se senza scadenza). */
   deadline: string;
@@ -139,6 +148,8 @@ export interface Payment {
   confirmed?: boolean;
   /** Istante della conferma (timestamp ISO completo). */
   confirmedAt?: string;
+  /** Saldata in contanti fuori dall'app: chiusa, ma niente è entrato nei salvadanai. */
+  outside?: boolean;
 }
 
 /** Entrata registrata: paghetta settimanale o extra (regalo, lavoretto). */
@@ -314,6 +325,8 @@ export interface MissionDraft {
   desc: string;
   tgt: number;
   pts: number;
+  /** Premio in euro come testo del campo ("" = nessun premio in euro). */
+  euro: string;
   team: boolean;
   deadline: string;
   to: UserId | "both";

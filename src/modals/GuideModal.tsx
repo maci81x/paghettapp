@@ -62,7 +62,7 @@ const PAGES: { i: string; t: string; lines: string[] }[] = [
     i: "🎯",
     t: "Missioni",
     lines: [
-      'Obiettivi speciali con un premio in punti, come "5 attività di Relazioni in una settimana".',
+      'Obiettivi speciali, come "5 attività di Relazioni in una settimana": il premio in euro va nei tuoi salvadanai, 30/60/10 come la paghetta.',
       "Le missioni di squadra si fanno insieme: i progressi di tutte e due si sommano.",
       "⚔️ Nei match sfidi tua sorella: vince chi fa più punti nel periodo.",
     ],

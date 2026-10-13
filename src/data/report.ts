@@ -10,7 +10,8 @@ export const allIncome = (u: User): IncomeEntry[] => {
   const income = u.income ?? [];
   const known = new Set(income.map((i) => i.id));
   const legacy: IncomeEntry[] = (u.pays ?? [])
-    .filter((p) => !known.has(p.id))
+    // una settimana pagata in contanti fuori app non è un'entrata dell'app
+    .filter((p) => !known.has(p.id) && !p.outside)
     .map((p) => ({
       id: p.id,
       date: p.date,

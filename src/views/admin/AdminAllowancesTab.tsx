@@ -23,7 +23,7 @@ export default function AdminAllowancesTab({ users, toClose, onUndo }: { users: 
           <GlassCard key={uid}>
             <p style={{ color: u.c, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
               {u.av} {u.n} · paghette registrate
-              <InfoTip text="✅ confermata = importo del tier · ✏️ modificata = importo cambiato da te. A destra: se la ragazza ha confermato di aver ricevuto i soldi." />
+              <InfoTip text="✅ confermata = importo del tier · ✏️ modificata = importo cambiato da te · 💵 pagata fuori app = saldata in contanti, niente nei salvadanai. ↩️ annulla e riporta la settimana fra quelle da chiudere." />
             </p>
             {pays.length === 0 && <p style={{ color: P.tx3, fontSize: 11, margin: 0 }}>Ancora nessuna paghetta registrata.</p>}
             {pays.map((p) => {
@@ -36,11 +36,21 @@ export default function AdminAllowancesTab({ users, toClose, onUndo }: { users: 
                     </p>
                     <p style={{ color: P.tx3, fontSize: 10, margin: "1px 0 0" }}>
                       {WEEK_STATUS_LABEL[st]}
-                      {st === "modificata" && p.tier !== undefined && ` (tier €${p.tier.toFixed(2)})`} · registrata il {fmtDay(p.date)} ·{" "}
-                      {p.confirmed ? <span style={{ color: P.mint }}>ricevuta</span> : <span style={{ color: P.gold }}>da ricevere</span>}
+                      {(st === "modificata" || st === "fuori_app") && p.tier !== undefined && ` (tier €${p.tier.toFixed(2)})`} · registrata il{" "}
+                      {fmtDay(p.date)}
+                      {st === "fuori_app" ? (
+                        " · niente nei salvadanai"
+                      ) : (
+                        <>
+                          {" · "}
+                          {p.confirmed ? <span style={{ color: P.mint }}>ricevuta</span> : <span style={{ color: P.gold }}>da ricevere</span>}
+                        </>
+                      )}
                     </p>
                   </div>
-                  <span style={{ color: st === "modificata" ? P.gold : P.mint, fontWeight: 800, fontSize: 13 }}>€{p.amount.toFixed(2)}</span>
+                  <span style={{ color: st === "fuori_app" ? P.tx3 : st === "modificata" ? P.gold : P.mint, fontWeight: 800, fontSize: 13 }}>
+                    {st === "fuori_app" ? "💵" : `€${p.amount.toFixed(2)}`}
+                  </span>
                   <Btn small outline color={P.tx3} onClick={() => onUndo(uid, p.week)}>
                     ↩️
                   </Btn>

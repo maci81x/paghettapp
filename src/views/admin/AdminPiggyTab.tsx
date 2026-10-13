@@ -102,7 +102,7 @@ export default function AdminPiggyTab({
               </div>
               {(u.pays ?? []).length > 0 && (
                 <p style={{ color: P.tx3, fontSize: 9, margin: "6px 0 0" }}>
-                  Ultimi accrediti: {(u.pays ?? []).slice(0, 3).map((p) => `${p.week} €${p.amount.toFixed(2)}`).join(" · ")}
+                  Ultimi accrediti: {(u.pays ?? []).slice(0, 3).map((p) => `${p.week} ${p.outside ? "💵 fuori app" : `€${p.amount.toFixed(2)}`}`).join(" · ")}
                 </p>
               )}
             </div>

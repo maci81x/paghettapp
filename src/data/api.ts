@@ -84,6 +84,9 @@ export interface LogRow {
    * `created_at` dice solo quando la riga è stata scritta.
    */
   activity_date?: string | null;
+  /** Dalla migrazione `activity_logs_rejected`: quando l'admin ha rifiutato, e perché. */
+  rejected_at?: string | null;
+  admin_note?: string | null;
 }
 
 /** Natura di una voce senza attività collegata. */
@@ -107,6 +110,8 @@ export interface MissionRow {
   completed_by?: Record<string, string> | null;
   /** Aggiunta dalla migrazione `missions_hidden`: assente finché non è applicata. */
   hidden?: boolean | null;
+  /** Premio in euro, dalla migrazione `missions_bonus_amount`. NULL = premio in punti. */
+  bonus_amount?: number | null;
 }
 
 export interface IncomeRow {
@@ -127,6 +132,8 @@ export interface IncomeRow {
   confirmed_at?: string | null;
   /** Lunedì della settimana saldata, dalla migrazione `activity_date_and_income_week`. */
   week_start?: string | null;
+  /** Settimana saldata in contanti fuori dall'app, dalla migrazione `income_paid_outside`. */
+  paid_outside?: boolean | null;
 }
 
 export interface ExpenseRow {
@@ -207,6 +214,7 @@ export const toLog = (r: LogRow): LogEntry => ({
   ok: r.approved,
   paid: r.paid,
   revoked: !!r.revoked,
+  ...(r.rejected_at ? { rejected: true, adminNote: r.admin_note ?? "" } : {}),
 });
 
 export const toMission = (r: MissionRow, uid: UserId): Mission => ({
@@ -225,6 +233,7 @@ export const toMission = (r: MissionRow, uid: UserId): Mission => ({
   progBy: (r.progress ?? {}) as Mission["progBy"],
   completedBy: (r.completed_by ?? {}) as Mission["completedBy"],
   hidden: !!r.hidden,
+  ...(r.bonus_amount != null ? { euro: Number(r.bonus_amount) } : {}),
 });
 
 export const toWish = (r: WishRow): Wish => ({
@@ -284,6 +293,9 @@ export const schema = {
   incomeWeek: false,
   expenseStatus: false,
   logPhotos: false,
+  missionEuro: false,
+  paidOutside: false,
+  logReject: false,
 };
 
 export const probeSchema = async () => {
@@ -386,6 +398,27 @@ export const probeLogPhotos = async () => {
   const { error } = await supabase.from("log_photos").select("log_id").limit(1);
   schema.logPhotos = !error;
   return schema.logPhotos;
+};
+
+/** `missions.bonus_amount`: senza, i premi delle missioni restano in punti. */
+export const probeMissionEuro = async () => {
+  const { error } = await supabase.from("missions").select("bonus_amount").limit(1);
+  schema.missionEuro = !error;
+  return schema.missionEuro;
+};
+
+/** `income.paid_outside`: senza, "Segna come pagata fuori app" non compare. */
+export const probePaidOutside = async () => {
+  const { error } = await supabase.from("income").select("paid_outside").limit(1);
+  schema.paidOutside = !error;
+  return schema.paidOutside;
+};
+
+/** `activity_logs.rejected_at`: senza, rifiutare cancella la riga come prima. */
+export const probeLogReject = async () => {
+  const { error } = await supabase.from("activity_logs").select("rejected_at").limit(1);
+  schema.logReject = !error;
+  return schema.logReject;
 };
 
 /** Toglie dal payload le colonne indicate quando `when` è vero. */
@@ -564,12 +597,23 @@ export const approveLog = (logId: number) =>
   wrap<LogRow[]>(
     supabase
       .from("activity_logs")
-      .update(stripIf(!schema.logExtras, { approved: true, revoked: false }, ["revoked"]))
+      .update(stripIf(!schema.logReject, stripIf(!schema.logExtras, { approved: true, revoked: false, rejected_at: null }, ["revoked"]), ["rejected_at"]))
       .eq("id", logId)
       .select(),
   );
 
+/** Cancella la voce: ritiro della ragazza, o rifiuto quando `rejected_at` non esiste ancora. */
 export const rejectLog = (logId: number) => wrap<LogRow[]>(supabase.from("activity_logs").delete().eq("id", logId).select());
+
+/** Rifiuto non distruttivo: la voce resta, con la data del rifiuto e la nota dell'admin. */
+export const markLogRejected = (logId: number, note: string) =>
+  wrap<LogRow[]>(
+    supabase
+      .from("activity_logs")
+      .update({ approved: false, rejected_at: new Date().toISOString(), admin_note: note || null })
+      .eq("id", logId)
+      .select(),
+  );
 
 /** Correzione della nota da parte della ragazza, finché la voce è in attesa. */
 export const updateLogNote = (logId: number, note: string) =>
@@ -665,6 +709,7 @@ const missionPayload = (m: Omit<Mission, "id">, targets: UserId[]) =>
       target: m.tgt,
       team: m.team,
       since: m.since || null,
+      ...(schema.missionEuro ? { bonus_amount: m.euro ?? null } : {}),
     },
     ["team", "since"],
   );
@@ -756,6 +801,8 @@ export const createIncome = (d: {
   weekPts?: number;
   /** Lunedì della settimana saldata: solo per la paghetta. */
   weekStart?: string;
+  /** Settimana già saldata in contanti: nessun accredito, solo la chiusura. */
+  paidOutside?: boolean;
 }) =>
   wrap<IncomeRow[]>(
     supabase
@@ -775,6 +822,7 @@ export const createIncome = (d: {
           split_charity: d.quote?.beneficenza ?? null,
           confirmed: d.type !== "allowance",
           confirmed_at: d.type !== "allowance" ? new Date().toISOString() : null,
+          ...(d.paidOutside ? { paid_outside: true, confirmed: true, confirmed_at: new Date().toISOString() } : {}),
         }, ["confirmed", "confirmed_at"]), ["week_start"]),
       )
       .select(),

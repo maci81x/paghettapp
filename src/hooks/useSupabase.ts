@@ -18,10 +18,12 @@ import {
   USER_IDS,
   getTier,
   getWeekStart,
+  isPending,
   allowanceNote,
   allowanceWeek,
   giftNote,
   isGiftNote,
+  missionNote,
   isoDate,
   nowTod,
   periodRange,
@@ -63,6 +65,7 @@ const OPS = {
   createActivityLog: api.createActivityLog,
   approveLog: api.approveLog,
   rejectLog: api.rejectLog,
+  markLogRejected: api.markLogRejected,
   updateLogNote: api.updateLogNote,
   revokeLog: api.revokeLog,
   deleteLog: api.deleteLog,
@@ -226,7 +229,8 @@ function buildSnapshot(rows: {
 
     const incomeRows = rows.income.filter((i) => i.user_id === uid);
     u.income = incomeRows
-      .filter((i) => i.type !== "bonus")
+      // le settimane saldate in contanti chiudono la settimana ma non sono un'entrata dell'app
+      .filter((i) => i.type !== "bonus" && !i.paid_outside)
       .map<IncomeEntry>((i) => ({
         id: i.id,
         date: isoDate(new Date(i.created_at)),
@@ -252,6 +256,7 @@ function buildSnapshot(rows: {
           pts: row.week_pts ?? 0,
           amount: Number(row.amount),
           tier: row.tier != null ? Number(row.tier) : Number(row.amount),
+          ...(row.paid_outside ? { outside: true } : {}),
           split: rowQuotes(row),
           logIds: paidLogs.filter((l) => l.created_at <= row.created_at && l.created_at > prev).map((l) => l.id),
           ...rowConfirm(row),
@@ -314,6 +319,9 @@ export function useSupabase() {
       api.probeIncomeWeek(),
       api.probeExpenseStatus(),
       api.probeLogPhotos(),
+      api.probeMissionEuro(),
+      api.probePaidOutside(),
+      api.probeLogReject(),
     ]);
     const [u, p, a, l, m, i, e, w, b, inv, ph] = await Promise.all([
       api.fetchUsers(),
@@ -458,7 +466,7 @@ export function useSupabase() {
   const weekPtsOn = (uid: UserId, week: string) => getWeekPts(users[uid].log, fromISO(week));
 
   // una voce annullata dall'admin è già decisa: non torna in coda di approvazione
-  const pendingCnt = (uid: UserId) => users[uid].log.filter((l) => !l.ok && !l.revoked).length;
+  const pendingCnt = (uid: UserId) => users[uid].log.filter(isPending).length;
 
   const allPending = USER_IDS.reduce((s, uid) => s + pendingCnt(uid), 0);
 
@@ -475,7 +483,7 @@ export function useSupabase() {
    */
   const periodDone = (uid: UserId, act: Activity, date = todayISO()) => {
     const { from, to } = periodRange(act.freq, date);
-    return users[uid].log.filter((l) => l.actId === act.id && l.date >= from && l.date <= to && !l.revoked).reduce((s, l) => s + l.cnt, 0);
+    return users[uid].log.filter((l) => l.actId === act.id && l.date >= from && l.date <= to && !l.revoked && !l.rejected).reduce((s, l) => s + l.cnt, 0);
   };
 
   const todayByTod = (uid: UserId, actId: number) => {
@@ -656,7 +664,16 @@ export function useSupabase() {
     await send("updateUser", [uid, { total_pts: users[uid].totalPts + entry.pts }]);
   };
 
-  const reject = async (uid: UserId, logId: number) => {
+  /**
+   * Rifiuto dell'admin. Con `rejected_at` sul database la voce resta, con la
+   * foto e la nota, e la ragazza vede il motivo; senza, si cancella come prima.
+   */
+  const reject = async (uid: UserId, logId: number, note = "") => {
+    if (api.schema.logReject) {
+      patch(uid, (u) => ({ ...u, log: u.log.map((l) => (l.id === logId ? { ...l, ok: false, rejected: true, adminNote: note.trim() } : l)) }));
+      await send("markLogRejected", [logId, note.trim()]);
+      return;
+    }
     patch(uid, (u) => ({ ...u, log: u.log.filter((l) => l.id !== logId) }));
     await send("rejectLog", [logId]);
   };
@@ -667,7 +684,7 @@ export function useSupabase() {
    * `approveLog` più al massimo due `updateUser`, non N.
    */
   const approveMany = async (picks: { uid: UserId; logId: number }[]) => {
-    const fresh = picks.filter(({ uid, logId }) => users[uid].log.some((l) => l.id === logId && !l.ok));
+    const fresh = picks.filter(({ uid, logId }) => users[uid].log.some((l) => l.id === logId && isPending(l)));
     if (fresh.length === 0) return;
 
     const gained = {} as Record<UserId, number>;
@@ -697,19 +714,26 @@ export function useSupabase() {
     }
   };
 
-  /** Rifiuto in blocco: `rejectLog` cancella la riga, quindi non è reversibile. */
-  const rejectMany = async (picks: { uid: UserId; logId: number }[]) => {
+  /** Rifiuto in blocco, con la stessa nota per tutte le voci scelte. */
+  const rejectMany = async (picks: { uid: UserId; logId: number }[], note = "") => {
     if (picks.length === 0) return;
+    const soft = api.schema.logReject;
+    const reason = note.trim();
     setUsers((p) => {
       const next = { ...p };
       USER_IDS.forEach((uid) => {
         const ids = picks.filter((f) => f.uid === uid).map((f) => f.logId);
         if (ids.length === 0) return;
-        next[uid] = { ...next[uid], log: next[uid].log.filter((l) => !ids.includes(l.id)) };
+        next[uid] = {
+          ...next[uid],
+          log: soft
+            ? next[uid].log.map((l) => (ids.includes(l.id) ? { ...l, ok: false, rejected: true, adminNote: reason } : l))
+            : next[uid].log.filter((l) => !ids.includes(l.id)),
+        };
       });
       return next;
     });
-    for (const { logId } of picks) await send("rejectLog", [logId]);
+    for (const { logId } of picks) await (soft ? send("markLogRejected", [logId, reason]) : send("rejectLog", [logId]));
   };
 
   /**
@@ -718,7 +742,7 @@ export function useSupabase() {
    */
   const editLogNote = async (uid: UserId, logId: number, note: string) => {
     const entry = users[uid].log.find((l) => l.id === logId);
-    if (!entry || entry.ok || entry.revoked) return;
+    if (!entry || !isPending(entry)) return;
     patch(uid, (u) => ({ ...u, log: u.log.map((l) => (l.id === logId ? { ...l, note } : l)) }));
     await send("updateLogNote", [logId, note]);
   };
@@ -726,8 +750,10 @@ export function useSupabase() {
   /** Ritiro di un invio sbagliato da parte della ragazza, prima dell'approvazione. */
   const withdrawLog = async (uid: UserId, logId: number) => {
     const entry = users[uid].log.find((l) => l.id === logId);
-    if (!entry || entry.ok || entry.revoked) return;
-    await reject(uid, logId);
+    if (!entry || !isPending(entry)) return;
+    // il ritiro è un errore della ragazza, non un giudizio: la voce sparisce davvero
+    patch(uid, (u) => ({ ...u, log: u.log.filter((l) => l.id !== logId) }));
+    await send("rejectLog", [logId]);
   };
 
   /**
@@ -1227,16 +1253,42 @@ export function useSupabase() {
       if (targets.length === 0) return;
       const stamp = todayISO();
       const completedBy = { ...(m.completedBy ?? {}), ...Object.fromEntries(targets.map((uid) => [uid, stamp])) };
+      // il premio in euro arriva comunque, anche a chi è già oltre l'ultima fascia
+      const euro = m.euro && m.euro > 0 ? +m.euro.toFixed(2) : 0;
+      const quote = splitAllowance(euro);
+      const note = missionNote(m.name);
       setUsers((p) => {
         const out = { ...p };
         targets.forEach((uid) => {
+          const u = out[uid];
           out[uid] = {
-            ...out[uid],
-            totalPts: out[uid].totalPts + m.pts,
-            log: [
-              ...out[uid].log,
-              { id: Date.now() + Math.round(m.id), actId: MISSION_ACT, date: stamp, cnt: 1, note: `🎯 ${m.name}`, tod: nowTod(), pts: m.pts, ok: true },
-            ],
+            ...u,
+            totalPts: u.totalPts + m.pts,
+            log:
+              m.pts > 0
+                ? [...u.log, { id: Date.now() + Math.round(m.id), actId: MISSION_ACT, date: stamp, cnt: 1, note: `🎯 ${m.name}`, tod: nowTod(), pts: m.pts, ok: true }]
+                : u.log,
+            ...(euro > 0
+              ? {
+                  w: {
+                    risparmio: +(u.w.risparmio + quote.risparmio).toFixed(2),
+                    personale: +(u.w.personale + quote.personale).toFixed(2),
+                    beneficenza: +(u.w.beneficenza + quote.beneficenza).toFixed(2),
+                  },
+                  income: [
+                    {
+                      id: Date.now() + Math.round(m.id) + 1,
+                      date: stamp,
+                      amount: euro,
+                      source: note,
+                      split: { risparmio: SPLIT.risparmio * 100, personale: SPLIT.personale * 100, beneficenza: SPLIT.beneficenza * 100 },
+                      type: "extra" as const,
+                      confirmed: true,
+                    },
+                    ...(u.income ?? []),
+                  ],
+                }
+              : {}),
           };
         });
         USER_IDS.forEach((uid) => {
@@ -1248,8 +1300,14 @@ export function useSupabase() {
       // coda, mentre premiare senza aver segnato nulla raddoppierebbe
       await send("setMissionCompleted", [m.id, completedBy]);
       for (const uid of targets) {
-        await send("awardMissionPoints", [uid, m.pts, m.name]);
-        await send("updateUser", [uid, { total_pts: users[uid].totalPts + m.pts }]);
+        if (m.pts > 0) {
+          await send("awardMissionPoints", [uid, m.pts, m.name]);
+          await send("updateUser", [uid, { total_pts: users[uid].totalPts + m.pts }]);
+        }
+        if (euro > 0) {
+          await send("createIncome", [{ userId: uid, type: "extra", amount: euro, note, quote }]);
+          for (const f of FUNDS) await send("updatePiggybank", [uid, f, quote[f]]);
+        }
       }
     },
     [users, send],
@@ -1410,6 +1468,34 @@ export function useSupabase() {
     return { ok: true as const };
   };
 
+  /**
+   * Chiude una settimana già saldata in contanti prima che l'app la
+   * registrasse: niente entra nei salvadanai, ma la settimana esce dalle
+   * "da chiudere" e i suoi punti risultano pagati. La riga di paghetta a
+   * importo zero occupa il posto della settimana nell'indice unico, così non
+   * la si può poi pagare di nuovo per sbaglio.
+   */
+  const closeWeekOutside = async (uid: UserId, week: string) => {
+    if (!api.schema.paidOutside) return { ok: false as const, error: "Manca la migrazione 20261014_income_paid_outside.sql." };
+    const blocked = payBlock(uid, week) ?? (await payBlockRemote(uid, week));
+    if (blocked) return { ok: false as const, error: blocked };
+    const { pts, amount: tier } = duePreview(uid, week);
+    const logIds = weekLogs(users[uid].log, fromISO(week)).filter((l) => l.ok && !l.paid).map((l) => l.id);
+    const zero = { risparmio: 0, personale: 0, beneficenza: 0 };
+    const note = `${allowanceNote(week)} · pagata fuori app`;
+    const row = await send<api.IncomeRow>("createIncome", [
+      { userId: uid, type: "allowance", amount: 0, note, quote: zero, tier, weekPts: pts, weekStart: week, paidOutside: true },
+    ]);
+    if (logIds.length > 0) await send("markLogsPaid", [logIds, true]);
+    const id = row?.id ?? Date.now();
+    patch(uid, (u) => ({
+      ...u,
+      log: u.log.map((l) => (logIds.includes(l.id) ? { ...l, paid: true } : l)),
+      pays: [{ id, week, date: todayISO(), pts, amount: 0, tier, split: zero, logIds, confirmed: true, outside: true }, ...(u.pays ?? [])],
+    }));
+    return { ok: true as const };
+  };
+
   const undoPayment = async (uid: UserId, week: string) => {
     const pay = (users[uid].pays ?? []).find((p) => p.week === week);
     if (!pay) return;
@@ -1426,7 +1512,8 @@ export function useSupabase() {
     }));
     await send("deleteIncome", [pay.id]);
     if ((pay.logIds ?? []).length > 0) await send("markLogsPaid", [pay.logIds, false]);
-    for (const f of FUNDS) await send("updatePiggybank", [uid, f, -pay.split[f]]);
+    // una settimana chiusa fuori app non aveva accreditato niente: niente da togliere
+    for (const f of FUNDS) if (pay.split[f] !== 0) await send("updatePiggybank", [uid, f, -pay.split[f]]);
   };
 
   return {
@@ -1513,6 +1600,12 @@ export function useSupabase() {
     bumpMission,
     syncMissions,
     missionAwardsSupported: api.schema.missionDone,
+    /** false finché la migrazione `missions_bonus_amount` non è applicata. */
+    missionEuroSupported: api.schema.missionEuro,
+    /** false finché la migrazione `income_paid_outside` non è applicata. */
+    paidOutsideSupported: api.schema.paidOutside,
+    /** false finché la migrazione `activity_logs_rejected` non è applicata. */
+    rejectNoteSupported: api.schema.logReject,
     payments,
     paymentFor,
     duePreview,
@@ -1520,6 +1613,7 @@ export function useSupabase() {
     payableWeeks,
     weeksToClose,
     payWeek,
+    closeWeekOutside,
     undoPayment,
   };
 }

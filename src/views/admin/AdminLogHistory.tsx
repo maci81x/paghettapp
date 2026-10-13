@@ -50,6 +50,7 @@ type Status = { label: string; color: string };
 const statusOf = (l: LogEntry): Status => {
   if (l.ok) return { label: "✅ approvato", color: P.mint };
   if (l.revoked) return { label: "❌ annullato", color: P.red };
+  if (l.rejected) return { label: l.adminNote ? `🚫 rifiutato: ${l.adminNote}` : "🚫 rifiutato", color: P.red };
   return { label: "⏳ in attesa", color: P.gold };
 };
 

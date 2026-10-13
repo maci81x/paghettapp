@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATS, USER_IDS, daysLeft } from "../../data/constants";
+import { CATS, USER_IDS, daysLeft, prizeLabel } from "../../data/constants";
 import type { MissionState } from "../../data/missions";
 import { assignees, byState, missionProgress, missionState } from "../../data/missions";
 import type { Range } from "../../data/movements";
@@ -124,7 +124,7 @@ export default function AdminMissionsTab({
                 {m.team ? "🤝 Squadra" : "👤 Individuale"}
               </span>
               <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
-                🏆 +{m.pts}pt
+                🏆 {prizeLabel(m)}
               </span>
               <span style={{ background: alpha(style.color, 12), color: style.color, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
                 {style.label}
@@ -206,7 +206,7 @@ export default function AdminMissionsTab({
       {!awardsSupported && (
         <GlassCard style={{ padding: 10, background: alpha(P.gold, 6), border: `1px solid ${alpha(P.gold, 18)}` }}>
           <p style={{ color: P.gold, fontSize: 11, margin: 0, fontWeight: 600, lineHeight: 1.45 }}>
-            ⚠️ I punti delle missioni non vengono assegnati in automatico: manca la colonna <code>completed_by</code> su <code>missions</code>.
+            ⚠️ I premi delle missioni non vengono assegnati in automatico: manca la colonna <code>completed_by</code> su <code>missions</code>.
             <span style={{ display: "block", color: P.tx3, fontWeight: 400, fontSize: 10, marginTop: 3 }}>
               Applica la migrazione <code>20260825_missions_completed_by.sql</code>. Senza, non c'è modo di ricordare chi è già stato premiato.
             </span>
@@ -217,7 +217,7 @@ export default function AdminMissionsTab({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>
           {active.length} in corso
-          <InfoTip text="I punti arrivano da soli quando il progresso tocca l'obiettivo: in squadra a entrambe, da sole a chi ha finito." />
+          <InfoTip text="Il premio arriva da solo quando il progresso tocca l'obiettivo: in squadra a entrambe, da sole a chi ha finito. Il premio in euro va nei salvadanai con lo split 30/60/10." />
         </span>
         <div style={{ display: "flex", gap: 6 }}>
           {s.selecting ? (

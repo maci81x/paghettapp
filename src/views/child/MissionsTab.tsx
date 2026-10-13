@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATS, daysLeft } from "../../data/constants";
+import { CATS, daysLeft, prizeLabel } from "../../data/constants";
 import type { MissionState } from "../../data/missions";
 import { assignees, byState, missionProgress, missionState, visibleMissions } from "../../data/missions";
 import type { Activity, Match, Mission, UserId, Users } from "../../data/types";
@@ -66,7 +66,7 @@ function MissionCard({ m, uid, users, acts, grad, collapsed }: { m: Mission; uid
               {m.team ? "🤝 Squadra" : "👤 Individuale"}
             </span>
             <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 800 }}>
-              🏆 +{m.pts}pt
+              🏆 {prizeLabel(m)}
             </span>
             {m.deadline && state !== "done" ? <Deadline iso={m.deadline} /> : null}
             {style.label && (
@@ -131,7 +131,7 @@ function MissionCard({ m, uid, users, acts, grad, collapsed }: { m: Mission; uid
             </p>
           )}
 
-          {awarded && <p style={{ color: P.mint, fontSize: 10, margin: "5px 0 0", fontWeight: 700 }}>🏆 +{m.pts}pt già assegnati</p>}
+          {awarded && <p style={{ color: P.mint, fontSize: 10, margin: "5px 0 0", fontWeight: 700 }}>🏆 {prizeLabel(m)} già assegnati</p>}
         </>
       )}
     </GlassCard>

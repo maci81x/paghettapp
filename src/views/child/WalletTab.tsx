@@ -172,10 +172,12 @@ export default function WalletTab({
             <div key={p.id} style={{ padding: "5px 0", borderBottom: `1px solid ${P.gb}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
                 <span style={{ color: P.tx }}>Settimana del {p.week}</span>
-                <span style={{ color: P.mint, fontWeight: 700 }}>+€{p.amount.toFixed(2)}</span>
+                <span style={{ color: p.outside ? P.tx3 : P.mint, fontWeight: 700 }}>{p.outside ? "💵" : `+€${p.amount.toFixed(2)}`}</span>
               </div>
               <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
-                {p.pts}pt · 🏦 €{p.split.risparmio.toFixed(2)} · 🎒 €{p.split.personale.toFixed(2)} · 🤝 €{p.split.beneficenza.toFixed(2)}
+                {p.outside
+                  ? `${p.pts}pt · 💵 pagata in contanti, fuori dai salvadanai`
+                  : `${p.pts}pt · 🏦 €${p.split.risparmio.toFixed(2)} · 🎒 €${p.split.personale.toFixed(2)} · 🤝 €${p.split.beneficenza.toFixed(2)}`}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
                 <span style={{ color: p.confirmed ? P.mint : P.gold, fontSize: 9, fontWeight: 600 }}>{confirmLabel(p)}</span>

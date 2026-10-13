@@ -2,7 +2,7 @@ import { Suspense, lazy, useState } from "react";
 import MovementFilters from "../../components/MovementFilters";
 import MovementSummary from "../../components/MovementSummary";
 import TierBar from "../../components/TierBar";
-import { FUNDS, PERIOD_MONTHS, TODS, YIELD_YEAR, fundName, getLvl, getTier } from "../../data/constants";
+import { FUNDS, PERIOD_MONTHS, TODS, YIELD_YEAR, fundName, getLvl, getTier, isPending } from "../../data/constants";
 import type { Activity, Fund, LogEntry, Payment, Period, UserId, Users } from "../../data/types";
 import { Avatar, Btn, GlassCard, PeriodBar } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
@@ -77,7 +77,7 @@ export default function AdminChildView({
   const lvl = getLvl(u.totalPts);
   const tier = getTier(weekPts);
   const months = PERIOD_MONTHS[period];
-  const pending = u.log.filter((l) => !l.ok && !l.revoked);
+  const pending = u.log.filter(isPending);
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
   const moves = filterMovements(u, filter);
   const summary = summarize(moves);

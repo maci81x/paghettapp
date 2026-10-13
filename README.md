@@ -24,6 +24,9 @@ Stanno in `supabase/migrations/` e si eseguono **una volta** nella SQL Editor di
 |---|---|
 | `20261013_expenses_planned.sql` | Spese in due tempi: ⏳ previsto → ✓ effettivo |
 | `20261013_log_photos.sql` | 📸 Foto-prova sulle attività e scheda Foto dell'admin |
+| `20261014_missions_bonus_amount.sql` | Premio delle missioni in euro, versato 30/60/10 (le missioni a punti restano a punti) |
+| `20261014_income_paid_outside.sql` | 💵 "Già pagata in contanti fuori app" nelle settimane da chiudere |
+| `20261014_activity_logs_rejected.sql` | Rifiuto non distruttivo con nota dell'admin (la voce e la foto restano) |
 
 ## Settimane e paghetta
 
