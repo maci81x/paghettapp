@@ -12,9 +12,9 @@ type PtsFilter = "all" | "low" | "mid" | "high";
 const FREQ_SHORT: Record<string, string> = { daily: "giorn.", weekly: "sett.", monthly: "mens." };
 const PTS_FILTERS: { k: PtsFilter; l: string }[] = [
   { k: "all", l: "Tutti" },
-  { k: "low", l: "≤5pt" },
+  { k: "low", l: "1-5" },
   { k: "mid", l: "5-10" },
-  { k: "high", l: "≥10" },
+  { k: "high", l: "10+" },
 ];
 
 export default function ActivitiesTab({

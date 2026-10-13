@@ -1,7 +1,7 @@
 // node --test src/data/movements.test.ts
 import assert from "node:assert/strict";
 import test from "node:test";
-import { emptyFilter, filterMovements, inRange, isFiltered, spesaDate, summarize, summaryText } from "./movements.ts";
+import { emptyFilter, filterMovements, inRange, isFiltered, spesaDate, summarize, summaryText, txRows } from "./movements.ts";
 import type { IncomeEntry, Spesa, User } from "./types";
 
 /** 15 marzo 2026, una domenica: la settimana ISO parte dal 9. */
@@ -108,4 +108,28 @@ test("il testo da copiare elenca solo i tipi presenti", () => {
   assert.ok(txt.includes("🟢 Paghetta: €15.00 (1)"), txt);
   assert.ok(txt.includes("💰 Totale entrate: €40.00"), txt);
   assert.ok(txt.includes("📊 Saldo: €29.00"), txt);
+});
+
+test("txRows: entrate, spese e previste insieme, dalla più recente", () => {
+  const u = user();
+  const f = { ...emptyFilter(), range: "month" as const };
+  const planned = [sp(20, "2026-03-15", 5, "personale"), sp(21, "2026-02-01", 9, "personale")];
+  const rows = txRows(filterMovements(u, f, TODAY), planned, f, TODAY);
+  assert.deepEqual(
+    rows.map((r) => r.key),
+    ["p20", "i1", "s10", "i2", "i3", "s11"],
+  );
+  const prev = rows.find((r) => r.key === "p20")!;
+  assert.equal(prev.status, "previsto");
+  assert.equal(prev.amount, -5);
+  assert.equal(rows.find((r) => r.key === "s10")!.amount, -3);
+});
+
+test("txRows: una paghetta non confermata è da ricevere, una spesa nata prevista è effettiva", () => {
+  const u = user();
+  u.spese = [{ ...sp(30, "2026-02-19", 3.5, "personale"), planned: 5 }];
+  const f = { ...emptyFilter(), range: "prevMonth" as const };
+  const rows = txRows(filterMovements(u, f, TODAY), [], f, TODAY);
+  assert.equal(rows.find((r) => r.key === "i4")!.status, "da_ricevere");
+  assert.equal(rows.find((r) => r.key === "s30")!.status, "effettivo");
 });

@@ -165,3 +165,47 @@ export const summaryText = (range: Range, rows: { name: string; summary: Summary
   lines.push(`Generato il ${todayISO()}`);
   return lines.join("\n");
 };
+
+/** Una riga del registro unico delle transazioni (vista admin). */
+export interface TxRow {
+  key: string;
+  date: string;
+  label: string;
+  /** Positivo = entrata, negativo = uscita. Per le previste è la cifra prevista. */
+  amount: number;
+  status: "ok" | "previsto" | "effettivo" | "da_ricevere";
+  fund?: Fund;
+  icon: string;
+}
+
+/**
+ * Entrate, spese e spese previste in un solo elenco, dalla più recente.
+ * Le previste seguono il filtro di periodo e salvadanaio come le spese, ma
+ * restano un'informazione: non sono soldi usciti.
+ */
+export const txRows = (m: Movements, planned: Spesa[], f: MovementFilter, today = new Date()): TxRow[] => {
+  const rows: TxRow[] = [
+    ...m.income.map<TxRow>((i) => ({
+      key: `i${i.id}`,
+      date: i.date,
+      label: i.source,
+      amount: i.amount,
+      status: i.type === "paghetta" && !i.confirmed ? "da_ricevere" : "ok",
+      icon: incomeIcon(i.type),
+    })),
+    ...m.spese.map<TxRow>((s) => ({
+      key: `s${s.id}`,
+      date: spesaDate(s, today),
+      label: s.ds,
+      amount: -s.a,
+      status: s.planned !== undefined ? "effettivo" : "ok",
+      fund: s.f,
+      icon: "💸",
+    })),
+    ...planned
+      .filter((s) => inRange(spesaDate(s, today), f.range, today))
+      .filter((s) => f.funds.length === 0 || f.funds.includes(s.f))
+      .map<TxRow>((s) => ({ key: `p${s.id}`, date: spesaDate(s, today), label: s.ds, amount: -s.a, status: "previsto", fund: s.f, icon: "⏳" })),
+  ];
+  return rows.sort((a, b) => b.date.localeCompare(a.date) || a.key.localeCompare(b.key));
+};

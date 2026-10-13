@@ -77,6 +77,7 @@ export default function PendingApprovalCard({
                         <span style={{ fontSize: 10, color: P.gold, fontWeight: 700 }}>+{l.pts}pt in attesa</span>
                         <span style={{ fontSize: 9, color: P.tx3 }}>{TODS.find((t) => t.k === l.tod)?.l}</span>
                         <span style={{ fontSize: 9, color: P.gold, fontWeight: 600 }}>⏳ In attesa</span>
+                        {l.photo && <span style={{ fontSize: 9, color: P.blue, fontWeight: 600 }}>📸 foto allegata</span>}
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>

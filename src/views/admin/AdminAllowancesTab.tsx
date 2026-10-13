@@ -1,0 +1,55 @@
+import type { ReactNode } from "react";
+import { USER_IDS } from "../../data/constants";
+import type { Users, UserId } from "../../data/types";
+import { weekLabel } from "../../data/weekBounds";
+import { WEEK_STATUS_LABEL, weekStatus } from "../../data/weekStatus";
+import { Btn, GlassCard, InfoTip } from "../../design/components";
+import { P } from "../../design/tokens";
+import { fmtDay } from "../../utils/dates";
+
+/**
+ * Registro delle paghette: in cima le settimane da chiudere, sotto lo storico
+ * di ogni ragazza con lo stato di ciascuna settimana (confermata, modificata,
+ * ricevuta o ancora da ricevere).
+ */
+export default function AdminAllowancesTab({ users, toClose, onUndo }: { users: Users; toClose: ReactNode; onUndo: (uid: UserId, week: string) => void }) {
+  return (
+    <div>
+      {toClose}
+      {USER_IDS.map((uid) => {
+        const u = users[uid];
+        const pays = u.pays ?? [];
+        return (
+          <GlassCard key={uid}>
+            <p style={{ color: u.c, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
+              {u.av} {u.n} · paghette registrate
+              <InfoTip text="✅ confermata = importo del tier · ✏️ modificata = importo cambiato da te. A destra: se la ragazza ha confermato di aver ricevuto i soldi." />
+            </p>
+            {pays.length === 0 && <p style={{ color: P.tx3, fontSize: 11, margin: 0 }}>Ancora nessuna paghetta registrata.</p>}
+            {pays.map((p) => {
+              const st = weekStatus(p.week, p);
+              return (
+                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderTop: `1px solid ${P.gb}` }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: P.tx, fontSize: 12, fontWeight: 600, margin: 0 }}>
+                      {weekLabel(p.week)} · {p.pts} pt
+                    </p>
+                    <p style={{ color: P.tx3, fontSize: 10, margin: "1px 0 0" }}>
+                      {WEEK_STATUS_LABEL[st]}
+                      {st === "modificata" && p.tier !== undefined && ` (tier €${p.tier.toFixed(2)})`} · registrata il {fmtDay(p.date)} ·{" "}
+                      {p.confirmed ? <span style={{ color: P.mint }}>ricevuta</span> : <span style={{ color: P.gold }}>da ricevere</span>}
+                    </p>
+                  </div>
+                  <span style={{ color: st === "modificata" ? P.gold : P.mint, fontWeight: 800, fontSize: 13 }}>€{p.amount.toFixed(2)}</span>
+                  <Btn small outline color={P.tx3} onClick={() => onUndo(uid, p.week)}>
+                    ↩️
+                  </Btn>
+                </div>
+              );
+            })}
+          </GlassCard>
+        );
+      })}
+    </div>
+  );
+}

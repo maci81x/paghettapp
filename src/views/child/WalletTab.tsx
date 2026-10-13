@@ -21,6 +21,7 @@ export default function WalletTab({
   onNewIncome,
   onNewGift,
   onConfirmIncome,
+  onSettle,
 }: {
   u: User;
   uc: string;
@@ -31,7 +32,10 @@ export default function WalletTab({
   onNewIncome: () => void;
   onNewGift: () => void;
   onConfirmIncome: (id: number) => void;
+  /** Apre "Quanto hai speso?" su una spesa prevista. */
+  onSettle: (id: number) => void;
 }) {
+  const planned = u.planned ?? [];
   const [filter, setFilter] = useState<MovementFilter>(emptyFilter);
   const total = FUNDS.reduce((s, k) => s + u.w[k], 0);
   const moves = filterMovements(u, filter);
@@ -186,6 +190,43 @@ export default function WalletTab({
         )}
       </GlassCard>
 
+      {planned.length > 0 && (
+        <GlassCard style={{ border: `1.5px solid ${alpha(P.gold, 40)}` }}>
+          <p style={{ color: P.gold, fontWeight: 700, fontSize: 13, margin: "0 0 2px" }}>
+            ⏳ Spese previste <InfoTip text="Hai annotato queste spese ma i soldi non sono ancora usciti. Quando spendi, tocca la spesa e scrivi quanto è costata davvero." />
+          </p>
+          <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 6px" }}>
+            Impegnati €{planned.reduce((s, p) => s + p.a, 0).toFixed(2)} · tocca per dire quanto hai speso
+          </p>
+          {planned.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onSettle(p.id)}
+              style={{
+                display: "flex",
+                width: "100%",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
+                minHeight: 48,
+                padding: "6px 0",
+                background: "transparent",
+                border: "none",
+                borderTop: `1px solid ${P.gb}`,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <span style={{ color: P.tx, fontSize: 12 }}>
+                {p.d} · {p.ds}
+                <span style={{ display: "block", color: P.tx3, fontSize: 9 }}>{fundName(u, p.f)}</span>
+              </span>
+              <span style={{ color: P.gold, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>⏳ €{p.a.toFixed(2)} ›</span>
+            </button>
+          ))}
+        </GlassCard>
+      )}
+
       <GlassCard>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>💸 Spese</p>
@@ -203,8 +244,9 @@ export default function WalletTab({
               <span style={{ color: P.tx }}>
                 {s.d} · {s.ds}
               </span>
-              <span style={{ color: P.red }}>
+              <span style={{ color: P.red, textAlign: "right" }}>
                 -€{s.a.toFixed(2)} <span style={{ color: P.tx3 }}>({fundName(u, s.f)})</span>
+                {s.planned !== undefined && <span style={{ display: "block", color: P.tx3, fontSize: 9 }}>✓ effettivo · previsto €{s.planned.toFixed(2)}</span>}
               </span>
             </div>
           ))

@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { TODS, isoDate, todayISO } from "../data/constants";
 import type { CompletionDraft } from "../data/types";
 import { Btn, Label, Modal, Pill, TextArea } from "../design/components";
-import { P, gls } from "../design/tokens";
+import { P, alpha, gls } from "../design/tokens";
+import { resizeImage } from "../utils/imageResize";
 
 /** Ieri in formato ISO: l'unico giorno passato che le ragazze possono segnare. */
 const yesterdayISO = () => {
@@ -16,6 +18,7 @@ export default function CompletionModal({
   color,
   grad,
   remainingOn,
+  photoEnabled,
   onConfirm,
   onClose,
 }: {
@@ -25,9 +28,23 @@ export default function CompletionModal({
   grad: string;
   /** Quante volte l'attività può ancora essere segnata in quel giorno. */
   remainingOn: (date: string) => number;
+  /** Foto-prova possibile: database pronto e rete presente. */
+  photoEnabled: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const [photoErr, setPhotoErr] = useState<string | null>(null);
+  const pickPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setPhotoErr(null);
+    try {
+      // 800px bastano per vedere un letto rifatto e stanno in un centinaio di KB
+      const photo = await resizeImage(file, 800);
+      setDraft((d) => ({ ...d, photo }));
+    } catch {
+      setPhotoErr("Non riesco a leggere questa immagine, prova con un'altra.");
+    }
+  };
   const step = (n: number) => setDraft((d) => ({ ...d, cnt: Math.min(d.maxCnt, Math.max(1, d.cnt + n)) }));
   // solo oggi o ieri: più indietro lo storico lo corregge l'admin.
   // ogni giorno ha il suo limite, quindi ognuno porta quante volte gli restano
@@ -89,6 +106,40 @@ export default function CompletionModal({
         rows={2}
         style={{ marginBottom: 12 }}
       />
+      {photoEnabled && (
+        <>
+          <Label>📸 Foto-prova (facoltativa)</Label>
+          {draft.photo ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <img src={draft.photo} alt="Foto-prova" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 10 }} />
+              <Btn small outline color={P.tx3} onClick={() => setDraft((d) => ({ ...d, photo: undefined }))}>
+                Togli
+              </Btn>
+            </div>
+          ) : (
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                minHeight: 48,
+                marginBottom: 12,
+                borderRadius: 12,
+                border: `1.5px dashed ${alpha(color, 50)}`,
+                color,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              📷 Scatta o scegli una foto
+              <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => void pickPhoto(e.target.files?.[0])} />
+            </label>
+          )}
+          {photoErr && <p style={{ fontSize: 10, color: P.red, margin: "-6px 0 10px" }}>{photoErr}</p>}
+        </>
+      )}
       <div style={{ display: "flex", gap: 8 }}>
         <Btn style={{ flex: 1 }} grad={grad} onClick={onConfirm}>
           Invia ✓

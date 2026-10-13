@@ -1,32 +1,30 @@
-# React + TypeScript + Vite
+# PaghettApp
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+PWA di famiglia per Mia e Samira: attività → punti → paghetta settimanale divisa in tre salvadanai (Risparmio 30% · Personale 60% · Beneficenza 10%), spese, missioni, match tra sorelle e investimenti simulati.
 
-Currently, two official plugins are available:
+- **Stack:** React + TypeScript + Vite, PWA (`vite-plugin-pwa`), Supabase (`olxesmxfadtgsinxrkcr`, eu-west-1).
+- **Deploy:** GitHub Pages, automatico a ogni push su `main` → https://maci81x.github.io/paghettapp/
+- **Accesso:** PIN a 4 cifre verificati sul database (`check_pin`, bcrypt), mai inviati al browser.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Sviluppo
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+npm run dev            # http://localhost:5173/paghettapp/
+npm run lint
+npm run build
+node --test src/**/*.test.ts
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Migrazioni
+
+Stanno in `supabase/migrations/` e si eseguono **una volta** nella SQL Editor di Supabase, in ordine di nome. Sono tutte idempotenti e facoltative: finché una manca, l'app se ne accorge all'avvio e spegne solo la funzione che ne dipende.
+
+| Migrazione | Cosa abilita |
+|---|---|
+| `20261013_expenses_planned.sql` | Spese in due tempi: ⏳ previsto → ✓ effettivo |
+| `20261013_log_photos.sql` | 📸 Foto-prova sulle attività e scheda Foto dell'admin |
+
+## Settimane e paghetta
+
+La settimana va da lunedì a domenica e i punti contano sulla **data dell'attività**. Dal lunedì la settimana appena finita compare nella Dashboard admin fra le **settimane da chiudere**, con l'importo già calcolato dal tier: l'admin la conferma, la modifica prima di confermarla, o le chiude tutte insieme. Nessuna si chiude da sola. Un indice unico sul database impedisce di pagare due volte la stessa settimana.

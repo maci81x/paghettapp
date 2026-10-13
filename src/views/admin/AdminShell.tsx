@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { USER_IDS, todayISO } from "../../data/constants";
+import { USER_IDS, hasFundNames, todayISO } from "../../data/constants";
 import type { ActivityDraft, AdminTab, LogEntry, MatchDraft, MissionDraft, Period, PinKey, UserId } from "../../data/types";
 import { prevWeekStart } from "../../data/weekBounds";
 import { Avatar, NavItem, Pill } from "../../design/components";
@@ -13,6 +13,7 @@ import BonusPointsModal from "../../modals/BonusPointsModal";
 import ConfirmModal from "../../modals/ConfirmModal";
 import DeductPointsModal from "../../modals/DeductPointsModal";
 import ExtraIncomeModal from "../../modals/ExtraIncomeModal";
+import ImportActivitiesModal from "../../modals/ImportActivitiesModal";
 import MatchEditModal from "../../modals/MatchEditModal";
 import MissionEditModal from "../../modals/MissionEditModal";
 import PiggyActionModal from "../../modals/PiggyActionModal";
@@ -20,6 +21,10 @@ import type { PiggyActionDraft } from "../../modals/PiggyActionModal";
 import PinChangeModal from "../../modals/PinChangeModal";
 import Shell from "../Shell";
 import AdminActivitiesTab from "./AdminActivitiesTab";
+import AdminAllowancesTab from "./AdminAllowancesTab";
+import AdminPhotosTab from "./AdminPhotosTab";
+import AdminTransactionsTab from "./AdminTransactionsTab";
+import AdminWeeksToClose from "./AdminWeeksToClose";
 import AdminChildView from "./AdminChildView";
 import AdminChildrenSummary from "./AdminChildrenSummary";
 import AdminComparisonCard from "./AdminComparisonCard";
@@ -30,11 +35,15 @@ import AdminPinsTab from "./AdminPinsTab";
 import ApproveTab from "./ApproveTab";
 
 const TABS: { id: AdminTab; i: string; l: string }[] = [
+  { id: "dash", i: "📊", l: "Dashboard" },
   { id: "approve", i: "✅", l: "Approva" },
+  { id: "photos", i: "📸", l: "Foto" },
+  { id: "tx", i: "💳", l: "Transazioni" },
   { id: "acts", i: "📋", l: "Attività" },
   { id: "miss", i: "🎯", l: "Missioni" },
   { id: "match", i: "⚔️", l: "Match" },
   { id: "piggy", i: "🏦", l: "Salvadanai" },
+  { id: "pays", i: "📅", l: "Paghette" },
   { id: "pins", i: "🔑", l: "PIN" },
 ];
 
@@ -56,7 +65,7 @@ export default function AdminShell({
   onResetPin: (target: PinKey, adminPin: string) => Promise<boolean>;
   onLogout: () => void;
 }) {
-  const [tab, setTab] = useState<AdminTab>("approve");
+  const [tab, setTab] = useState<AdminTab>("dash");
   const [view, setView] = useState<UserId | null>(null);
   const [piggyAction, setPiggyAction] = useState<{ uid: UserId; draft: PiggyActionDraft } | null>(null);
   const [period, setPeriod] = useState<Period>("7g");
@@ -64,6 +73,7 @@ export default function AdminShell({
   const [matchDraft, setMatchDraft] = useState<MatchDraft | null>(null);
   const [missDraft, setMissDraft] = useState<MissionDraft | null>(null);
   const [pinTarget, setPinTarget] = useState<PinKey | null>(null);
+  const [importing, setImporting] = useState(false);
   const [incomeFor, setIncomeFor] = useState<UserId | null>(null);
   const [bonusFor, setBonusFor] = useState<UserId | null>(null);
   const [deductFor, setDeductFor] = useState<UserId | null>(null);
@@ -107,6 +117,30 @@ export default function AdminShell({
     setMissDraft(null);
   };
 
+  // settimane concluse e mai saldate, di entrambe, dalla più recente
+  const toClose = USER_IDS.flatMap((uid) => usersApi.weeksToClose(uid).map((week) => ({ uid, week }))).sort(
+    (a, b) => b.week.localeCompare(a.week) || a.uid.localeCompare(b.uid),
+  );
+
+  const pendingPhotos = USER_IDS.reduce((n, uid) => n + users[uid].log.filter((l) => l.photo && !l.ok && !l.revoked).length, 0);
+  /** Numerino accanto al nome della scheda: cosa aspetta l'admin lì dentro. */
+  const tabCount = (id: AdminTab) => (id === "dash" || id === "pays" ? toClose.length : id === "approve" ? usersApi.allPending : id === "photos" ? pendingPhotos : 0);
+
+  const weeksToClose = (
+    <AdminWeeksToClose
+      users={users}
+      rows={toClose}
+      dueFor={(uid, week) => usersApi.duePreview(uid, week)}
+      blockedFor={(uid) =>
+        usersApi.piggyNamesSupported && !hasFundNames(users[uid]) ? `${users[uid].n} deve prima dare un nome ai salvadanai (Profilo → 🐷).` : null
+      }
+      onConfirm={async (uid, week, override) => {
+        const res = await usersApi.payWeek(uid, week, override);
+        return res.ok ? null : res.error;
+      }}
+    />
+  );
+
   const body = () => {
     if (view) {
       return (
@@ -144,6 +178,29 @@ export default function AdminShell({
     }
     const tabBody = () => {
       switch (tab) {
+        case "dash":
+          return (
+            <>
+              {weeksToClose}
+              <AdminComparisonCard users={users} />
+            </>
+          );
+        case "pays":
+          return (
+            <AdminAllowancesTab
+              users={users}
+              toClose={weeksToClose}
+              onUndo={(uid, week) => {
+                if (confirm(`Annullare l'accredito della settimana del ${week}? I soldi vengono tolti dai salvadanai.`)) usersApi.undoPayment(uid, week);
+              }}
+            />
+          );
+        case "photos":
+          return (
+            <AdminPhotosTab users={users} acts={actsApi.acts} supported={usersApi.photosSupported} onApprove={usersApi.approve} onReject={usersApi.reject} />
+          );
+        case "tx":
+          return <AdminTransactionsTab users={users} />;
         case "approve":
           return (
             <ApproveTab
@@ -167,6 +224,7 @@ export default function AdminShell({
               canHide={actsApi.canHideActs}
               onToggleHidden={(a) => actsApi.toggleActHidden(a.id, !a.hidden)}
               onToggleHiddenMany={(ids, hidden) => void actsApi.toggleActHiddenMany(ids, hidden)}
+              onImport={() => setImporting(true)}
               onNew={() => setActDraft({ mode: "add", name: "", emoji: "", cat: "casa", pts: 3, pen: 0, freq: "daily", max: 1, ch: 0, duration: "" })}
               onEdit={(a) =>
                 setActDraft({
@@ -274,11 +332,11 @@ export default function AdminShell({
     return (
       <div>
         <AdminChildrenSummary users={users} weekPts={usersApi.weekPts} onOpen={setView} />
-        <AdminComparisonCard users={users} />
         <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
           {TABS.map((t) => (
             <Pill key={t.id} active={tab === t.id} onClick={() => setTab(t.id)} color={P.acc}>
               {t.i} {t.l}
+              {tabCount(t.id) > 0 && <b style={{ color: P.gold }}> {tabCount(t.id)}</b>}
             </Pill>
           ))}
         </div>
@@ -292,7 +350,7 @@ export default function AdminShell({
       <Shell
         avatar={view ? <Avatar photo={users[view].profilePhoto} emoji={users[view].av} size={30} radius={10} grad="transparent" /> : "🔒"}
         title={view ? `Admin › ${users[view].n}` : "Admin"}
-        subtitle={view ? undefined : `${usersApi.allPending} in attesa`}
+        subtitle={view ? undefined : `${usersApi.allPending} in attesa${toClose.length ? ` · ${toClose.length} settimane da chiudere` : ""}`}
         tint={view ? users[view].c : P.acc}
         onBack={view ? () => setView(null) : undefined}
         onLogout={onLogout}
@@ -307,6 +365,13 @@ export default function AdminShell({
         {body()}
       </Shell>
 
+      {importing && (
+        <ImportActivitiesModal
+          existingNames={actsApi.acts.map((a) => a.name)}
+          onImport={(res) => actsApi.importActs(res.items)}
+          onClose={() => setImporting(false)}
+        />
+      )}
       {actDraft && <ActivityEditModal draft={actDraft} setDraft={(fn) => setActDraft((d) => (d ? fn(d) : d))} onSave={saveAct} onClose={() => setActDraft(null)} />}
       {matchDraft && (
         <MatchEditModal draft={matchDraft} setDraft={(fn) => setMatchDraft((d) => (d ? fn(d) : d))} acts={actsApi.acts} onSave={saveMatch} onClose={() => setMatchDraft(null)} />

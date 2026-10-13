@@ -1,8 +1,9 @@
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { MONTH_RATE } from "../../data/interest";
 import { SPLIT, YIELD_YEAR, fundName } from "../../data/constants";
 import { monthlyAllowanceAvg } from "../../data/report";
 import type { InvestCfg, User, UserId } from "../../data/types";
-import { GlassCard, InfoTip, Input, Label, Pill, SectionTitle } from "../../design/components";
+import { GlassCard, InfoTip, Label, Pill, SectionTitle } from "../../design/components";
 import { P, alpha, gls } from "../../design/tokens";
 import { calcCompoundInterest } from "../../utils/compoundInterest";
 import { useInterest } from "../../hooks/useInterest";
@@ -11,6 +12,10 @@ import SavingsTrendCard from "./SavingsTrendCard";
 
 const MIN_MONTHS = 12;
 const MAX_MONTHS = 120;
+/** Durate proposte per il blocco: minimo un anno. */
+const LOCK_YEARS = [1, 2, 3, 5, 10];
+/** Tetto del versamento mensile simulato. */
+const MAX_EXTRA = 20;
 
 export default function InvestTab({
   uid,
@@ -30,11 +35,12 @@ export default function InvestTab({
   // il capitale simulato è il salvadanaio vero: le ragazze non lo modificano
   const principal = u.w.risparmio;
   const months = Math.min(MAX_MONTHS, Math.max(MIN_MONTHS, u.inv.mo));
-  const monthlyAdd = Math.max(0, u.inv.ex);
+  const monthlyAdd = Math.min(MAX_EXTRA, Math.max(0, u.inv.ex));
   // suggerimento: 30% della paghetta media degli ultimi 3 mesi
   const suggested = +(monthlyAllowanceAvg(u, 3) * SPLIT.risparmio).toFixed(2);
 
-  const res = calcCompoundInterest(principal, monthlyAdd, YIELD_YEAR, months);
+  // stesso tasso mensile degli interessi accreditati davvero: la stima non promette di più
+  const res = calcCompoundInterest(principal, monthlyAdd, MONTH_RATE * 12, months);
   /**
    * Quanto rendono in tutto i soldi versati, non il tasso annuo: i versamenti
    * dei mesi finali lavorano per poche settimane, quindi su un anno questa
@@ -46,7 +52,12 @@ export default function InvestTab({
   const step = Math.ceil(res.monthlyBreakdown.length / 24) || 1;
   const chart = res.monthlyBreakdown
     .filter((_, i) => (i + 1) % step === 0 || i === res.monthlyBreakdown.length - 1)
-    .map((m) => ({ m: `M${m.month}`, versato: m.contributed, interessi: m.growth }));
+    .map((m) => ({
+      m: m.month % 12 === 0 ? `${m.month / 12}a` : `${m.month}m`,
+      investito: m.contributed,
+      guadagno: m.growth,
+      totale: m.balance,
+    }));
 
   return (
     <div>
@@ -71,24 +82,28 @@ export default function InvestTab({
           <span style={{ color: P.tx3, fontSize: 9 }}>gestito da Babbo Roby</span>
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-          <div style={{ flex: 1 }}>
-            <Label>Quanto aggiungi ogni mese €</Label>
-            <Input type="number" value={u.inv.ex} onChange={(e) => onChange("ex", +e.target.value)} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <Label>Per quanti mesi ({MIN_MONTHS}–{MAX_MONTHS})</Label>
-            <Input type="number" min={MIN_MONTHS} max={MAX_MONTHS} value={u.inv.mo} onChange={(e) => onChange("mo", Math.min(MAX_MONTHS, +e.target.value))} />
-          </div>
+        <Label>🔒 Blocca per</Label>
+        <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+          {LOCK_YEARS.map((y) => (
+            <Pill key={y} active={months === y * 12} onClick={() => onChange("mo", y * 12)} color={P.mint}>
+              {y}a
+            </Pill>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <Label>➕ Extra al mese</Label>
+          <span style={{ color: P.acc, fontSize: 13, fontWeight: 800 }}>€{monthlyAdd.toFixed(2)}</span>
         </div>
         <input
           type="range"
-          min={MIN_MONTHS}
-          max={MAX_MONTHS}
-          step={6}
-          value={months}
-          onChange={(e) => onChange("mo", +e.target.value)}
-          style={{ width: "100%", accentColor: P.mint, marginBottom: 6 }}
+          min={0}
+          max={MAX_EXTRA}
+          step={0.5}
+          value={monthlyAdd}
+          aria-label="Extra al mese"
+          onChange={(e) => onChange("ex", +e.target.value)}
+          style={{ width: "100%", accentColor: P.acc, marginBottom: 6, minHeight: 32 }}
         />
         {suggested > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
@@ -102,7 +117,7 @@ export default function InvestTab({
         <div style={{ borderTop: `1px solid ${P.gb}`, paddingTop: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: 0 }}>
-              💰 Tra {months} mesi avrai: <span style={{ color: P.gold, fontSize: 16 }}>€{res.finalValue.toFixed(2)}</span>
+              💰 Tra {months % 12 === 0 ? `${months / 12} ann${months === 12 ? "o" : "i"}` : `${months} mesi`} avrai: <span style={{ color: P.gold, fontSize: 16 }}>€{res.finalValue.toFixed(2)}</span>
             </p>
             <span style={{ background: alpha(P.gold, 13), color: P.gold, borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 800, flexShrink: 0, whiteSpace: "nowrap" }}>
               tasso {YIELD_YEAR * 100}%/anno
@@ -120,20 +135,36 @@ export default function InvestTab({
           </p>
         </div>
 
-        <ResponsiveContainer width="100%" height={190}>
-          <BarChart data={chart} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={200}>
+          <ComposedChart data={chart} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gainFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.mint} stopOpacity={0.45} />
+                <stop offset="100%" stopColor={P.mint} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={P.gb} />
             <XAxis dataKey="m" tick={{ fill: P.tx3, fontSize: 8 }} interval="preserveStartEnd" />
             <YAxis tick={{ fill: P.tx3, fontSize: 8 }} />
-            <Tooltip
-              contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }}
-              formatter={(v) => `€${Number(v).toFixed(2)}`}
-            />
+            <Tooltip contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }} formatter={(v) => `€${Number(v).toFixed(2)}`} />
             <Legend wrapperStyle={{ fontSize: 9 }} />
-            <Bar dataKey="versato" name="Versato" stackId="a" fill={P.mint} />
-            <Bar dataKey="interessi" name="Interessi" stackId="a" fill={P.gold} radius={[4, 4, 0, 0]} />
-          </BarChart>
+            <Area type="monotone" dataKey="guadagno" name="🟢 Guadagno" stroke={P.mint} fill="url(#gainFill)" strokeWidth={1.5} />
+            <Line type="monotone" dataKey="investito" name="🔵 Investito" stroke={P.blue} strokeDasharray="5 4" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="totale" name="🟡 Totale" stroke={P.gold} strokeWidth={2.5} dot={false} />
+          </ComposedChart>
         </ResponsiveContainer>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 8 }}>
+          {[
+            { l: "Investito", v: res.totalContributed, c: P.blue },
+            { l: "Guadagno", v: res.totalGrowth, c: P.mint },
+            { l: "Totale", v: res.finalValue, c: P.gold },
+          ].map((x) => (
+            <div key={x.l} style={{ background: alpha(x.c, 12), borderRadius: 12, padding: "6px 4px", textAlign: "center" }}>
+              <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>{x.l}</p>
+              <p style={{ color: x.c, fontSize: 13, fontWeight: 800, margin: 0 }}>€{x.v.toFixed(2)}</p>
+            </div>
+          ))}
+        </div>
       </GlassCard>
     </div>
   );

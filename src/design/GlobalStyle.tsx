@@ -11,6 +11,7 @@ const css = `@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opaci
 :root[data-theme="light"]{color-scheme:light;${vars(PALETTES.light)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body,#root{margin:0;padding:0;min-height:100%;background:var(--p-bg)}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--p-tx);-webkit-overflow-scrolling:touch}
 input,select,button,textarea{font-family:inherit}
 ::-webkit-scrollbar{width:0;height:0}
 .anim{animation:fadeIn .35s ease}`;

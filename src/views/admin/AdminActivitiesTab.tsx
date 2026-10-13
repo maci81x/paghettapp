@@ -69,6 +69,7 @@ export default function AdminActivitiesTab({
   acts,
   canHide,
   onNew,
+  onImport,
   onEdit,
   onDelete,
   onDeleteMany,
@@ -79,6 +80,8 @@ export default function AdminActivitiesTab({
   /** false finché la migrazione `activities_hidden` non è applicata. */
   canHide: boolean;
   onNew: () => void;
+  /** Apre l'import da Excel/CSV. */
+  onImport: () => void;
   onEdit: (a: Activity) => void;
   onDelete: (a: Activity) => void;
   /** Chiede conferma ed elimina: true se l'eliminazione è avvenuta. */
@@ -156,6 +159,9 @@ export default function AdminActivitiesTab({
           <div style={{ display: "flex", gap: 6 }}>
             <Btn small outline color={P.acc} onClick={s.start} disabled={shown.length === 0}>
               ☑️ Seleziona
+            </Btn>
+            <Btn small outline color={P.acc} onClick={onImport}>
+              📥 Excel
             </Btn>
             <Btn small grad={P.accG} onClick={onNew}>
               + Nuova

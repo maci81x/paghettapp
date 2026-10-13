@@ -1,8 +1,12 @@
 // estensione esplicita: così `node --test` esegue i test senza bundler
 import { YIELD_YEAR } from "./constants.ts";
 
-/** Tasso mensile: il 10% annuo capitalizzato dodici volte. */
-export const MONTH_RATE = YIELD_YEAR / 12;
+/**
+ * Tasso mensile equivalente al 10% annuo: (1 + 0,10)^(1/12) − 1 ≈ 0,797%.
+ * Capitalizzato dodici volte dà esattamente il 10% in un anno; il semplice
+ * 10% / 12 (0,833%) ne darebbe il 10,47%, più della media storica dichiarata.
+ */
+export const MONTH_RATE = Math.pow(1 + YIELD_YEAR, 1 / 12) - 1;
 
 /** Quanti mesi arretrati si recuperano al massimo in una passata. */
 export const MAX_CATCHUP = 120;

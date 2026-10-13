@@ -136,6 +136,9 @@ export interface ExpenseRow {
   description: string;
   piggybank_type: DbFund;
   created_at: string;
+  /** Dalla migrazione `expenses_planned`: assenti finché non è applicata. */
+  status?: "ok" | "previsto" | "effettivo" | null;
+  planned_amount?: number | null;
 }
 
 export interface WishRow {
@@ -279,6 +282,8 @@ export const schema = {
   missionHidden: false,
   activityDate: false,
   incomeWeek: false,
+  expenseStatus: false,
+  logPhotos: false,
 };
 
 export const probeSchema = async () => {
@@ -366,6 +371,23 @@ export const probeIncomeWeek = async () => {
   return schema.incomeWeek;
 };
 
+/**
+ * `expenses.status` permette il previsto → effettivo. Senza la colonna una
+ * spesa si registra in un passaggio solo, come prima.
+ */
+export const probeExpenseStatus = async () => {
+  const { error } = await supabase.from("expenses").select("status").limit(1);
+  schema.expenseStatus = !error;
+  return schema.expenseStatus;
+};
+
+/** La tabella `log_photos` tiene le foto-prova: senza, il campo foto non compare. */
+export const probeLogPhotos = async () => {
+  const { error } = await supabase.from("log_photos").select("log_id").limit(1);
+  schema.logPhotos = !error;
+  return schema.logPhotos;
+};
+
 /** Toglie dal payload le colonne indicate quando `when` è vero. */
 const stripIf = <T extends Record<string, unknown>>(when: boolean, payload: T, keys: string[]): T => {
   if (!when) return payload;
@@ -413,13 +435,14 @@ export const adminSetPinRpc = (adminPin: string, userId: string, newPin: string)
 
 export const fetchActivities = () => wrap<ActRow[]>(supabase.from("activities").select("*").eq("active", true).order("id"));
 
-export const createActivity = (a: Omit<Activity, "id">) =>
+export const createActivity = (a: Omit<Activity, "id">, description?: string) =>
   wrap<ActRow[]>(
     supabase
       .from("activities")
       .insert(
         strip(
           {
+            ...(description ? { description } : {}),
             name: a.name,
             emoji: a.emoji || "⭐",
             category: a.cat,
@@ -924,6 +947,32 @@ export const capitalizeInterest = async (userId: string, startPeriod: string, ty
   return { data: { monthsCapitalized, totalInterest }, error: null };
 };
 
+/* ── foto-prova ── */
+
+export interface LogPhotoRow {
+  log_id: number;
+  user_id: string;
+  photo?: string;
+  created_at: string;
+}
+
+/** Quali voci del log hanno una foto: solo l'indice, senza le immagini. */
+export const fetchLogPhotoIndex = () => {
+  if (!schema.logPhotos) return Promise.resolve<Result<LogPhotoRow[]>>({ data: [], error: null });
+  return wrap<LogPhotoRow[]>(supabase.from("log_photos").select("log_id,user_id,created_at").order("created_at", { ascending: false }));
+};
+
+/** L'immagine di una voce, letta solo quando qualcuno la apre. */
+export const fetchLogPhoto = async (logId: number): Promise<Result<string | null>> => {
+  const res = await wrap<{ photo: string }[]>(supabase.from("log_photos").select("photo").eq("log_id", logId).limit(1));
+  return { data: res.data?.[0]?.photo ?? null, error: res.error };
+};
+
+export const createLogPhoto = (logId: number, userId: string, photo: string) =>
+  wrap<LogPhotoRow[]>(supabase.from("log_photos").upsert({ log_id: logId, user_id: userId, photo }).select("log_id,user_id,created_at"));
+
+export const deleteLogPhoto = (logId: number) => wrap<LogPhotoRow[]>(supabase.from("log_photos").delete().eq("log_id", logId).select("log_id"));
+
 /* ── spese ── */
 
 export const fetchExpenses = (userId?: string) => {
@@ -931,10 +980,29 @@ export const fetchExpenses = (userId?: string) => {
   return wrap<ExpenseRow[]>(userId ? q.eq("user_id", userId) : q);
 };
 
-export const createExpense = (d: { userId: string; amount: number; description: string; fund: Fund }) =>
+export const createExpense = (d: { userId: string; amount: number; description: string; fund: Fund; planned?: boolean }) =>
   wrap<ExpenseRow[]>(
-    supabase.from("expenses").insert({ user_id: d.userId, amount: d.amount, description: d.description, piggybank_type: FUND_DB[d.fund] }).select(),
+    supabase
+      .from("expenses")
+      .insert(
+        stripIf(!schema.expenseStatus, {
+          user_id: d.userId,
+          amount: d.amount,
+          description: d.description,
+          piggybank_type: FUND_DB[d.fund],
+          status: d.planned ? "previsto" : "ok",
+          planned_amount: d.planned ? d.amount : null,
+        }, ["status", "planned_amount"]),
+      )
+      .select(),
   );
+
+/** La spesa prevista è stata fatta davvero: `amount` diventa l'importo reale. */
+export const settleExpense = (id: number, amount: number) =>
+  wrap<ExpenseRow[]>(supabase.from("expenses").update({ amount, status: "effettivo" }).eq("id", id).select());
+
+/** Spesa prevista e poi non fatta: sparisce, il saldo non era mai stato toccato. */
+export const deleteExpense = (id: number) => wrap<ExpenseRow[]>(supabase.from("expenses").delete().eq("id", id).select());
 
 /* ── desideri ── */
 

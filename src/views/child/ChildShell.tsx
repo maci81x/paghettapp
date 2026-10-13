@@ -16,6 +16,8 @@ import PinChangeModal from "../../modals/PinChangeModal";
 import SpesaModal from "../../modals/SpesaModal";
 import WishEditModal from "../../modals/WishEditModal";
 import { resizeImage } from "../../utils/imageResize";
+import { parseAmount } from "../../utils/money";
+import SettleSpesaModal from "../../modals/SettleSpesaModal";
 import Shell from "../Shell";
 import { useInterest } from "../../hooks/useInterest";
 import ActivitiesTab from "./ActivitiesTab";
@@ -62,6 +64,7 @@ export default function ChildShell({
   const [wish, setWish] = useState<WishDraft | null>(null);
   const [withdraw, setWithdraw] = useState<{ l: LogEntry; name: string } | null>(null);
   const [gift, setGift] = useState(false);
+  const [settle, setSettle] = useState<number | null>(null);
 
   const u = usersApi.users[au];
   // colori e nome mostrati alla figlia: quelli che ha scelto lei, se li ha scelti
@@ -117,7 +120,7 @@ export default function ChildShell({
       setComp(null);
       return;
     }
-    usersApi.addLog(au, a.id, cnt, comp.note, comp.tod, a.pts * cnt, comp.date);
+    void usersApi.addLog(au, a.id, cnt, comp.note, comp.tod, a.pts * cnt, comp.date, comp.photo);
     setComp(null);
   };
 
@@ -130,9 +133,9 @@ export default function ChildShell({
 
   const confirmSpesa = () => {
     if (!spesa) return;
-    const amount = parseFloat(spesa.a);
-    if (!spesa.ds.trim() || !(amount > 0)) return;
-    usersApi.addSpesa(au, spesa.ds.trim(), amount, spesa.f);
+    const amount = parseAmount(spesa.a);
+    if (!spesa.ds.trim() || amount === null) return;
+    usersApi.addSpesa(au, spesa.ds.trim(), amount, spesa.f, spesa.planned && usersApi.plannedSupported);
     setSpesa(null);
   };
 
@@ -159,7 +162,7 @@ export default function ChildShell({
             onNote={(fund, note) => usersApi.setPiggyNote(au, fund, note)}
             onIncome={() => setIncome(true)}
             interestThisMonth={interest.thisMonth?.amount ?? 0}
-            onSpesa={() => setSpesa({ ds: "", a: "", f: "personale" })}
+            onSpesa={() => setSpesa({ ds: "", a: "", f: "personale", planned: usersApi.plannedSupported })}
           />
         );
       case "act":
@@ -186,10 +189,11 @@ export default function ChildShell({
             period={period}
             setPeriod={setPeriod}
             series={usersApi.periodSeries(au, period)}
-            onNewSpesa={() => setSpesa({ ds: "", a: "", f: "personale" })}
+            onNewSpesa={() => setSpesa({ ds: "", a: "", f: "personale", planned: usersApi.plannedSupported })}
             onNewIncome={() => setIncome(true)}
             onNewGift={() => setGift(true)}
             onConfirmIncome={(id) => usersApi.confirmIncome(au, id)}
+            onSettle={setSettle}
           />
         );
       case "invest":
@@ -256,6 +260,7 @@ export default function ChildShell({
           setDraft={(fn) => setComp((d) => (d ? fn(d) : d))}
           color={uc}
           grad={grad}
+          photoEnabled={usersApi.photosSupported && !usersApi.offline}
           remainingOn={(date) => {
             const a = actsApi.findAct(comp.actId);
             return a ? remainingOn(a, date) : 0;
@@ -311,7 +316,14 @@ export default function ChildShell({
         />
       )}
       {spesa && (
-        <SpesaModal draft={spesa} setDraft={(fn) => setSpesa((d) => (d ? fn(d) : d))} balance={u.w[spesa.f]} onSave={confirmSpesa} onClose={() => setSpesa(null)} />
+        <SpesaModal
+          draft={spesa}
+          setDraft={(fn) => setSpesa((d) => (d ? fn(d) : d))}
+          balance={u.w[spesa.f]}
+          plannedSupported={usersApi.plannedSupported}
+          onSave={confirmSpesa}
+          onClose={() => setSpesa(null)}
+        />
       )}
       {income && (
         <ExtraIncomeModal
@@ -322,6 +334,21 @@ export default function ChildShell({
             setIncome(false);
           }}
           onClose={() => setIncome(false)}
+        />
+      )}
+      {settle !== null && (u.planned ?? []).some((p) => p.id === settle) && (
+        <SettleSpesaModal
+          u={u}
+          spesa={(u.planned ?? []).find((p) => p.id === settle)!}
+          onSettle={(amount) => {
+            void usersApi.settleSpesa(au, settle, amount);
+            setSettle(null);
+          }}
+          onCancel={() => {
+            void usersApi.cancelPlanned(au, settle);
+            setSettle(null);
+          }}
+          onClose={() => setSettle(null)}
         />
       )}
       {wish && <WishEditModal init={wish} color={uc} onSave={saveWish} onClose={() => setWish(null)} />}

@@ -45,11 +45,12 @@ export const INIT_ACTS: Activity[] = [
   { id: 20, name: "Meditazione 5min", cat: "salute", pts: 5, pen: 0, freq: "daily", max: 2, ch: 0 },
 ];
 
+/** Livelli sui punti totali. "Campionessa" e non "Eroina": in italiano suonerebbe come la droga. */
 export const LVLS: Level[] = [
-  { n: "Esploratrice", min: 0, max: 500, i: "🌱", c: "#34d399" },
-  { n: "Capitana", min: 501, max: 2000, i: "⭐", c: "#fbbf24" },
-  { n: "Campionessa", min: 2001, max: 5000, i: "🏆", c: "#a78bfa" },
-  { n: "Leggenda", min: 5001, max: 999999, i: "👑", c: "#ec4899" },
+  { n: "Esploratrice", min: 0, max: 500, i: "🧭", c: "#34d399", d: "Inizio avventura — stai scoprendo come funziona!" },
+  { n: "Capitana", min: 501, max: 2000, i: "⚓", c: "#fbbf24", d: "Guidi la nave — costanza e impegno ti portano qui." },
+  { n: "Campionessa", min: 2001, max: 5000, i: "🏆", c: "#a78bfa", d: "Risultati eccezionali — sei un esempio!" },
+  { n: "Leggenda", min: 5001, max: 999999, i: "👑", c: "#ec4899", d: "Il livello massimo — pochi ci arrivano!" },
 ];
 
 export const TIERS: Tier[] = [
@@ -84,7 +85,7 @@ export const tierPos = (p: number): number =>
   Math.min(100, Math.max(0, (TIERS.indexOf(getTier(p)) + tierProgress(p) / 100) * TIER_TICK));
 
 /** PIN di default: sovrascritti da quelli salvati in localStorage. */
-export const DEFAULT_PINS: Record<PinKey, string> = { mia: "2806", samira: "0811", admin: "0000" };
+export const DEFAULT_PINS: Record<PinKey, string> = { mia: "2503", samira: "0811", admin: "0000" };
 
 export const AVATARS = [
   "👧🏻", "👧🏽", "👩🏻", "👩🏽", "🧑🏻", "🧑🏽", "👸🏻", "👸🏽",

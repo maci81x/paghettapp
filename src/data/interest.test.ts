@@ -5,9 +5,9 @@ import { MONTH_RATE, effectiveYield, monthlyInterest, nextPeriod, pendingPeriods
 
 const AUG = new Date(2026, 7, 20); // 20 agosto 2026
 
-test("il tasso mensile è il 10% annuo diviso dodici", () => {
-  assert.equal(+(MONTH_RATE * 12).toFixed(6), 0.1);
-  assert.equal(+MONTH_RATE.toFixed(6), 0.008333);
+test("il tasso mensile, capitalizzato dodici volte, fa esattamente il 10% annuo", () => {
+  assert.equal(+(Math.pow(1 + MONTH_RATE, 12) - 1).toFixed(10), 0.1);
+  assert.equal(+MONTH_RATE.toFixed(5), 0.00797);
 });
 
 test("periodi: formato, passo avanti e indietro, scavalco d'anno", () => {
@@ -43,17 +43,16 @@ test("il recupero è limitato, così una data sbagliata non manda in loop", () =
 });
 
 test("l'interesse del mese è il saldo per il tasso, al centesimo", () => {
-  assert.equal(monthlyInterest(120), 1); // 120 × 0.008333 = 0.999…
-  assert.equal(monthlyInterest(42.6), 0.35); // 0.35499… arrotonda per difetto
+  assert.equal(monthlyInterest(120), 0.96); // 120 × 0.0079741 = 0.9569…
+  assert.equal(monthlyInterest(42.6), 0.34); // 0.33970… al centesimo
   assert.equal(monthlyInterest(0), 0);
   assert.equal(monthlyInterest(-5), 0, "un saldo negativo non produce interessi");
 });
 
-test("dodici mesi capitalizzati battono l'interesse semplice", () => {
+test("dodici mesi capitalizzati fanno il 10% annuo, a meno degli arrotondamenti", () => {
   let balance = 1000;
   for (let i = 0; i < 12; i++) balance = +(balance + monthlyInterest(balance)).toFixed(2);
-  assert.ok(balance > 1100, `${balance} deve superare i 1100 dell'interesse semplice`);
-  assert.ok(balance < 1105, `${balance} resta sotto il 10.5% teorico per via degli arrotondamenti`);
+  assert.ok(Math.abs(balance - 1100) < 0.1, `${balance} deve stare a pochi centesimi da 1100`);
 });
 
 test("rendimento effettivo sul versato", () => {

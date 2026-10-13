@@ -3,6 +3,9 @@ import type { Activity, LogEntry, UserId, Users } from "../../data/types";
 import { Btn, GlassCard } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
 import { useSelection } from "../../hooks/useSelection";
+import { useState } from "react";
+import { LogPhotoThumb, PhotoViewer } from "../../components/LogPhoto";
+import { fmtDay } from "../../utils/dates";
 
 interface Pending {
   id: number;
@@ -34,6 +37,7 @@ export default function ApproveTab({
   ).filter((x): x is Pending => !!x.a);
 
   const s = useSelection(pending);
+  const [viewing, setViewing] = useState<Pending | null>(null);
 
   /** Dagli id selezionati alle coppie figlia+voce che servono alle scritture. */
   const picksOf = (ids: number[]) => pending.filter((p) => ids.includes(p.id)).map((p) => ({ uid: p.uid, logId: p.l.id }));
@@ -119,10 +123,11 @@ export default function ApproveTab({
                 </span>
               </div>
               <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0 28px" }}>
-                {TODS.find((t) => t.k === p.l.tod)?.l} {p.l.note && `· ${p.l.note}`}
+                {fmtDay(p.l.date)} · {TODS.find((t) => t.k === p.l.tod)?.l} {p.l.note && `· ${p.l.note}`}
               </p>
               <span style={{ fontSize: 10, color: P.mint, marginLeft: 28 }}>+{p.l.pts}pt</span>
             </div>
+            {p.l.photo && <LogPhotoThumb logId={p.l.id} size={44} onClick={s.selecting ? undefined : () => setViewing(p)} />}
             {!s.selecting && (
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                 <Btn small grad={P.mintG} onClick={() => onApprove(p.uid, p.l.id)}>
@@ -136,6 +141,38 @@ export default function ApproveTab({
           </GlassCard>
         );
       })}
+
+      {viewing && (
+        <PhotoViewer
+          logId={viewing.l.id}
+          title={`${users[viewing.uid].n} · ${viewing.a.name} · ${fmtDay(viewing.l.date)}`}
+          onClose={() => setViewing(null)}
+          actions={
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn
+                style={{ flex: 1, minHeight: 48 }}
+                grad={P.mintG}
+                onClick={() => {
+                  onApprove(viewing.uid, viewing.l.id);
+                  setViewing(null);
+                }}
+              >
+                ✓ Approva +{viewing.l.pts}pt
+              </Btn>
+              <Btn
+                style={{ flex: 1, minHeight: 48 }}
+                color={P.red}
+                onClick={() => {
+                  onReject(viewing.uid, viewing.l.id);
+                  setViewing(null);
+                }}
+              >
+                ✗ Rifiuta
+              </Btn>
+            </div>
+          }
+        />
+      )}
 
       {s.selecting && (
         <div style={{ position: "sticky", bottom: 8, marginTop: 12, display: "flex", gap: 8 }}>

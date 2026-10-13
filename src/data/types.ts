@@ -6,7 +6,7 @@ export type Fund = "risparmio" | "personale" | "beneficenza";
 export type Period = "7g" | "30g" | "3m" | "1a";
 export type Screen = "login" | "pin" | "app" | "admin";
 export type ChildTab = "home" | "act" | "miss" | "wallet" | "invest" | "profile";
-export type AdminTab = "approve" | "acts" | "miss" | "match" | "piggy" | "pins";
+export type AdminTab = "dash" | "approve" | "photos" | "tx" | "acts" | "miss" | "match" | "piggy" | "pays" | "pins";
 
 export interface Category {
   id: string;
@@ -53,6 +53,8 @@ export interface LogEntry {
   paid?: boolean;
   /** true quando l'admin ha annullato un'approvazione: resta a storico. */
   revoked?: boolean;
+  /** true quando la ragazza ha allegato una foto-prova (l'immagine si legge a parte). */
+  photo?: boolean;
 }
 
 export interface Mission {
@@ -104,6 +106,11 @@ export interface Spesa {
   ds: string;
   a: number;
   f: Fund;
+  /**
+   * Cifra prevista, per le spese nate come "previsto" e poi completate:
+   * accanto all'importo reale mostra quanto si pensava di spendere.
+   */
+  planned?: number;
 }
 
 export interface InvestCfg {
@@ -119,6 +126,12 @@ export interface Payment {
   date: string; // giorno dell'accredito (ISO)
   pts: number;
   amount: number;
+  /**
+   * Importo che spettava dal tier. Diverso da `amount` quando l'admin ha
+   * modificato la cifra prima di confermare: è così che si riconosce lo stato
+   * "modificata". Facoltativo nelle cache salvate prima.
+   */
+  tier?: number;
   split: Record<Fund, number>;
   /** Voci di log saldate da questo accredito: servono per annullarlo. */
   logIds: number[];
@@ -197,6 +210,11 @@ export interface User {
   wNick?: Record<Fund, string>;
   inv: InvestCfg;
   spese: Spesa[];
+  /**
+   * Spese previste e non ancora fatte: il saldo non è sceso. Stanno fuori da
+   * `spese` così totali, grafici e report contano solo i soldi usciti davvero.
+   */
+  planned?: Spesa[];
   log: LogEntry[];
   miss: Mission[];
   /** Facoltativi: i dati salvati prima di queste feature non hanno il campo. */
@@ -235,6 +253,8 @@ export interface Level {
   max: number;
   i: string;
   c: string;
+  /** Cosa significa il livello, in una frase. */
+  d: string;
 }
 
 export interface Tier {
@@ -257,6 +277,8 @@ export interface CompletionDraft {
   date: string;
   /** Durata prevista in minuti, se l'admin l'ha indicata. */
   duration?: number;
+  /** Foto-prova già ridimensionata (data URL JPEG), facoltativa. */
+  photo?: string;
 }
 
 export interface ActivityDraft {
@@ -328,4 +350,6 @@ export interface SpesaDraft {
   ds: string;
   a: string;
   f: Fund;
+  /** true = spesa prevista, il saldo scende solo quando diventa effettiva. */
+  planned: boolean;
 }

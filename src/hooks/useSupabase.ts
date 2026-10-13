@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../data/api";
 import { BONUS_ACT_ID, DB_FUND, toActivity, toInvest, toLog, toMission, toWish } from "../data/api";
+import type { ImportedActivity } from "../data/activityImport";
 import { earnedBadges } from "../data/badges";
 import { periodOf } from "../data/interest";
 import { toAward } from "../data/missions";
@@ -82,7 +83,11 @@ const OPS = {
   createIncome: api.createIncome,
   deleteIncome: api.deleteIncome,
   confirmIncome: api.confirmIncome,
+  createLogPhoto: api.createLogPhoto,
+  deleteLogPhoto: api.deleteLogPhoto,
   createExpense: api.createExpense,
+  settleExpense: api.settleExpense,
+  deleteExpense: api.deleteExpense,
   createWish: api.createWish,
   updateWish: api.updateWish,
   deleteWish: api.deleteWish,
@@ -109,6 +114,7 @@ const mkUser = (row: api.UserRow | undefined, uid: UserId): User => ({
   wNick: { risparmio: "", personale: "", beneficenza: "" },
   inv: toInvest(),
   spese: [],
+  planned: [],
   log: [],
   miss: [],
   pays: [],
@@ -177,6 +183,7 @@ function buildSnapshot(rows: {
   wishes: api.WishRow[];
   badges: api.BadgeRow[];
   investments: api.InvRow[];
+  photos: api.LogPhotoRow[];
 }): Snapshot {
   const users = {} as Users;
   const invIds: Partial<Record<UserId, number>> = {};
@@ -198,20 +205,24 @@ function buildSnapshot(rows: {
       });
 
     const logRows = rows.logs.filter((l) => l.user_id === uid);
-    u.log = logRows.map(toLog);
+    const withPhoto = new Set(rows.photos.filter((p) => p.user_id === uid).map((p) => p.log_id));
+    u.log = logRows.map((r) => (withPhoto.has(r.id) ? { ...toLog(r), photo: true } : toLog(r)));
 
     u.miss = rows.missions.filter((m) => m.assigned_to?.includes(uid)).map((m) => toMission(m, uid));
 
-    u.spese = rows.expenses
-      .filter((e) => e.user_id === uid)
-      .map((e) => ({
-        id: e.id,
-        d: new Date(e.created_at).toLocaleDateString("it", { day: "2-digit", month: "2-digit" }),
-        date: isoDate(new Date(e.created_at)),
-        ds: e.description,
-        a: Number(e.amount),
-        f: DB_FUND[e.piggybank_type] ?? "personale",
-      }));
+    const expenseRows = rows.expenses.filter((e) => e.user_id === uid);
+    const toSpesa = (e: api.ExpenseRow) => ({
+      id: e.id,
+      d: new Date(e.created_at).toLocaleDateString("it", { day: "2-digit", month: "2-digit" }),
+      date: isoDate(new Date(e.created_at)),
+      ds: e.description,
+      a: Number(e.amount),
+      f: DB_FUND[e.piggybank_type] ?? "personale",
+      ...(e.status === "effettivo" && e.planned_amount != null ? { planned: Number(e.planned_amount) } : {}),
+    });
+    // le previste non sono soldi usciti: restano fuori dai totali
+    u.spese = expenseRows.filter((e) => e.status !== "previsto").map(toSpesa);
+    u.planned = expenseRows.filter((e) => e.status === "previsto").map(toSpesa);
 
     const incomeRows = rows.income.filter((i) => i.user_id === uid);
     u.income = incomeRows
@@ -236,10 +247,11 @@ function buildSnapshot(rows: {
           id: row.id,
           // la settimana saldata sta nella sua colonna; senza, nella nota; per le
           // righe più vecchie di entrambe resta il lunedì del giorno di accredito
-          week: row.week_start ?? allowanceWeek(row.note) ?? weekStartOf(new Date(row.created_at)),
+          week: row.week_start ?? (allowanceWeek(row.note) || weekStartOf(new Date(row.created_at))),
           date: isoDate(new Date(row.created_at)),
           pts: row.week_pts ?? 0,
           amount: Number(row.amount),
+          tier: row.tier != null ? Number(row.tier) : Number(row.amount),
           split: rowQuotes(row),
           logIds: paidLogs.filter((l) => l.created_at <= row.created_at && l.created_at > prev).map((l) => l.id),
           ...rowConfirm(row),
@@ -300,8 +312,10 @@ export function useSupabase() {
       api.probeMissionHidden(),
       api.probeActivityDate(),
       api.probeIncomeWeek(),
+      api.probeExpenseStatus(),
+      api.probeLogPhotos(),
     ]);
-    const [u, p, a, l, m, i, e, w, b, inv] = await Promise.all([
+    const [u, p, a, l, m, i, e, w, b, inv, ph] = await Promise.all([
       api.fetchUsers(),
       api.fetchPiggybanks(),
       api.fetchActivities(),
@@ -312,6 +326,7 @@ export function useSupabase() {
       api.fetchWishes(),
       api.fetchBadges(),
       api.fetchInvestments(),
+      api.fetchLogPhotoIndex(),
     ]);
     const failed = [u, p, a, l, m, i, e, w, b, inv].find((r) => r.error);
     if (failed || !u.data) {
@@ -331,6 +346,8 @@ export function useSupabase() {
       wishes: w.data ?? [],
       badges: b.data ?? [],
       investments: inv.data ?? [],
+      // l'indice delle foto non è indispensabile: se manca, nessuna voce ha la foto
+      photos: ph.data ?? [],
     });
     setUsers(snap.users);
     setActs(snap.acts);
@@ -533,6 +550,31 @@ export function useSupabase() {
     setActs((p) => [...p, row ? toActivity(row) : { ...body, id: Date.now() }]);
   };
 
+  /**
+   * Attività lette da un foglio Excel: si aggiungono a quelle che ci sono, una
+   * alla volta, saltando i doppioni già segnalati nell'anteprima.
+   */
+  const importActs = async (items: ImportedActivity[]) => {
+    let added = 0;
+    for (const it of items) {
+      if (it.duplicate) continue;
+      const body: Omit<Activity, "id"> = {
+        name: it.name,
+        cat: it.cat,
+        pts: it.pts,
+        pen: it.pen,
+        freq: it.freq,
+        max: 1,
+        ch: it.ch,
+        chPts: it.ch ? it.pts * 2 : 0,
+      };
+      const row = await send<api.ActRow>("createActivity", [body, it.desc]);
+      setActs((p) => [...p, row ? toActivity(row) : { ...body, id: Date.now() + added }]);
+      added++;
+    }
+    return added;
+  };
+
   const updateAct = async (d: ActivityDraft) => {
     if (!d.id) return;
     const body = draftToActivity(d);
@@ -575,10 +617,26 @@ export function useSupabase() {
   /* ── completamenti ── */
 
   /** `date` è il giorno dell'attività: oggi o ieri, mai più indietro (solo l'admin tocca lo storico). */
-  const addLog = async (uid: UserId, actId: number, cnt: number, note: string, tod: Tod, pts: number, date = todayISO()) => {
+  /**
+   * Segna un'attività. La foto-prova si salva solo se la voce è arrivata al
+   * database: offline la riga non ha ancora un id vero a cui agganciarla, e
+   * l'esito lo dice a chi chiama invece di perdere la foto in silenzio.
+   */
+  const addLog = async (uid: UserId, actId: number, cnt: number, note: string, tod: Tod, pts: number, date = todayISO(), photo?: string) => {
     const row = await send<api.LogRow>("createActivityLog", [{ userId: uid, actId, pts, cnt, tod, note, date }]);
-    const entry: LogEntry = row ? toLog(row) : { id: Date.now(), actId, date, cnt, note, tod, pts, ok: false };
+    // con l'id vero la foto parte subito; se la rete cade resta in coda come le altre scritture
+    const photoSaved = !!row && !!photo && api.schema.logPhotos;
+    if (photoSaved) await send("createLogPhoto", [row.id, uid, photo]);
+    const base: LogEntry = row ? toLog(row) : { id: Date.now(), actId, date, cnt, note, tod, pts, ok: false };
+    const entry = photoSaved ? { ...base, photo: true } : base;
     patch(uid, (u) => ({ ...u, log: [...u.log, entry] }));
+    return { photoLost: !!photo && !photoSaved };
+  };
+
+  /** Toglie la foto-prova da una voce. */
+  const removePhoto = async (uid: UserId, logId: number) => {
+    patch(uid, (u) => ({ ...u, log: u.log.map((l) => (l.id === logId ? { ...l, photo: false } : l)) }));
+    await send("deleteLogPhoto", [logId]);
   };
 
   const addBonus = async (uid: UserId, pts: number, reason: string) => {
@@ -880,7 +938,24 @@ export function useSupabase() {
 
   /* ── movimenti di denaro ── */
 
-  const addSpesa = async (uid: UserId, ds: string, amount: number, fund: Fund) => {
+  /**
+   * Nuova spesa. Prevista: si annota e basta, il saldo resta com'è finché la
+   * ragazza non dice quanto ha speso davvero (`settleSpesa`).
+   */
+  const addSpesa = async (uid: UserId, ds: string, amount: number, fund: Fund, planned = false) => {
+    if (planned && api.schema.expenseStatus) {
+      const row = await send<api.ExpenseRow>("createExpense", [{ userId: uid, amount, description: ds, fund, planned: true }]);
+      const entry = {
+        id: row?.id ?? Date.now(),
+        d: new Date().toLocaleDateString("it", { day: "2-digit", month: "2-digit" }),
+        date: todayISO(),
+        ds,
+        a: amount,
+        f: fund,
+      };
+      patch(uid, (u) => ({ ...u, planned: [entry, ...(u.planned ?? [])] }));
+      return;
+    }
     const row = await send<api.ExpenseRow>("createExpense", [{ userId: uid, amount, description: ds, fund }]);
     patch(uid, (u) => ({
       ...u,
@@ -898,6 +973,26 @@ export function useSupabase() {
       w: { ...u.w, [fund]: Math.max(0, +(u.w[fund] - amount).toFixed(2)) },
     }));
     await send("updatePiggybank", [uid, fund, -amount]);
+  };
+
+  /** La spesa prevista è stata fatta: ora, e solo ora, i soldi escono dal salvadanaio. */
+  const settleSpesa = async (uid: UserId, id: number, amount: number) => {
+    const p = (users[uid].planned ?? []).find((x) => x.id === id);
+    if (!p || !(amount > 0)) return;
+    patch(uid, (u) => ({
+      ...u,
+      planned: (u.planned ?? []).filter((x) => x.id !== id),
+      spese: [{ ...p, a: amount, planned: p.a, d: new Date().toLocaleDateString("it", { day: "2-digit", month: "2-digit" }), date: todayISO() }, ...u.spese],
+      w: { ...u.w, [p.f]: Math.max(0, +(u.w[p.f] - amount).toFixed(2)) },
+    }));
+    await send("settleExpense", [id, amount]);
+    await send("updatePiggybank", [uid, p.f, -amount]);
+  };
+
+  /** Spesa prevista e poi non fatta: si toglie, il saldo non era mai cambiato. */
+  const cancelPlanned = async (uid: UserId, id: number) => {
+    patch(uid, (u) => ({ ...u, planned: (u.planned ?? []).filter((x) => x.id !== id) }));
+    await send("deleteExpense", [id]);
   };
 
   const addIncome = async (uid: UserId, entry: Omit<IncomeEntry, "id">) => {
@@ -1247,16 +1342,42 @@ export function useSupabase() {
       .sort((a, b) => b.localeCompare(a));
   };
 
-  const payWeek = async (uid: UserId, week = getWeekStart()) => {
+  /**
+   * Settimane da chiudere: concluse, mai saldate, e non precedenti al primo
+   * giorno in cui la ragazza ha usato l'app — una settimana di prima avrebbe
+   * zero punti e proporrebbe €2 per niente.
+   */
+  const weeksToClose = (uid: UserId): string[] => {
+    const u = users[uid];
+    const first = [...u.log.map((l) => l.date), ...(u.pays ?? []).map((p) => p.week)].sort()[0];
+    if (!first) return [];
+    const from = weekStartOf(fromISO(first));
+    return payableWeeks(uid).filter((w) => w >= from);
+  };
+
+  /**
+   * Registra la paghetta di una settimana conclusa. `amount` sostituisce
+   * l'importo del tier quando l'admin lo modifica prima di confermare: il tier
+   * resta salvato accanto, ed è il confronto fra i due a dire "modificata".
+   */
+  const payWeek = async (uid: UserId, week = getWeekStart(), override?: { amount?: number; note?: string }) => {
     const blocked = payBlock(uid, week) ?? (await payBlockRemote(uid, week));
     if (blocked) return { ok: false as const, error: blocked };
-    const { pts, amount, split } = duePreview(uid, week);
+    const preview = duePreview(uid, week);
+    const { pts } = preview;
+    const tier = preview.amount;
+    const custom = override?.amount;
+    if (custom !== undefined && !(custom > 0)) return { ok: false as const, error: "L'importo deve essere maggiore di zero." };
+    const amount = custom !== undefined ? Math.round(custom * 100) / 100 : tier;
+    const split = splitAllowance(amount);
+    const reason = override?.note?.trim();
+    const note = reason ? `${allowanceNote(week)} · ${reason}` : allowanceNote(week);
     // si saldano solo le voci di *quella* settimana: pagare mercoledì la
     // settimana scorsa non deve marcare come pagati i punti di questa
     const logIds = weekLogs(users[uid].log, fromISO(week)).filter((l) => l.ok && !l.paid).map((l) => l.id);
 
     const row = await send<api.IncomeRow>("createIncome", [
-      { userId: uid, type: "allowance", amount, note: allowanceNote(week), quote: split, tier: amount, weekPts: pts, weekStart: week },
+      { userId: uid, type: "allowance", amount, note, quote: split, tier, weekPts: pts, weekStart: week },
     ]);
     if (logIds.length > 0) await send("markLogsPaid", [logIds, true]);
     for (const f of FUNDS) await send("updatePiggybank", [uid, f, split[f]]);
@@ -1272,13 +1393,13 @@ export function useSupabase() {
         beneficenza: +(u.w.beneficenza + split.beneficenza).toFixed(2),
       },
       log: u.log.map((l) => (logIds.includes(l.id) ? { ...l, paid: true } : l)),
-      pays: [{ id, week, date: todayISO(), pts, amount, split, logIds, confirmed }, ...(u.pays ?? [])],
+      pays: [{ id, week, date: todayISO(), pts, amount, tier, split, logIds, confirmed }, ...(u.pays ?? [])],
       income: [
         {
           id,
           date: todayISO(),
           amount,
-          source: allowanceNote(week),
+          source: note,
           split: { risparmio: SPLIT.risparmio * 100, personale: SPLIT.personale * 100, beneficenza: SPLIT.beneficenza * 100 },
           type: "paghetta" as const,
           confirmed,
@@ -1331,12 +1452,14 @@ export function useSupabase() {
     periodSeries,
     findAct,
     addAct,
+    importActs,
     updateAct,
     delAct,
     delActs,
     toggleActHidden,
     toggleActHiddenMany,
     addLog,
+    removePhoto,
     addBonus,
     approve,
     reject,
@@ -1362,6 +1485,12 @@ export function useSupabase() {
     adminSetPin,
     resetPin,
     addSpesa,
+    settleSpesa,
+    cancelPlanned,
+    /** false finché la migrazione `expenses_planned` non è applicata. */
+    plannedSupported: api.schema.expenseStatus,
+    /** false finché la migrazione `log_photos` non è applicata. */
+    photosSupported: api.schema.logPhotos,
     redeemPiggy,
     resetPiggy,
     interestSupported: api.schema.interest,
@@ -1389,6 +1518,7 @@ export function useSupabase() {
     duePreview,
     payBlock,
     payableWeeks,
+    weeksToClose,
     payWeek,
     undoPayment,
   };

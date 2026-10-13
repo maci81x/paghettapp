@@ -8,6 +8,7 @@ import { THEME_LABEL, useThemeMode } from "../../hooks/useThemeMode";
 import type { ThemePref } from "../../hooks/useThemeMode";
 import { BG_PATTERNS, COLOR_PRESETS, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
+import PhotoGalleryCard from "./PhotoGalleryCard";
 
 const STARS = { 1: "⭐⭐⭐", 2: "⭐⭐", 3: "⭐" } as const;
 
@@ -297,6 +298,8 @@ export default function ProfileTab({
         </div>
       </GlassCard>
 
+      <PhotoGalleryCard log={u.log} />
+
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
           ⭐ Livelli <InfoTip text="I punti totali non si resettano. Sali accumulandoli!" />
@@ -309,6 +312,7 @@ export default function ProfileTab({
               <span style={{ color: P.tx3, fontSize: 9, marginLeft: 6 }}>
                 {l.min}–{l.max < 999999 ? l.max : "∞"}
               </span>
+              <p style={{ color: P.tx2, fontSize: 10, margin: "1px 0 0" }}>{l.d}</p>
             </div>
             {u.totalPts >= l.min && u.totalPts <= l.max && (
               <span style={{ background: grad, color: "#fff", padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>Tu sei qui</span>
