@@ -33,6 +33,7 @@ import {
   weekStartOf,
 } from "../data/constants";
 import { fromISO, getWeekPts, isWeekOver, pastWeeks, weekLogs } from "../data/weekBounds";
+import { arrearsOf, canNudge, weeksWithActivityToClose } from "../data/arrears";
 import { fmtDay } from "../utils/dates";
 import { clearPending, loadCache, loadPending, queuePending, savePending, saveCache } from "../data/storage";
 import type { PendingOp } from "../data/storage";
@@ -98,6 +99,7 @@ const OPS = {
   createInvestment: api.createInvestment,
   updateInvestment: api.updateInvestment,
   addBonusPoints: api.addBonusPoints,
+  nudgeAllowance: api.nudgeAllowance,
 };
 type OpName = keyof typeof OPS;
 
@@ -129,6 +131,7 @@ const mkUser = (row: api.UserRow | undefined, uid: UserId): User => ({
   nickname: row?.nickname ?? undefined,
   themeColors: row?.theme_colors ?? undefined,
   bgPattern: row?.bg_pattern ?? undefined,
+  nudgedAt: row?.allowance_nudged_at ?? undefined,
 });
 
 const emptyUsers = (): Users => ({ mia: mkUser(undefined, "mia"), samira: mkUser(undefined, "samira") });
@@ -322,6 +325,7 @@ export function useSupabase() {
       api.probeMissionEuro(),
       api.probePaidOutside(),
       api.probeLogReject(),
+      api.probeNudge(),
     ]);
     const [u, p, a, l, m, i, e, w, b, inv, ph] = await Promise.all([
       api.fetchUsers(),
@@ -1401,16 +1405,23 @@ export function useSupabase() {
   };
 
   /**
-   * Settimane da chiudere: concluse, mai saldate, e non precedenti al primo
-   * giorno in cui la ragazza ha usato l'app — una settimana di prima avrebbe
-   * zero punti e proporrebbe €2 per niente.
+   * Settimane da chiudere: concluse, mai saldate, e con almeno un'attività
+   * fatta (approvata e non pagata, o da approvare). Le settimane vuote non si
+   * pagano: regola decisa a novembre 2026, vedi `data/arrears.ts`.
    */
-  const weeksToClose = (uid: UserId): string[] => {
-    const u = users[uid];
-    const first = [...u.log.map((l) => l.date), ...(u.pays ?? []).map((p) => p.week)].sort()[0];
-    if (!first) return [];
-    const from = weekStartOf(fromISO(first));
-    return payableWeeks(uid).filter((w) => w >= from);
+  const paidWeekSet = (uid: UserId) => new Set(payments(uid).map((p) => p.week));
+  const weeksToClose = (uid: UserId): string[] => weeksWithActivityToClose(users[uid].log, paidWeekSet(uid));
+
+  /** Quanto spetta alla ragazza per le settimane arretrate: lo vedono lei e papà. */
+  const owed = (uid: UserId) => arrearsOf(users[uid].log, paidWeekSet(uid));
+
+  /** "Ricordalo a papà": una volta ogni 7 giorni. */
+  const canNudgeNow = (uid: UserId) => api.schema.nudge && canNudge(users[uid].nudgedAt);
+  const nudge = async (uid: UserId) => {
+    if (!canNudgeNow(uid)) return;
+    const at = new Date().toISOString();
+    patch(uid, (u) => ({ ...u, nudgedAt: at }));
+    await send("nudgeAllowance", [uid, at]);
   };
 
   /**
@@ -1612,6 +1623,10 @@ export function useSupabase() {
     payBlock,
     payableWeeks,
     weeksToClose,
+    owed,
+    nudge,
+    canNudgeNow,
+    nudgeSupported: api.schema.nudge,
     payWeek,
     closeWeekOutside,
     undoPayment,

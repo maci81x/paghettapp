@@ -26,6 +26,7 @@ import AdminActivitiesTab from "./AdminActivitiesTab";
 import AdminAllowancesTab from "./AdminAllowancesTab";
 import AdminPhotosTab from "./AdminPhotosTab";
 import AdminTransactionsTab from "./AdminTransactionsTab";
+import AdminOwedBanner from "./AdminOwedBanner";
 import AdminWeeksToClose from "./AdminWeeksToClose";
 import AdminChildView from "./AdminChildView";
 import AdminChildrenSummary from "./AdminChildrenSummary";
@@ -220,6 +221,7 @@ export default function AdminShell({
         case "dash":
           return (
             <>
+              <AdminOwedBanner users={users} owedOf={usersApi.owed} />
               {weeksToClose}
               <AdminComparisonCard users={users} />
             </>

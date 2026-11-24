@@ -8,3 +8,10 @@ export const parseAmount = (raw: string): number | null => {
   if (!raw.trim() || !Number.isFinite(n) || n <= 0) return null;
   return Math.round(n * 100) / 100;
 };
+
+/** 16 → "€16,00", 1234.5 → "€1.234,50": virgola per i decimali, punto per le migliaia. */
+export const fmtEuro = (n: number): string => {
+  const neg = n < 0;
+  const [int, dec] = Math.abs(Math.round(n * 100) / 100).toFixed(2).split(".");
+  return `${neg ? "−" : ""}€${int.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${dec}`;
+};

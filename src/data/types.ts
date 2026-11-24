@@ -233,6 +233,8 @@ export interface User {
   income?: IncomeEntry[];
   wishes?: Wish[];
   badges?: string[];
+  /** Ultima volta che ha usato "Ricordalo a papà" (ISO). Manca finché la colonna non c'è. */
+  nudgedAt?: string;
   /** Badge id → giorno di sblocco (ISO). */
   badgeAt?: Record<string, string>;
   /* ── personalizzazione (tutti facoltativi: senza valore valgono i default) ── */

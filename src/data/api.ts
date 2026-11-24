@@ -33,6 +33,8 @@ export interface UserRow {
   nickname: string | null;
   theme_colors: { from: string; to: string } | null;
   bg_pattern: string | null;
+  /** Dalla migrazione `users_allowance_nudge`: assente finché non è applicata. */
+  allowance_nudged_at?: string | null;
 }
 
 export interface PiggyRow {
@@ -296,6 +298,7 @@ export const schema = {
   missionEuro: false,
   paidOutside: false,
   logReject: false,
+  nudge: false,
 };
 
 export const probeSchema = async () => {
@@ -316,6 +319,19 @@ export const probeIncomeConfirm = async () => {
  * i nomi non sono salvabili: l'app non li chiede e usa le etichette generiche,
  * invece di bloccare la ragazza davanti a un modale che non può funzionare.
  */
+/** Il promemoria "Ricordalo a papà" vive in `users.allowance_nudged_at`. */
+export const probeNudge = async () => {
+  const { error } = await supabase.from("users").select("allowance_nudged_at").limit(1);
+  schema.nudge = !error;
+  return schema.nudge;
+};
+
+/** Segna l'ora del promemoria: papà lo vede nella sua area (e, con le notifiche, sul telefono). */
+export const nudgeAllowance = (id: string, at: string) => {
+  if (!schema.nudge) return Promise.resolve<Result<UserRow[]>>({ data: [], error: null });
+  return wrap<UserRow[]>(supabase.from("users").update({ allowance_nudged_at: at }).eq("id", id).select("id,allowance_nudged_at"));
+};
+
 export const probePiggyName = async () => {
   const { error } = await supabase.from("piggybanks").select("nickname").limit(1);
   schema.piggyName = !error;

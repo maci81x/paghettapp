@@ -22,6 +22,7 @@ import Shell from "../Shell";
 import { useInterest } from "../../hooks/useInterest";
 import ActivitiesTab from "./ActivitiesTab";
 import HomeTab from "./HomeTab";
+import OwedCard from "./OwedCard";
 import MissionsTab from "./MissionsTab";
 import ProfileTab from "./ProfileTab";
 
@@ -143,6 +144,14 @@ export default function ChildShell({
     switch (tab) {
       case "home":
         return (
+          <>
+          <OwedCard
+            owed={usersApi.owed(au)}
+            nudgedAt={u.nudgedAt}
+            canNudge={usersApi.canNudgeNow(au)}
+            nudgeSupported={usersApi.nudgeSupported}
+            onNudge={() => void usersApi.nudge(au)}
+          />
           <HomeTab
             pending={pendingProps}
             u={u}
@@ -164,6 +173,7 @@ export default function ChildShell({
             interestThisMonth={interest.thisMonth?.amount ?? 0}
             onSpesa={() => setSpesa({ ds: "", a: "", f: "personale", planned: usersApi.plannedSupported })}
           />
+          </>
         );
       case "act":
         return (
