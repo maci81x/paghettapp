@@ -43,7 +43,7 @@ export default function BonusPointsModal({
         onChange={(e) => setReason(e.target.value)}
         style={{ marginBottom: 6 }}
       />
-      <p style={{ fontSize: 9, color: P.tx3, margin: "0 0 12px" }}>
+      <p style={{ fontSize: 11.5, color: P.tx3, margin: "0 0 12px" }}>
         I punti bonus sono già approvati: entrano subito nel totale e nella paghetta della settimana.
       </p>
 

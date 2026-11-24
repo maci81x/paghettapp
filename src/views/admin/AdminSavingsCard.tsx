@@ -7,6 +7,7 @@ import { P, gls } from "../../design/tokens";
 import { useInterest } from "../../hooks/useInterest";
 import { useSavingsHistory } from "../../hooks/useSavingsHistory";
 import { weeklyGrowth, yearlyGrowth } from "../../utils/compoundInterest";
+import { fmtEuro } from "../../utils/money";
 
 /** Andamento del salvadanaio Risparmio negli ultimi 3 mesi, vista admin. */
 export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
@@ -25,7 +26,7 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
           📈 Andamento Risparmi
           <InfoTip text="Saldo ricostruito dai versamenti e dai prelievi degli ultimi 3 mesi. Il rendimento è una stima all'interesse composto." />
         </p>
-        <span style={{ color: P.mint, fontWeight: 800, fontSize: 18 }}>€{summary.current.toFixed(2)}</span>
+        <span style={{ color: P.mint, fontWeight: 800, fontSize: 18 }}>{fmtEuro(summary.current)}</span>
       </div>
 
       <ResponsiveContainer width="100%" height={150}>
@@ -34,8 +35,8 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
           <XAxis dataKey="d" tick={{ fill: P.tx3, fontSize: 8 }} interval="preserveStartEnd" />
           <YAxis tick={{ fill: P.tx3, fontSize: 8 }} />
           <Tooltip
-            contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }}
-            formatter={(v) => [`€${Number(v).toFixed(2)}`, "Saldo"]}
+            contentStyle={{ ...gls, background: P.surf, fontSize: 12, borderRadius: 10 }}
+            formatter={(v) => [`${fmtEuro(Number(v))}`, "Saldo"]}
           />
           <Line type="monotone" dataKey="saldo" stroke={P.mint} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
         </LineChart>
@@ -43,48 +44,48 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, margin: "8px 0" }}>
         <div style={{ ...gls, padding: 8, borderRadius: 10 }}>
-          <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>REND. SETTIMANALE</p>
-          <p style={{ color: P.mint, fontSize: 14, fontWeight: 800, margin: 0 }}>+€{perWeek.toFixed(2)}</p>
+          <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>REND. SETTIMANALE</p>
+          <p style={{ color: P.mint, fontSize: 14, fontWeight: 800, margin: 0 }}>+{fmtEuro(perWeek)}</p>
         </div>
         <div style={{ ...gls, padding: 8, borderRadius: 10 }}>
-          <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>REND. ANNUO ({YIELD_YEAR * 100}%)</p>
-          <p style={{ color: P.gold, fontSize: 14, fontWeight: 800, margin: 0 }}>+€{perYear.toFixed(2)}</p>
+          <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>REND. ANNUO ({YIELD_YEAR * 100}%)</p>
+          <p style={{ color: P.gold, fontSize: 14, fontWeight: 800, margin: 0 }}>+{fmtEuro(perYear)}</p>
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
         <span style={{ color: P.tx2 }}>📦 Versato da {u.n}</span>
-        <span style={{ color: P.tx, fontWeight: 700 }}>€{Math.max(0, deposited).toFixed(2)}</span>
+        <span style={{ color: P.tx, fontWeight: 700 }}>{fmtEuro(Math.max(0, deposited))}</span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
         <span style={{ color: P.tx2 }}>📈 Interessi maturati</span>
-        <span style={{ color: P.mint, fontWeight: 700 }}>+€{interest.total.toFixed(2)}</span>
+        <span style={{ color: P.mint, fontWeight: 700 }}>+{fmtEuro(interest.total)}</span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
         <span style={{ color: P.tx2 }}>🎯 Rendimento effettivo</span>
         <span style={{ color: P.gold, fontWeight: 700 }}>{effectiveYield(interest.total, Math.max(0, deposited))}%</span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
         <span style={{ color: P.tx2 }}>💰 Saldo attuale</span>
-        <span style={{ color: P.mint, fontWeight: 700 }}>€{summary.current.toFixed(2)}</span>
+        <span style={{ color: P.mint, fontWeight: 700 }}>{fmtEuro(summary.current)}</span>
       </div>
       {summary.withdrawn > 0 && (
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
           <span style={{ color: P.tx2 }}>💸 Prelevato</span>
-          <span style={{ color: P.red, fontWeight: 700 }}>-€{summary.withdrawn.toFixed(2)}</span>
+          <span style={{ color: P.red, fontWeight: 700 }}>-{fmtEuro(summary.withdrawn)}</span>
         </div>
       )}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5 }}>
         <span style={{ color: P.tx2 }}>📈 Differenza</span>
         <span style={{ color: summary.growth >= 0 ? P.mint : P.red, fontWeight: 700 }}>
-          {summary.growth >= 0 ? "+" : "−"}€{Math.abs(summary.growth).toFixed(2)}
+          {summary.growth >= 0 ? "+" : "−"}{fmtEuro(Math.abs(summary.growth))}
         </span>
       </div>
 
       {interest.history.length > 0 && (
         <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${P.gb}` }}>
           <p style={{ color: P.tx, fontSize: 12, fontWeight: 700, margin: "0 0 4px" }}>📈 Storico interessi</p>
-          <div style={{ display: "flex", fontSize: 9, color: P.tx3, fontWeight: 700, paddingBottom: 3, borderBottom: `1px solid ${P.gb}` }}>
+          <div style={{ display: "flex", fontSize: 11.5, color: P.tx3, fontWeight: 700, paddingBottom: 3, borderBottom: `1px solid ${P.gb}` }}>
             <span style={{ flex: 1 }}>Periodo</span>
             <span style={{ width: 74, textAlign: "right" }}>Saldo</span>
             <span style={{ width: 62, textAlign: "right" }}>Interesse</span>
@@ -92,10 +93,10 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
           </div>
           <div style={{ maxHeight: 168, overflowY: "auto" }}>
             {interest.history.map((h) => (
-              <div key={h.id} style={{ display: "flex", fontSize: 10, padding: "4px 0", borderBottom: `1px solid ${P.gb}` }}>
+              <div key={h.id} style={{ display: "flex", fontSize: 12, padding: "4px 0", borderBottom: `1px solid ${P.gb}` }}>
                 <span style={{ flex: 1, color: P.tx }}>{periodLabel(h.period)}</span>
-                <span style={{ width: 74, textAlign: "right", color: P.tx2 }}>€{h.balanceBefore.toFixed(2)}</span>
-                <span style={{ width: 62, textAlign: "right", color: h.amount > 0 ? P.mint : P.tx3, fontWeight: 700 }}>+€{h.amount.toFixed(2)}</span>
+                <span style={{ width: 74, textAlign: "right", color: P.tx2 }}>{fmtEuro(h.balanceBefore)}</span>
+                <span style={{ width: 62, textAlign: "right", color: h.amount > 0 ? P.mint : P.tx3, fontWeight: 700 }}>+{fmtEuro(h.amount)}</span>
                 <span style={{ width: 54, textAlign: "right", color: P.tx3 }}>{(h.rate * 100).toFixed(3)}%</span>
               </div>
             ))}
@@ -107,8 +108,8 @@ export default function AdminSavingsCard({ uid, u }: { uid: UserId; u: User }) {
         <div style={{ background: P.track, borderRadius: 3, height: 5 }}>
           <div style={{ background: P.mintG, borderRadius: 3, height: 5, width: `${goalPct}%`, transition: "width .6s" }} />
         </div>
-        <p style={{ color: P.tx3, fontSize: 10, margin: "4px 0 0" }}>
-          🎯 Mancano <b style={{ color: P.gold }}>€{summary.toGoal.toFixed(2)}</b> per arrivare a €{summary.goal}
+        <p style={{ color: P.tx3, fontSize: 12, margin: "4px 0 0" }}>
+          🎯 Mancano <b style={{ color: P.gold }}>{fmtEuro(summary.toGoal)}</b> per arrivare a €{summary.goal}
         </p>
       </div>
     </GlassCard>

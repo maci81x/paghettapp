@@ -10,6 +10,7 @@ import { Btn, GlassCard, InfoTip, PeriodBar, SectionTitle } from "../../design/c
 import { P, alpha, gls } from "../../design/tokens";
 import { fmtDayTime } from "../../utils/dates";
 import MonthReportCard from "../MonthReportCard";
+import { fmtEuro } from "../../utils/money";
 
 export default function WalletTab({
   u,
@@ -53,26 +54,26 @@ export default function WalletTab({
 
       <GlassCard>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ color: P.tx2, fontSize: 11 }}>Totale salvadanai</span>
-          <span style={{ color: P.gold, fontWeight: 800, fontSize: 18 }}>€{total.toFixed(2)}</span>
+          <span style={{ color: P.tx2, fontSize: 12.5 }}>Totale salvadanai</span>
+          <span style={{ color: P.gold, fontWeight: 800, fontSize: 18 }}>{fmtEuro(total)}</span>
         </div>
         {FUNDS.map((k) => (
-          <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+          <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
             <span style={{ color: P.tx }}>{fundName(u, k)}</span>
-            <span style={{ color: P.mint, fontWeight: 700 }}>€{u.w[k].toFixed(2)}</span>
+            <span style={{ color: P.mint, fontWeight: 700 }}>{fmtEuro(u.w[k])}</span>
           </div>
         ))}
       </GlassCard>
 
       <GlassCard>
-        <p style={{ color: P.tx2, fontSize: 10, margin: "0 0 6px" }}>📊 Punti e spese</p>
+        <p style={{ color: P.tx2, fontSize: 12, margin: "0 0 6px" }}>📊 Punti e spese</p>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={series}>
             <CartesianGrid strokeDasharray="3 3" stroke={P.gb} />
             <XAxis dataKey="d" tick={{ fill: P.tx3, fontSize: 8 }} />
             <YAxis tick={{ fill: P.tx3, fontSize: 8 }} />
-            <Tooltip contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }} />
-            <Legend wrapperStyle={{ fontSize: 9 }} />
+            <Tooltip contentStyle={{ ...gls, background: P.surf, fontSize: 12, borderRadius: 10 }} />
+            <Legend wrapperStyle={{ fontSize: 11.5 }} />
             <Bar dataKey="pts" name="Punti" fill={uc} radius={[5, 5, 0, 0]} />
             <Bar dataKey="spese" name="Spese €" fill={P.red} radius={[5, 5, 0, 0]} />
           </BarChart>
@@ -90,7 +91,7 @@ export default function WalletTab({
               color: filtered ? P.acc : P.tx3,
               borderRadius: 8,
               padding: "2px 8px",
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: 800,
               whiteSpace: "nowrap",
             }}
@@ -118,7 +119,7 @@ export default function WalletTab({
           </div>
         </div>
         {income.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>
+          <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 10 }}>
             {filtered ? "Nessuna entrata in questo periodo" : "Nessuna entrata registrata"}
           </p>
         ) : (
@@ -133,27 +134,27 @@ export default function WalletTab({
                   <span style={{ width: 8, height: 8, borderRadius: 4, background: color, marginTop: 8, flexShrink: 0 }} />
                   {idx < income.length - 1 && <span style={{ flex: 1, width: 1, background: P.gb }} />}
                 </div>
-                <div style={{ flex: 1, display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11 }}>
+                <div style={{ flex: 1, display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5 }}>
                   <div>
                     <span style={{ color: P.tx }}>
                       {i.type === "regalo" ? i.source : `${icon} ${i.source}`}
                     </span>
-                    <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
+                    <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>
                       {i.date}
-                      {pay ? ` · €${pay.amount.toFixed(2)} (${pay.pts}pt)` : i.type === "regalo" ? ` · 100% ${fundName(u, "personale")}` : " · extra"}
+                      {pay ? ` · ${fmtEuro(pay.amount)} (${pay.pts}pt)` : i.type === "regalo" ? ` · 100% ${fundName(u, "personale")}` : " · extra"}
                     </p>
                     {i.type === "paghetta" && (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
-                        <span style={{ color: i.confirmed ? P.mint : P.gold, fontSize: 9, fontWeight: 600 }}>{confirmLabel(i)}</span>
+                        <span style={{ color: i.confirmed ? P.mint : P.gold, fontSize: 11.5, fontWeight: 600 }}>{confirmLabel(i)}</span>
                         {!i.confirmed && (
-                          <Btn small grad={P.mintG} style={{ padding: "3px 8px", fontSize: 9 }} onClick={() => onConfirmIncome(i.id)}>
+                          <Btn small grad={P.mintG} style={{ padding: "3px 8px", fontSize: 11.5 }} onClick={() => onConfirmIncome(i.id)}>
                             ✅ Ricevuta!
                           </Btn>
                         )}
                       </div>
                     )}
                   </div>
-                  <span style={{ color: P.mint, fontWeight: 700 }}>+€{i.amount.toFixed(2)}</span>
+                  <span style={{ color: P.mint, fontWeight: 700 }}>+{fmtEuro(i.amount)}</span>
                 </div>
               </div>
             );
@@ -166,23 +167,23 @@ export default function WalletTab({
           🪙 Paghette ricevute <InfoTip text="Ogni paghetta viene divisa: 30% Risparmio, 60% Personale, 10% Beneficenza." />
         </p>
         {(u.pays ?? []).length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>Nessuna paghetta accreditata</p>
+          <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 10 }}>Nessuna paghetta accreditata</p>
         ) : (
           (u.pays ?? []).slice(0, 6).map((p) => (
             <div key={p.id} style={{ padding: "5px 0", borderBottom: `1px solid ${P.gb}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
                 <span style={{ color: P.tx }}>Settimana del {p.week}</span>
-                <span style={{ color: p.outside ? P.tx3 : P.mint, fontWeight: 700 }}>{p.outside ? "💵" : `+€${p.amount.toFixed(2)}`}</span>
+                <span style={{ color: p.outside ? P.tx3 : P.mint, fontWeight: 700 }}>{p.outside ? "💵" : `+${fmtEuro(p.amount)}`}</span>
               </div>
-              <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
+              <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>
                 {p.outside
                   ? `${p.pts}pt · 💵 pagata in contanti, fuori dai salvadanai`
-                  : `${p.pts}pt · 🏦 €${p.split.risparmio.toFixed(2)} · 🎒 €${p.split.personale.toFixed(2)} · 🤝 €${p.split.beneficenza.toFixed(2)}`}
+                  : `${p.pts}pt · 🏦 ${fmtEuro(p.split.risparmio)} · 🎒 ${fmtEuro(p.split.personale)} · 🤝 ${fmtEuro(p.split.beneficenza)}`}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
-                <span style={{ color: p.confirmed ? P.mint : P.gold, fontSize: 9, fontWeight: 600 }}>{confirmLabel(p)}</span>
+                <span style={{ color: p.confirmed ? P.mint : P.gold, fontSize: 11.5, fontWeight: 600 }}>{confirmLabel(p)}</span>
                 {!p.confirmed && (
-                  <Btn small grad={P.mintG} style={{ padding: "3px 8px", fontSize: 9 }} onClick={() => onConfirmIncome(p.id)}>
+                  <Btn small grad={P.mintG} style={{ padding: "3px 8px", fontSize: 11.5 }} onClick={() => onConfirmIncome(p.id)}>
                     ✅ Ricevuta!
                   </Btn>
                 )}
@@ -197,8 +198,8 @@ export default function WalletTab({
           <p style={{ color: P.gold, fontWeight: 700, fontSize: 13, margin: "0 0 2px" }}>
             ⏳ Spese previste <InfoTip text="Hai annotato queste spese ma i soldi non sono ancora usciti. Quando spendi, tocca la spesa e scrivi quanto è costata davvero." />
           </p>
-          <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 6px" }}>
-            Impegnati €{planned.reduce((s, p) => s + p.a, 0).toFixed(2)} · tocca per dire quanto hai speso
+          <p style={{ color: P.tx3, fontSize: 12, margin: "0 0 6px" }}>
+            Impegnati {fmtEuro(planned.reduce((s, p) => s + p.a, 0))} · tocca per dire quanto hai speso
           </p>
           {planned.map((p) => (
             <button
@@ -221,9 +222,9 @@ export default function WalletTab({
             >
               <span style={{ color: P.tx, fontSize: 12 }}>
                 {p.d} · {p.ds}
-                <span style={{ display: "block", color: P.tx3, fontSize: 9 }}>{fundName(u, p.f)}</span>
+                <span style={{ display: "block", color: P.tx3, fontSize: 11.5 }}>{fundName(u, p.f)}</span>
               </span>
-              <span style={{ color: P.gold, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>⏳ €{p.a.toFixed(2)} ›</span>
+              <span style={{ color: P.gold, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>⏳ {fmtEuro(p.a)} ›</span>
             </button>
           ))}
         </GlassCard>
@@ -237,18 +238,18 @@ export default function WalletTab({
           </Btn>
         </div>
         {spese.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>
+          <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 10 }}>
             {filtered ? "Nessuna spesa in questo periodo" : "Nessuna spesa registrata"}
           </p>
         ) : (
           spese.map((s) => (
-            <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+            <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
               <span style={{ color: P.tx }}>
                 {s.d} · {s.ds}
               </span>
               <span style={{ color: P.red, textAlign: "right" }}>
-                -€{s.a.toFixed(2)} <span style={{ color: P.tx3 }}>({fundName(u, s.f)})</span>
-                {s.planned !== undefined && <span style={{ display: "block", color: P.tx3, fontSize: 9 }}>✓ effettivo · previsto €{s.planned.toFixed(2)}</span>}
+                -{fmtEuro(s.a)} <span style={{ color: P.tx3 }}>({fundName(u, s.f)})</span>
+                {s.planned !== undefined && <span style={{ display: "block", color: P.tx3, fontSize: 11.5 }}>✓ effettivo · previsto {fmtEuro(s.planned)}</span>}
               </span>
             </div>
           ))

@@ -108,7 +108,7 @@ export default function App() {
             background: P.surf,
             border: `1px solid ${alpha(P.gold, 27)}`,
             color: P.gold,
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: 700,
             padding: "5px 12px",
           }}
@@ -140,9 +140,9 @@ export default function App() {
         >
           <span style={{ fontSize: 26 }}>{badge.i}</span>
           <div>
-            <p style={{ color: P.gold, fontSize: 11, fontWeight: 800, margin: 0 }}>🏅 Badge sbloccato!</p>
+            <p style={{ color: P.gold, fontSize: 12.5, fontWeight: 800, margin: 0 }}>🏅 Badge sbloccato!</p>
             <p style={{ color: P.tx, fontSize: 12, fontWeight: 700, margin: 0 }}>{badge.n}</p>
-            <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>{toast.who}</p>
+            <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>{toast.who}</p>
           </div>
         </div>
       )}

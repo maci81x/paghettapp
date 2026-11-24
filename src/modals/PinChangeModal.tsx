@@ -66,7 +66,7 @@ export default function PinChangeModal({
       <Input type="password" inputMode="numeric" maxLength={4} value={next} onChange={(e) => setNext(e.target.value)} style={{ marginBottom: 8 }} />
       <Label>Conferma nuovo PIN</Label>
       <Input type="password" inputMode="numeric" maxLength={4} value={confirm} onChange={(e) => setConfirm(e.target.value)} style={{ marginBottom: 8 }} />
-      {error && <p style={{ color: P.red, fontSize: 11, margin: "0 0 8px" }}>{error}</p>}
+      {error && <p style={{ color: P.red, fontSize: 12.5, margin: "0 0 8px" }}>{error}</p>}
       <div style={{ display: "flex", gap: 8 }}>
         <Btn style={{ flex: 1 }} grad={P.mintG} disabled={!valid || saving} onClick={save}>
           {saving ? "Salvo…" : "Salva"}

@@ -18,10 +18,10 @@ export default function PenaltyCard({ penalties, acts }: { penalties: LogEntry[]
         return (
           <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, padding: "4px 0" }}>
             <div style={{ minWidth: 0 }}>
-              <p style={{ color: P.tx2, fontSize: 11, margin: 0 }}>
+              <p style={{ color: P.tx2, fontSize: 12.5, margin: 0 }}>
                 ⚠️ Penalità: non hai fatto {a ? `${actIcon(a)} ${a.name}` : "un'attività"}
               </p>
-              <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
+              <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>
                 {fmtDay(l.date)}
                 {l.note && ` · ${l.note}`}
               </p>

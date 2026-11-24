@@ -118,7 +118,7 @@ export default function AdminLogHistory({
         ))}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: P.tx3, marginBottom: 6 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: P.tx3, marginBottom: 6 }}>
         <span>
           {rows.length} voci · {approved.length} approvate
         </span>
@@ -129,7 +129,7 @@ export default function AdminLogHistory({
       </div>
 
       {rows.length === 0 ? (
-        <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 12 }}>Nessuna voce in questo periodo</p>
+        <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 12 }}>Nessuna voce in questo periodo</p>
       ) : (
         rows.slice(0, shown).map((l) => {
           const st = statusOf(l);
@@ -142,22 +142,22 @@ export default function AdminLogHistory({
             <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: `1px solid ${P.gb}` }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 10, color: P.tx3, fontWeight: 700 }}>{fmtDay(l.date)}</span>
+                  <span style={{ fontSize: 12, color: P.tx3, fontWeight: 700 }}>{fmtDay(l.date)}</span>
                   <span style={{ color: penalty ? P.red : P.tx, fontSize: 12, fontWeight: 600 }}>
                     {icon} {name}
                     {l.cnt > 1 ? ` ×${l.cnt}` : ""}
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 1 }}>
-                  <span style={{ fontSize: 10, color: l.pts >= 0 ? P.mint : P.red, fontWeight: 700 }}>
+                  <span style={{ fontSize: 12, color: l.pts >= 0 ? P.mint : P.red, fontWeight: 700 }}>
                     {l.pts >= 0 ? "+" : ""}
                     {l.pts}pt
                   </span>
-                  <span style={{ fontSize: 9, color: st.color, fontWeight: 600 }}>{st.label}</span>
-                  {l.paid && <span style={{ fontSize: 9, color: P.tx3 }}>💸 pagata</span>}
-                  {!manual && !penalty && <span style={{ fontSize: 9, color: P.tx3 }}>{TODS.find((t) => t.k === l.tod)?.l}</span>}
+                  <span style={{ fontSize: 11.5, color: st.color, fontWeight: 600 }}>{st.label}</span>
+                  {l.paid && <span style={{ fontSize: 11.5, color: P.tx3 }}>💸 pagata</span>}
+                  {!manual && !penalty && <span style={{ fontSize: 11.5, color: P.tx3 }}>{TODS.find((t) => t.k === l.tod)?.l}</span>}
                 </div>
-                {l.note && <p style={{ color: P.tx3, fontSize: 9, margin: "1px 0 0" }}>{l.note}</p>}
+                {l.note && <p style={{ color: P.tx3, fontSize: 11.5, margin: "1px 0 0" }}>{l.note}</p>}
               </div>
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                 {l.ok && (

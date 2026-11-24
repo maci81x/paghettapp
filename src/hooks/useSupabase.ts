@@ -55,6 +55,7 @@ import type {
   Wish,
 } from "../data/types";
 import { P } from "../design/tokens";
+import { fmtEuro } from "../utils/money";
 
 /* ── operazioni di scrittura, indicizzate per nome così la coda offline è serializzabile ── */
 const OPS = {
@@ -1373,7 +1374,7 @@ export function useSupabase() {
   const payBlock = (uid: UserId, week: string): string | null => {
     if (!isWeekOver(week)) return "⏳ La settimana finisce domenica — potrai registrare la paghetta da lunedì.";
     const done = paymentFor(uid, week);
-    if (done) return `⚠️ Paghetta già registrata per questa settimana (€${done.amount.toFixed(2)} il ${fmtDay(done.date)})`;
+    if (done) return `⚠️ Paghetta già registrata per questa settimana (${fmtEuro(done.amount)} il ${fmtDay(done.date)})`;
     return null;
   };
 
@@ -1387,7 +1388,7 @@ export function useSupabase() {
   const payBlockRemote = async (uid: UserId, week: string): Promise<string | null> => {
     const res = await api.allowanceForWeek(uid, week);
     if (!res.data) return null;
-    return `⚠️ Paghetta già registrata per la settimana del ${fmtDay(week)} (€${Number(res.data.amount).toFixed(2)})`;
+    return `⚠️ Paghetta già registrata per la settimana del ${fmtDay(week)} (${fmtEuro(Number(res.data.amount))})`;
   };
 
   /**

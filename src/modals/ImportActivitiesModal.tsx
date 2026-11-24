@@ -56,7 +56,7 @@ export default function ImportActivitiesModal({
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>📥 Importa attività</h3>
-      <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 10px", lineHeight: 1.5 }}>
+      <p style={{ color: P.tx3, fontSize: 12, margin: "0 0 10px", lineHeight: 1.5 }}>
         File .xlsx o .csv. Prima riga con le intestazioni: <b>nome</b>, <b>punteggio</b> (obbligatorie), descrizione, penalità, categoria, daily, sfida. Le
         attività si aggiungono a quelle esistenti; quelle con lo stesso nome vengono saltate.
       </p>
@@ -83,11 +83,11 @@ export default function ImportActivitiesModal({
           onChange={(e) => void pick(e.target.files?.[0])}
         />
       </label>
-      {fileErr && <p style={{ color: P.red, fontSize: 11, margin: "0 0 8px" }}>{fileErr}</p>}
+      {fileErr && <p style={{ color: P.red, fontSize: 12.5, margin: "0 0 8px" }}>{fileErr}</p>}
 
       {res && (
         <>
-          <p style={{ color: P.tx2, fontSize: 11, margin: "0 0 6px" }}>
+          <p style={{ color: P.tx2, fontSize: 12.5, margin: "0 0 6px" }}>
             <b style={{ color: P.mint }}>{fresh.length} nuove</b>
             {res.items.length > fresh.length && ` · ${res.items.length - fresh.length} già presenti`}
             {res.errors.length > 0 && <span style={{ color: P.red }}> · {res.errors.length} scartate</span>}
@@ -99,9 +99,9 @@ export default function ImportActivitiesModal({
                 <div key={i} style={{ padding: "5px 0", borderBottom: `1px solid ${P.gb}`, opacity: it.duplicate ? 0.45 : 1 }}>
                   <p style={{ color: P.tx, fontSize: 12, margin: 0 }}>
                     {cat?.i} {it.name} {it.ch ? "⚡" : ""}
-                    {it.duplicate && <span style={{ color: P.tx3, fontSize: 9 }}> · già presente</span>}
+                    {it.duplicate && <span style={{ color: P.tx3, fontSize: 11.5 }}> · già presente</span>}
                   </p>
-                  <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
+                  <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>
                     <span style={{ color: P.mint }}>+{it.pts}pt</span>
                     {it.pen < 0 && <span style={{ color: P.red }}> · {it.pen}pt</span>} · 1/{FREQ_UNIT[it.freq]}
                     {it.desc && ` · ${it.desc}`}
@@ -110,7 +110,7 @@ export default function ImportActivitiesModal({
               );
             })}
             {res.errors.map((e) => (
-              <p key={e} style={{ color: P.red, fontSize: 10, margin: "4px 0 0" }}>
+              <p key={e} style={{ color: P.red, fontSize: 12, margin: "4px 0 0" }}>
                 ⚠️ {e}
               </p>
             ))}

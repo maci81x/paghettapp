@@ -90,14 +90,14 @@ export default function TierBar({
               key={t.r}
               style={{ position: "absolute", left: `${i * TIER_TICK}%`, transform: "translateX(-50%)", width: compact ? 40 : 44, textAlign: "center" }}
             >
-              <p style={{ margin: 0, fontSize: compact ? 10 : 12, fontWeight: 800, color: wp >= t.min ? P.tx : P.tx3 }}>€{t.r}</p>
+              <p style={{ margin: 0, fontSize: compact ? 12 : 12, fontWeight: 800, color: wp >= t.min ? P.tx : P.tx3 }}>€{t.r}</p>
               <p style={{ margin: 0, fontSize: 8, color: P.tx3 }}>{t.min}pt</p>
             </div>
           ))}
         </div>
       </div>
 
-      <p style={{ margin: 0, textAlign: "center", fontSize: compact ? 9 : 10, color: P.tx2 }}>
+      <p style={{ margin: 0, textAlign: "center", fontSize: compact ? 11.5 : 10, color: P.tx2 }}>
         {next ? (
           <>
             Sei a <b style={{ color: P.tx }}>{wp}pt</b> • Mancano <b style={{ color }}>{next.min - wp}pt</b> per €{next.r}

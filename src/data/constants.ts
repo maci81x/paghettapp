@@ -1,4 +1,5 @@
 import type { Activity, Badge, Category, Freq, Fund, Level, PinKey, Period, Tier, Tod, User } from "./types";
+import { fmtEuro } from "../utils/money.ts";
 
 export const CATS: Category[] = [
   { id: "casa", n: "Casa", i: "🏠", c: "#6366f1" },
@@ -129,7 +130,7 @@ export const isPending = (l: { ok: boolean; revoked?: boolean; rejected?: boolea
 /** Etichetta del premio di una missione: euro per le nuove, punti per quelle di prima. */
 export const prizeLabel = (m: { pts: number; euro?: number }) => {
   const parts: string[] = [];
-  if (m.euro && m.euro > 0) parts.push(`€${m.euro.toFixed(2)}`);
+  if (m.euro && m.euro > 0) parts.push(`${fmtEuro(m.euro)}`);
   if (m.pts > 0) parts.push(`+${m.pts} pt`);
   return parts.join(" + ") || "—";
 };

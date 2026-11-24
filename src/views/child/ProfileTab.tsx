@@ -9,6 +9,7 @@ import type { ThemePref } from "../../hooks/useThemeMode";
 import { BG_PATTERNS, COLOR_PRESETS, userGrad, userName } from "../../design/theme";
 import { P } from "../../design/tokens";
 import PhotoGalleryCard from "./PhotoGalleryCard";
+import { fmtEuro } from "../../utils/money";
 
 const STARS = { 1: "⭐⭐⭐", 2: "⭐⭐", 3: "⭐" } as const;
 
@@ -118,7 +119,7 @@ export default function ProfileTab({
               borderBottomRightRadius: 34,
               background: "rgba(0,0,0,.55)",
               color: "#fff",
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: 700,
               padding: "4px 0",
               cursor: "pointer",
@@ -143,7 +144,7 @@ export default function ProfileTab({
         {/* `capture` apre la fotocamera; senza l'attributo si apre la galleria */}
         <input ref={camRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={onFile} />
         <input ref={galRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} />
-        {photoErr && <p style={{ color: P.red, fontSize: 10, margin: "0 0 6px" }}>{photoErr}</p>}
+        {photoErr && <p style={{ color: P.red, fontSize: 12, margin: "0 0 6px" }}>{photoErr}</p>}
 
         <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 8 }}>
           <Btn small outline color={P.tx3} onClick={onAvatar}>
@@ -171,10 +172,10 @@ export default function ProfileTab({
             }}
             style={{ color: P.tx, fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: -0.5, cursor: "pointer" }}
           >
-            {userName(u)} <span style={{ fontSize: 11 }}>✏️</span>
+            {userName(u)} <span style={{ fontSize: 12.5 }}>✏️</span>
           </p>
         )}
-        <p style={{ color: P.tx2, fontSize: 11, margin: 0 }}>
+        <p style={{ color: P.tx2, fontSize: 12.5, margin: 0 }}>
           {lvl.i} {lvl.n} · {u.totalPts}pt
         </p>
       </div>
@@ -191,7 +192,7 @@ export default function ProfileTab({
               <div key={k} style={{ padding: "7px 0", borderBottom: `1px solid ${P.gb}` }}>
                 {editing ? (
                   <>
-                    <p style={{ color: P.tx3, fontSize: 9, margin: "0 0 3px" }}>{FUND_LABEL[k]}</p>
+                    <p style={{ color: P.tx3, fontSize: 11.5, margin: "0 0 3px" }}>{FUND_LABEL[k]}</p>
                     <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
                       <Input
                         value={fundDraft}
@@ -207,7 +208,7 @@ export default function ProfileTab({
                         ✕
                       </Btn>
                     </div>
-                    <p style={{ fontSize: 9, color: tooShort ? P.red : P.tx3, margin: "3px 0 0" }}>
+                    <p style={{ fontSize: 11.5, color: tooShort ? P.red : P.tx3, margin: "3px 0 0" }}>
                       {tooShort ? `Almeno ${FUND_NAME_MIN} caratteri` : `${fundDraft.trim().length}/${FUND_NAME_MAX}`}
                     </p>
                   </>
@@ -215,7 +216,7 @@ export default function ProfileTab({
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ color: P.tx, fontSize: 12, fontWeight: 600, margin: 0 }}>{fundName(u, k)}</p>
-                      <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>{FUND_LABEL[k]}</p>
+                      <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>{FUND_LABEL[k]}</p>
                     </div>
                     <Btn
                       small
@@ -309,13 +310,13 @@ export default function ProfileTab({
             <span style={{ fontSize: 22 }}>{l.i}</span>
             <div style={{ flex: 1 }}>
               <span style={{ color: l.c, fontWeight: 700, fontSize: 13 }}>{l.n}</span>
-              <span style={{ color: P.tx3, fontSize: 9, marginLeft: 6 }}>
+              <span style={{ color: P.tx3, fontSize: 11.5, marginLeft: 6 }}>
                 {l.min}–{l.max < 999999 ? l.max : "∞"}
               </span>
-              <p style={{ color: P.tx2, fontSize: 10, margin: "1px 0 0" }}>{l.d}</p>
+              <p style={{ color: P.tx2, fontSize: 12, margin: "1px 0 0" }}>{l.d}</p>
             </div>
             {u.totalPts >= l.min && u.totalPts <= l.max && (
-              <span style={{ background: grad, color: "#fff", padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>Tu sei qui</span>
+              <span style={{ background: grad, color: "#fff", padding: "2px 8px", borderRadius: 6, fontSize: 11.5, fontWeight: 700 }}>Tu sei qui</span>
             )}
           </div>
         ))}
@@ -344,7 +345,7 @@ export default function ProfileTab({
               >
                 <span style={{ fontSize: 18, filter: got ? "none" : "grayscale(1)" }}>{b.i}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: got ? P.tx : P.tx3, fontSize: 10, fontWeight: 700, margin: 0 }}>{b.n}</p>
+                  <p style={{ color: got ? P.tx : P.tx3, fontSize: 12, fontWeight: 700, margin: 0 }}>{b.n}</p>
                   <p style={{ color: P.tx3, fontSize: 8, margin: 0, lineHeight: 1.3 }}>{got ? (u.badgeAt?.[b.id] ?? "sbloccato") : b.hint}</p>
                 </div>
               </div>
@@ -361,7 +362,7 @@ export default function ProfileTab({
           </Btn>
         </div>
         {wishes.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10 }}>Nessun desiderio in lista</p>
+          <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 10 }}>Nessun desiderio in lista</p>
         ) : (
           wishes.map((w) => {
             const bal = u.w[w.fund];
@@ -374,10 +375,10 @@ export default function ProfileTab({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: P.tx, fontSize: 12, fontWeight: 600, margin: 0 }}>
                       {w.done ? "✅ " : ""}
-                      {w.name} <span style={{ color: P.tx3, fontSize: 10 }}>{STARS[w.priority]}</span>
+                      {w.name} <span style={{ color: P.tx3, fontSize: 12 }}>{STARS[w.priority]}</span>
                     </p>
-                    <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
-                      €{w.cost.toFixed(2)} · {FUND_LABEL[w.fund]}
+                    <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>
+                      {fmtEuro(w.cost)} · {FUND_LABEL[w.fund]}
                     </p>
                   </div>
                   <div style={{ display: "flex", gap: 4 }}>
@@ -399,8 +400,8 @@ export default function ProfileTab({
                     <div style={{ background: P.track, borderRadius: 3, height: 5, marginTop: 5 }}>
                       <div style={{ background: pct >= 100 ? P.mintG : uc, borderRadius: 3, height: 5, width: `${pct}%`, transition: "width .5s" }} />
                     </div>
-                    <p style={{ fontSize: 9, color: missing <= 0 ? P.mint : P.tx3, margin: "3px 0 0" }}>
-                      {missing <= 0 ? "✅ Puoi comprarlo!" : `Mancano €${missing.toFixed(2)}${weeks ? ` · ~${weeks} settiman${weeks === 1 ? "a" : "e"}` : ""}`}
+                    <p style={{ fontSize: 11.5, color: missing <= 0 ? P.mint : P.tx3, margin: "3px 0 0" }}>
+                      {missing <= 0 ? "✅ Puoi comprarlo!" : `Mancano ${fmtEuro(missing)}${weeks ? ` · ~${weeks} settiman${weeks === 1 ? "a" : "e"}` : ""}`}
                     </p>
                   </>
                 )}
@@ -414,11 +415,11 @@ export default function ProfileTab({
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>📊 Riepilogo</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <div style={{ textAlign: "center" }}>
-            <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>Oggi</p>
+            <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>Oggi</p>
             <p style={{ color: P.mint, fontSize: 20, fontWeight: 800, margin: 0 }}>+{tp}</p>
           </div>
           <div style={{ textAlign: "center" }}>
-            <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>Settimana</p>
+            <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>Settimana</p>
             <p style={{ color: P.gold, fontSize: 20, fontWeight: 800, margin: 0 }}>+{wp}</p>
           </div>
         </div>

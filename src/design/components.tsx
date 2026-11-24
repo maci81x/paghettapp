@@ -94,7 +94,7 @@ export function Avatar({
 /* ── Card vetro ── */
 export function GlassCard({ children, style, onClick }: { children: ReactNode; style?: CSSProperties; onClick?: () => void }) {
   return (
-    <div className="anim" style={{ ...gls, padding: 16, marginBottom: 12, ...style }} onClick={onClick}>
+    <div className="anim" style={{ padding: "16px 0", marginBottom: 4, borderTop: `1px solid ${P.gb}`, ...style }} onClick={onClick}>
       {children}
     </div>
   );
@@ -122,13 +122,14 @@ export function Pill({
       onClick={onClick}
       disabled={disabled}
       style={{
-        background: active ? color + "1a" : "transparent",
-        color: active ? color : P.tx3,
-        border: `1.5px solid ${active ? color + "55" : "transparent"}`,
-        borderRadius: 20,
-        padding: s ? "3px 10px" : "5px 14px",
-        fontSize: s ? 10 : 11,
-        fontWeight: 600,
+        background: active ? alpha(color, 22) : "transparent",
+        color: active ? P.tx : P.tx2,
+        border: `1.5px solid ${active ? color : P.gb}`,
+        borderRadius: 99,
+        padding: s ? "5px 12px" : "8px 16px",
+        minHeight: s ? 32 : 40,
+        fontSize: s ? 12.5 : 14,
+        fontWeight: active ? 800 : 700,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.45 : 1,
         whiteSpace: "nowrap",
@@ -169,12 +170,14 @@ export function Btn({
       disabled={disabled}
       style={{
         background: outline ? "transparent" : grad || color,
-        color: outline ? color : "#fff",
+        // su menta e oro il bianco non si legge: testo scuro come il fondo
+        color: outline ? color : [P.mint, P.gold].includes(color) || [P.mintG, P.goldG].includes(grad ?? "") ? P.bg : "#fff",
         border: outline ? `1.5px solid ${color}` : "none",
-        borderRadius: 12,
+        borderRadius: small ? 12 : 14,
         padding: small ? "6px 14px" : "10px 18px",
-        fontSize: small ? 11 : 13,
-        fontWeight: 600,
+        minHeight: small ? 36 : 48,
+        fontSize: small ? 13 : 15,
+        fontWeight: 800,
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.4 : 1,
         width: full ? "100%" : "auto",
@@ -203,7 +206,7 @@ export function InfoTip({ text }: { text: string }) {
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 9,
+          fontSize: 11.5,
           fontWeight: 700,
         }}
       >
@@ -211,7 +214,7 @@ export function InfoTip({ text }: { text: string }) {
       </span>
       {open && (
         <div
-          style={{ position: "absolute", bottom: 22, left: -90, zIndex: 999, ...gls, background: P.surf, padding: 12, width: 220, fontSize: 11, color: P.tx2, lineHeight: 1.5 }}
+          style={{ position: "absolute", bottom: 22, left: -90, zIndex: 999, ...gls, background: P.surf, padding: 12, width: 220, fontSize: 12.5, color: P.tx2, lineHeight: 1.5 }}
           onClick={(e) => e.stopPropagation()}
         >
           {text}
@@ -316,7 +319,7 @@ export function TextArea({ style, ...p }: TextareaHTMLAttributes<HTMLTextAreaEle
 }
 
 export function Label({ children }: { children: ReactNode }) {
-  return <label style={{ fontSize: 10, color: P.tx3, display: "block", marginBottom: 3 }}>{children}</label>;
+  return <label style={{ fontSize: 12, color: P.tx3, display: "block", marginBottom: 3 }}>{children}</label>;
 }
 
 /* ── Modale ── */

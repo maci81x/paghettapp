@@ -3,6 +3,7 @@ import { fundName } from "../data/constants";
 import type { Fund, User } from "../data/types";
 import { Btn, Input, Label, Modal } from "../design/components";
 import { P, alpha } from "../design/tokens";
+import { fmtEuro } from "../utils/money";
 
 export type PiggyAction = "redeem" | "reset";
 
@@ -46,7 +47,7 @@ export default function PiggyActionModal({
       <Modal onClose={onClose}>
         <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 8px" }}>🔄 Azzerare {name}?</h3>
         <p style={{ fontSize: 12, color: P.tx2, lineHeight: 1.5, margin: "0 0 16px" }}>
-          Il salvadanaio {name} di <b style={{ color: P.tx }}>{u.n}</b> passa da <b style={{ color: P.mint }}>€{balance.toFixed(2)}</b> a zero. Resta
+          Il salvadanaio {name} di <b style={{ color: P.tx }}>{u.n}</b> passa da <b style={{ color: P.mint }}>{fmtEuro(balance)}</b> a zero. Resta
           una spesa a storico, e gli interessi già accreditati restano nello storico interessi.
           <span style={{ display: "block", color: P.red, fontWeight: 700, marginTop: 6 }}>Questa azione non è reversibile.</span>
         </p>
@@ -60,7 +61,7 @@ export default function PiggyActionModal({
               onClose();
             }}
           >
-            Azzera €{balance.toFixed(2)}
+            Azzera {fmtEuro(balance)}
           </Btn>
           <Btn style={{ flex: 1 }} outline color={P.tx3} onClick={onClose}>
             Annulla
@@ -73,13 +74,13 @@ export default function PiggyActionModal({
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>💸 Riscatta {name}</h3>
-      <p style={{ fontSize: 11, color: P.tx3, margin: "0 0 12px" }}>
-        Saldo disponibile: <b style={{ color: P.mint }}>€{balance.toFixed(2)}</b>. I soldi escono dall'app perché li consegni a mano.
+      <p style={{ fontSize: 12.5, color: P.tx3, margin: "0 0 12px" }}>
+        Saldo disponibile: <b style={{ color: P.mint }}>{fmtEuro(balance)}</b>. I soldi escono dall'app perché li consegni a mano.
       </p>
 
       <Label>Quanto vuoi dare a {u.n}?</Label>
       <Input type="number" inputMode="decimal" max={balance} value={amount} onChange={(e) => setAmount(e.target.value)} style={{ marginBottom: 4 }} />
-      {num(amount) > balance && <p style={{ color: P.gold, fontSize: 10, margin: "0 0 6px" }}>Il massimo è €{balance.toFixed(2)}: userò quello.</p>}
+      {num(amount) > balance && <p style={{ color: P.gold, fontSize: 12, margin: "0 0 6px" }}>Il massimo è {fmtEuro(balance)}: userò quello.</p>}
 
       <Label>Motivo</Label>
       <Input
@@ -92,7 +93,7 @@ export default function PiggyActionModal({
 
       {validRedeem && (
         <p style={{ background: alpha(P.gold, 8), border: `1px solid ${alpha(P.gold, 18)}`, borderRadius: 10, padding: 10, fontSize: 12, color: P.tx, margin: "0 0 12px" }}>
-          💸 <b>€{value.toFixed(2)}</b> escono da {name} e vanno a {u.n} — {reason.trim()}
+          💸 <b>{fmtEuro(value)}</b> escono da {name} e vanno a {u.n} — {reason.trim()}
         </p>
       )}
 
@@ -106,7 +107,7 @@ export default function PiggyActionModal({
             onClose();
           }}
         >
-          Riscatta €{value.toFixed(2)}
+          Riscatta {fmtEuro(value)}
         </Btn>
         <Btn style={{ flex: 1 }} outline color={P.tx3} onClick={onClose}>
           Annulla

@@ -40,7 +40,7 @@ export default function PinEntry({
       </button>
       <Avatar photo={tgt.photo} emoji={tgt.av} size={52} radius={16} grad={tgt.grad} style={{ marginBottom: 10, boxShadow: `0 6px 20px ${tgt.c}33` }} />
       <h2 style={{ color: P.tx, fontSize: 16, fontWeight: 700, margin: "0 0 2px" }}>{tgt.n}</h2>
-      <p style={{ color: P.tx3, fontSize: 11, marginBottom: 24 }}>Inserisci il PIN</p>
+      <p style={{ color: P.tx3, fontSize: 12.5, marginBottom: 24 }}>Inserisci il PIN</p>
       <div style={{ display: "flex", gap: 12, marginBottom: 32 }}>
         {[0, 1, 2, 3].map((i) => (
           <div

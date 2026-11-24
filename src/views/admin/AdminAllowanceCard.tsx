@@ -5,6 +5,7 @@ import { prevWeekStart, weekLabel } from "../../data/weekBounds";
 import { Btn, GlassCard, InfoTip, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
 import { fmtDay, fmtDayTime } from "../../utils/dates";
+import { fmtEuro } from "../../utils/money";
 
 /** Registro della paghetta settimanale: anteprima dello split e conferma del pagamento. */
 export default function AdminAllowanceCard({
@@ -55,7 +56,7 @@ export default function AdminAllowanceCard({
           📤 Paghetta settimanale
           <InfoTip text="L'accredito divide l'importo fra i tre salvadanai. I punti restano nella settimana in cui le attività sono state fatte: una settimana si paga una volta sola." />
         </p>
-        {paid && <span style={{ color: P.mint, fontSize: 11, fontWeight: 700 }}>✓ Pagata €{paid.amount.toFixed(2)}</span>}
+        {paid && <span style={{ color: P.mint, fontSize: 12.5, fontWeight: 700 }}>✓ Pagata {fmtEuro(paid.amount)}</span>}
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
@@ -75,7 +76,7 @@ export default function AdminAllowanceCard({
               border: `1.5px solid ${older.includes(week) ? P.gold + "55" : "transparent"}`,
               borderRadius: 20,
               padding: "5px 10px",
-              fontSize: 11,
+              fontSize: 12.5,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -89,7 +90,7 @@ export default function AdminAllowanceCard({
           </select>
         )}
       </div>
-      <p style={{ color: P.tx3, fontSize: 9, margin: "0 0 10px" }}>
+      <p style={{ color: P.tx3, fontSize: 11.5, margin: "0 0 10px" }}>
         {week === current
           ? "⏳ La settimana finisce domenica — potrai registrare la paghetta da lunedì."
           : `Settimana ${weekLabel(week)} · si registra solo a settimana conclusa.`}
@@ -97,7 +98,7 @@ export default function AdminAllowanceCard({
 
       {paid ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>
+          <p style={{ color: P.tx3, fontSize: 12, margin: 0 }}>
             <b style={{ color: P.gold, display: "block", marginBottom: 2 }}>{blocked}</b>
             Settimana del {paid.week} · {paid.pts}pt ·{" "}
             {paid.confirmed ? (
@@ -113,7 +114,7 @@ export default function AdminAllowanceCard({
       ) : noNames ? (
         <p style={{ color: P.gold, fontSize: 12, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
           ⚠️ {u.n} non ha ancora dato un nome ai salvadanai. Chiedi a {u.n} di farlo prima!
-          <span style={{ display: "block", color: P.tx3, fontSize: 10, fontWeight: 400, marginTop: 4 }}>
+          <span style={{ display: "block", color: P.tx3, fontSize: 12, fontWeight: 400, marginTop: 4 }}>
             Li trova al primo accesso, oppure nel suo Profilo → 🐷 I miei salvadanai.
           </span>
         </p>
@@ -124,20 +125,20 @@ export default function AdminAllowanceCard({
       ) : (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-            <span style={{ color: P.tx2, fontSize: 11 }}>Tier raggiunto</span>
+            <span style={{ color: P.tx2, fontSize: 12.5 }}>Tier raggiunto</span>
             <span style={{ color: P.tx, fontSize: 15, fontWeight: 800 }}>
               {due.pts}pt <span style={{ color: P.tx3, fontWeight: 600 }}>→</span> <span style={{ color: P.gold }}>€{tier.r}</span>
             </span>
           </div>
 
           {FUNDS.map((k) => (
-            <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
               <span style={{ color: P.tx }}>{fundName(u, k)}</span>
-              <span style={{ color: P.mint, fontWeight: 700 }}>€{due.split[k].toFixed(2)}</span>
+              <span style={{ color: P.mint, fontWeight: 700 }}>{fmtEuro(due.split[k])}</span>
             </div>
           ))}
 
-          <p style={{ color: P.tx3, fontSize: 9, margin: "8px 0 10px" }}>
+          <p style={{ color: P.tx3, fontSize: 11.5, margin: "8px 0 10px" }}>
             I punti restano nella settimana in cui sono stati fatti; quella nuova riparte da zero il lunedì. Dopo il pagamento {u.n} riceve la richiesta di conferma.
           </p>
 
@@ -154,14 +155,14 @@ export default function AdminAllowanceCard({
 
       {history.length > 0 && (
         <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${P.gb}` }}>
-          <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 4px" }}>Ultimi accrediti</p>
+          <p style={{ color: P.tx3, fontSize: 12, margin: "0 0 4px" }}>Ultimi accrediti</p>
           {history.map((p) => (
-            <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 10 }}>
+            <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 12 }}>
               <span style={{ color: P.tx2 }}>
                 {p.week} · {p.pts}pt
               </span>
               <span style={{ color: p.outside ? P.tx3 : p.confirmed ? P.mint : P.gold }}>
-                {p.outside ? "💵 pagata fuori app" : `€${p.amount.toFixed(2)} · ${p.confirmed ? `✅ ${fmtDay(p.confirmedAt ?? p.date)}` : "⏳ in attesa"}`}
+                {p.outside ? "💵 pagata fuori app" : `${fmtEuro(p.amount)} · ${p.confirmed ? `✅ ${fmtDay(p.confirmedAt ?? p.date)}` : "⏳ in attesa"}`}
               </span>
             </div>
           ))}

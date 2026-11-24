@@ -29,6 +29,7 @@ import TierBar from "../../components/TierBar";
 import PendingApprovalCard from "./PendingApprovalCard";
 import PenaltyCard from "./PenaltyCard";
 import { fmtDay } from "../../utils/dates";
+import { fmtEuro } from "../../utils/money";
 
 /** Nome scelto dalla ragazza più la quota che gli spetta di ogni paghetta. */
 const fundHomeLabel = (u: User, k: Fund) => `${fundName(u, k)} (${SPLIT[k] * 100}%)`;
@@ -142,7 +143,7 @@ export default function HomeTab({
         <Avatar photo={u.profilePhoto} emoji={u.av} size={48} grad={grad} />
         <div>
           <p style={{ color: P.tx, fontSize: 15, fontWeight: 800, margin: 0, letterSpacing: -0.3 }}>Ciao, {userName(u)}! 👋</p>
-          <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>🔥 {u.streak} giorni di fila</p>
+          <p style={{ color: P.tx3, fontSize: 12, margin: 0 }}>🔥 {u.streak} giorni di fila</p>
         </div>
       </div>
 
@@ -151,9 +152,9 @@ export default function HomeTab({
       {toConfirm && (
         <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.gold, 12)},transparent)`, border: `1.5px solid ${alpha(P.gold, 33)}` }}>
           <p style={{ color: P.tx, fontWeight: 800, fontSize: 15, margin: "0 0 4px", letterSpacing: -0.3 }}>
-            💰 Hai ricevuto la paghetta di €{toConfirm.amount.toFixed(2)}?
+            💰 Hai ricevuto la paghetta di {fmtEuro(toConfirm.amount)}?
           </p>
-          <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 10px" }}>Accreditata il {fmtDay(toConfirm.date)} · confermala quando hai i soldi in mano</p>
+          <p style={{ color: P.tx3, fontSize: 12, margin: "0 0 10px" }}>Accreditata il {fmtDay(toConfirm.date)} · confermala quando hai i soldi in mano</p>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn style={{ flex: 1 }} grad={P.mintG} onClick={() => onConfirmIncome(toConfirm.id)}>
               ✅ Sì, ricevuta!
@@ -163,7 +164,7 @@ export default function HomeTab({
             </Btn>
           </div>
           {notYet && (
-            <p style={{ color: P.tx2, fontSize: 10, margin: "8px 0 0", lineHeight: 1.4 }}>
+            <p style={{ color: P.tx2, fontSize: 12, margin: "8px 0 0", lineHeight: 1.4 }}>
               Nessun problema: chiedi a Babbo Roby. La domanda resta qui finché non confermi.
             </p>
           )}
@@ -173,14 +174,14 @@ export default function HomeTab({
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
         <Ring pct={weekPct} size={156} stroke={10} color={uc} glow>
           <p style={{ fontSize: 34, fontWeight: 800, margin: 0, letterSpacing: -2, color: P.tx }}>{wp}</p>
-          <p style={{ fontSize: 10, color: P.tx3, margin: 0 }}>punti settimana</p>
+          <p style={{ fontSize: 12, color: P.tx3, margin: 0 }}>punti settimana</p>
         </Ring>
       </div>
 
       <GlassCard style={{ textAlign: "center", padding: 12, marginBottom: 8 }}>
-        <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>OGGI</p>
+        <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>OGGI</p>
         <p style={{ fontSize: 26, fontWeight: 800, margin: 0, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>+{tp}</p>
-        <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>punti</p>
+        <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>punti</p>
       </GlassCard>
 
       {/*
@@ -197,25 +198,25 @@ export default function HomeTab({
           border: `1.5px solid ${alpha(P.gold, 18)}`,
         }}
       >
-        <p style={{ color: P.tx3, fontSize: 9, margin: 0, letterSpacing: 0.2 }}>{paid ? "PAGHETTA" : "PAGHETTA IN CORSO"}</p>
+        <p style={{ color: P.tx3, fontSize: 11.5, margin: 0, letterSpacing: 0.2 }}>{paid ? "PAGHETTA" : "PAGHETTA IN CORSO"}</p>
         <p style={{ fontSize: 32, fontWeight: 800, margin: "2px 0 0", letterSpacing: -1, background: P.goldG, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          €{(paid ? paid.amount : tier.r).toFixed(2).replace(".00", "")}
+          {fmtEuro(paid ? paid.amount : tier.r).replace(",00", "")}
         </p>
 
         {paid ? (
-          <p style={{ color: P.mint, fontSize: 11, fontWeight: 700, margin: "4px 0 0" }}>✓ accreditata</p>
+          <p style={{ color: P.mint, fontSize: 12.5, fontWeight: 700, margin: "4px 0 0" }}>✓ accreditata</p>
         ) : wp <= 0 ? (
           <p style={{ color: P.acc, fontSize: 16, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.35 }}>
             🎯 Questa settimana parti da €{TIERS[0].r} — fai attività per guadagnare di più!
           </p>
         ) : nextTier ? (
           <>
-            <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0" }}>con {wp}pt della settimana</p>
+            <p style={{ color: P.tx3, fontSize: 12, margin: "2px 0 0" }}>con {wp}pt della settimana</p>
             <p style={{ color: P.acc, fontSize: 16, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.35 }}>
               Mancano {gapTier}pt per arrivare a €{nextTier.r}
             </p>
             {best && (
-              <p style={{ color: P.tx2, fontSize: 11, margin: "5px 0 0", lineHeight: 1.4 }}>
+              <p style={{ color: P.tx2, fontSize: 12.5, margin: "5px 0 0", lineHeight: 1.4 }}>
                 Fai {CATS.find((c) => c.id === best.cat)?.i} <b style={{ color: P.tx }}>{best.name}</b> per +{best.pts}pt!
               </p>
             )}
@@ -236,7 +237,7 @@ export default function HomeTab({
           <span style={{ color: P.mint, fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{tp}pt</span>
         </div>
         {doneToday.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, margin: "6px 0 0" }}>Non hai ancora segnato niente oggi — comincia da "Da fare oggi" 👇</p>
+          <p style={{ color: P.tx3, fontSize: 12.5, margin: "6px 0 0" }}>Non hai ancora segnato niente oggi — comincia da "Da fare oggi" 👇</p>
         ) : (
           <div style={{ marginTop: 6 }}>
             {doneToday.map(({ l, a }) => {
@@ -244,7 +245,7 @@ export default function HomeTab({
               const pen = isPenalty(l);
               const name = pen ? `⚠️ Penalità: non hai fatto ${a ? a.name : "un'attività"}` : (a?.name ?? MANUAL_ACT_LABEL[l.actId] ?? "Attività");
               return (
-                <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0", fontSize: 11 }}>
+                <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0", fontSize: 12.5 }}>
                   <span style={{ color: pen ? P.red : P.tx2 }}>
                     {pen ? "" : (cat?.i ?? "")} {name}
                     {l.cnt > 1 ? ` ×${l.cnt}` : ""}
@@ -254,7 +255,7 @@ export default function HomeTab({
                       {l.pts >= 0 ? "+" : ""}
                       {l.pts}pt
                     </span>
-                    <span style={{ fontSize: 9, color: l.ok ? P.mint : P.gold }}>{l.ok ? "✅" : "⏳"}</span>
+                    <span style={{ fontSize: 11.5, color: l.ok ? P.mint : P.gold }}>{l.ok ? "✅" : "⏳"}</span>
                   </span>
                 </div>
               );
@@ -283,11 +284,11 @@ export default function HomeTab({
             <div style={{ background: P.track, borderRadius: 4, height: 6, marginBottom: 8 }}>
               <div style={{ background: grad, borderRadius: 4, height: 6, width: `${weekPct}%`, transition: "width .5s" }} />
             </div>
-            <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 4px" }}>💡 Prova queste attività:</p>
+            <p style={{ color: P.tx3, fontSize: 12, margin: "0 0 4px" }}>💡 Prova queste attività:</p>
             {suggestions.map((a) => {
               const cat = CATS.find((c) => c.id === a.cat);
               return (
-                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 11 }}>
+                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 12.5 }}>
                   <span style={{ color: P.tx }}>
                     {cat?.i} {a.name}
                   </span>
@@ -316,7 +317,7 @@ export default function HomeTab({
                     justifyContent: "space-between",
                     alignItems: "center",
                     padding: "6px 0",
-                    fontSize: 11,
+                    fontSize: 12.5,
                     borderBottom: `1px solid ${P.gb}`,
                     cursor: "pointer",
                   }}
@@ -327,15 +328,15 @@ export default function HomeTab({
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {/* `todo` contiene solo le attività non ancora segnate oggi:
                         appena la segni sparisce di qui, avviso penalità compreso */}
-                    {a.pen < 0 && <span style={{ color: P.red, fontSize: 10, fontWeight: 700 }}>⚠️ {a.pen}pt</span>}
+                    {a.pen < 0 && <span style={{ color: P.red, fontSize: 12, fontWeight: 700 }}>⚠️ {a.pen}pt</span>}
                     <span style={{ color: P.mint, fontWeight: 700 }}>+{a.pts}pt</span>
-                    <span style={{ color: uc, fontSize: 10, fontWeight: 700 }}>✅ Fatto!</span>
+                    <span style={{ color: uc, fontSize: 12, fontWeight: 700 }}>✅ Fatto!</span>
                   </span>
                 </div>
               );
             })}
             {todo.length > todoTop.length && (
-              <p style={{ color: P.tx3, fontSize: 10, margin: "6px 0 0" }}>…e altre {todo.length - todoTop.length}</p>
+              <p style={{ color: P.tx3, fontSize: 12, margin: "6px 0 0" }}>…e altre {todo.length - todoTop.length}</p>
             )}
           </>
         )}
@@ -355,7 +356,7 @@ export default function HomeTab({
             <span style={{ color: b.c, fontWeight: 800, fontSize: 14 }}>{b.pts}pt</span>
           </div>
         ))}
-        <p style={{ color: P.tx3, fontSize: 10, margin: "6px 0 0", textAlign: "center" }}>
+        <p style={{ color: P.tx3, fontSize: 12, margin: "6px 0 0", textAlign: "center" }}>
           {tie ? "Testa a testa! 🤝" : me.pts > other.pts ? `Sei avanti di ${diff} punti` : `Ti mancano ${diff} punti per raggiungere ${other.n}`}
         </p>
       </GlassCard>
@@ -366,7 +367,7 @@ export default function HomeTab({
         <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.gold, 3)},transparent)`, border: `1px solid ${alpha(P.gold, 10)}` }}>
           <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>🎁 Punti bonus e penalità</p>
           {bonuses.map((l) => (
-            <div key={l.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 11 }}>
+            <div key={l.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 12.5 }}>
               <span style={{ color: P.tx2 }}>{l.note}</span>
               <span style={{ color: l.pts >= 0 ? P.mint : P.red, fontWeight: 700 }}>
                 {l.pts >= 0 ? "+" : ""}
@@ -385,36 +386,36 @@ export default function HomeTab({
           <div key={k} style={{ padding: "8px 0", borderBottom: `1px solid ${P.gb}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 12, color: P.tx }}>{fundHomeLabel(u, k)}</span>
-              <span style={{ color: P.mint, fontWeight: 700, fontSize: 15 }}>€{u.w[k].toFixed(2)}</span>
+              <span style={{ color: P.mint, fontWeight: 700, fontSize: 15 }}>{fmtEuro(u.w[k])}</span>
             </div>
             {k === "risparmio" && (
               <>
                 <div style={{ display: "flex", gap: 10, marginTop: 3, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>+€{perMonth.toFixed(2)}/mese</span>
-                  <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>+€{perWeek.toFixed(2)}/sett</span>
-                  <span style={{ fontSize: 10, color: P.gold, fontWeight: 700 }}>
-                    +€{perYear.toFixed(2)}/anno <span style={{ color: P.tx3, fontWeight: 600 }}>({YIELD_YEAR * 100}%)</span>
+                  <span style={{ fontSize: 12, color: P.mint, fontWeight: 700 }}>+{fmtEuro(perMonth)}/mese</span>
+                  <span style={{ fontSize: 12, color: P.mint, fontWeight: 700 }}>+{fmtEuro(perWeek)}/sett</span>
+                  <span style={{ fontSize: 12, color: P.gold, fontWeight: 700 }}>
+                    +{fmtEuro(perYear)}/anno <span style={{ color: P.tx3, fontWeight: 600 }}>({YIELD_YEAR * 100}%)</span>
                   </span>
                 </div>
                 <div style={{ background: P.track, borderRadius: 3, height: 5, marginTop: 4 }}>
                   <div style={{ background: P.mintG, borderRadius: 3, height: 5, width: `${Math.min(100, (save / goal) * 100)}%`, transition: "width .6s" }} />
                 </div>
                 {interestThisMonth > 0 && (
-                  <p style={{ fontSize: 10, color: P.mint, fontWeight: 700, margin: "4px 0 0" }}>📈 +€{interestThisMonth.toFixed(2)} di interessi questo mese!</p>
+                  <p style={{ fontSize: 12, color: P.mint, fontWeight: 700, margin: "4px 0 0" }}>📈 +{fmtEuro(interestThisMonth)} di interessi questo mese!</p>
                 )}
-                <p style={{ fontSize: 9, color: P.tx3, margin: "3px 0 0" }}>Prossimo traguardo: €{goal}</p>
-                <p style={{ fontSize: 9, color: P.tx2, margin: "4px 0 0", lineHeight: 1.4 }}>
+                <p style={{ fontSize: 11.5, color: P.tx3, margin: "3px 0 0" }}>Prossimo traguardo: €{goal}</p>
+                <p style={{ fontSize: 11.5, color: P.tx2, margin: "4px 0 0", lineHeight: 1.4 }}>
                   📈 I tuoi risparmi crescono con l'interesse composto! Babbo Roby li investe: rendimento medio ~{YIELD_YEAR * 100}%/anno.
                 </p>
               </>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-              <span style={{ fontSize: 9, color: P.tx3 }}>📍</span>
+              <span style={{ fontSize: 11.5, color: P.tx3 }}>📍</span>
               <input
                 value={u.wN[k]}
                 onChange={(e) => onNote(k, e.target.value)}
                 placeholder="Dove lo tieni?"
-                style={{ flex: 1, ...gls, padding: "4px 8px", color: P.tx, fontSize: 10, borderRadius: 8 }}
+                style={{ flex: 1, ...gls, padding: "4px 8px", color: P.tx, fontSize: 12, borderRadius: 8 }}
               />
             </div>
           </div>
@@ -430,7 +431,7 @@ export default function HomeTab({
             const prog = missionProgress(users, m, au).current;
             return (
               <div key={m.id} style={{ marginBottom: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
                   <span style={{ color: P.tx }}>{m.name}</span>
                   <span style={{ color: prog >= m.tgt ? P.mint : P.acc, fontWeight: 700 }}>
                     {prog}/{m.tgt}

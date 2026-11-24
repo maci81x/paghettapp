@@ -37,7 +37,7 @@ export default function AdminPhotosTab({
     return (
       <GlassCard>
         <p style={{ color: P.gold, fontSize: 12, fontWeight: 700, margin: "0 0 4px" }}>📸 Foto-prova non ancora attive</p>
-        <p style={{ color: P.tx3, fontSize: 11, margin: 0, lineHeight: 1.5 }}>
+        <p style={{ color: P.tx3, fontSize: 12.5, margin: 0, lineHeight: 1.5 }}>
           Esegui la migrazione <b>20261013_log_photos.sql</b> nella SQL Editor di Supabase: da quel momento le ragazze potranno allegare una foto alle attività.
         </p>
       </GlassCard>
@@ -78,10 +78,10 @@ export default function AdminPhotosTab({
                 {sh.l.ok && <span style={{ position: "absolute", top: 4, right: 4, fontSize: 12 }}>✅</span>}
                 {sh.l.rejected && <span style={{ position: "absolute", top: 4, right: 4, fontSize: 12 }}>❌</span>}
               </div>
-              <p style={{ color: P.tx, fontSize: 10, fontWeight: 600, margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <p style={{ color: P.tx, fontSize: 12, fontWeight: 600, margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {sh.name}
               </p>
-              <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
+              <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>
                 {users[sh.uid].n} · {fmtDay(sh.l.date)}
               </p>
             </div>
@@ -97,7 +97,7 @@ export default function AdminPhotosTab({
           actions={
             !isPending(viewing.l) ? (
               viewing.l.rejected ? (
-                <p style={{ color: P.red, fontSize: 11, margin: 0 }}>❌ Rifiutata{viewing.l.adminNote ? `: ${viewing.l.adminNote}` : ""}</p>
+                <p style={{ color: P.red, fontSize: 12.5, margin: 0 }}>❌ Rifiutata{viewing.l.adminNote ? `: ${viewing.l.adminNote}` : ""}</p>
               ) : undefined
             ) : (
               <div style={{ display: "flex", gap: 8 }}>

@@ -13,7 +13,7 @@ const CONFIRMS: { k: ConfirmFilter; l: string }[] = [
 
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div style={{ marginBottom: 6 }}>
-    <p style={{ color: P.tx3, fontSize: 9, fontWeight: 700, letterSpacing: 0.3, margin: "0 0 3px", textTransform: "uppercase" }}>{label}</p>
+    <p style={{ color: P.tx3, fontSize: 11.5, fontWeight: 700, letterSpacing: 0.3, margin: "0 0 3px", textTransform: "uppercase" }}>{label}</p>
     <div style={{ display: "flex", gap: 3, overflowX: "auto", paddingBottom: 3 }}>{children}</div>
   </div>
 );

@@ -3,6 +3,7 @@ import { YIELD_YEAR } from "../../data/constants";
 import type { InterestView } from "../../hooks/useInterest";
 import { GlassCard } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
+import { fmtEuro } from "../../utils/money";
 
 const pct = (amount: number, before: number) => (before > 0 ? `+${((amount / before) * 100).toFixed(2)}%` : `+${(MONTH_RATE * 100).toFixed(2)}%`);
 
@@ -17,24 +18,24 @@ export default function InterestCard({ view, supported }: { view: InterestView; 
       <div style={{ background: alpha(P.mint, 8), borderRadius: 10, padding: 10, marginBottom: 10 }}>
         {view.thisMonth ? (
           <p style={{ color: P.tx, fontSize: 13, fontWeight: 800, margin: 0 }}>
-            📈 Questo mese hai guadagnato: <span style={{ color: P.mint }}>+€{view.thisMonth.amount.toFixed(2)}</span> di interessi!
+            📈 Questo mese hai guadagnato: <span style={{ color: P.mint }}>+{fmtEuro(view.thisMonth.amount)}</span> di interessi!
           </p>
         ) : (
           <p style={{ color: P.tx, fontSize: 13, fontWeight: 800, margin: 0 }}>
-            📈 A fine mese guadagnerai circa <span style={{ color: P.mint }}>+€{view.projected.toFixed(2)}</span>
+            📈 A fine mese guadagnerai circa <span style={{ color: P.mint }}>+{fmtEuro(view.projected)}</span>
           </p>
         )}
         {view.total > 0 && (
-          <p style={{ color: P.tx3, fontSize: 10, margin: "3px 0 0" }}>In tutto hai già incassato €{view.total.toFixed(2)} di interessi.</p>
+          <p style={{ color: P.tx3, fontSize: 12, margin: "3px 0 0" }}>In tutto hai già incassato {fmtEuro(view.total)} di interessi.</p>
         )}
       </div>
 
       {!supported ? (
-        <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 8, margin: 0 }}>
+        <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 8, margin: 0 }}>
           Gli interessi non sono ancora attivi: per ora quello che vedi è una stima.
         </p>
       ) : recent.length === 0 ? (
-        <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 8, margin: 0 }}>
+        <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 8, margin: 0 }}>
           I tuoi interessi verranno calcolati alla fine del primo mese
         </p>
       ) : (
@@ -42,17 +43,17 @@ export default function InterestCard({ view, supported }: { view: InterestView; 
           <div key={h.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${P.gb}` }}>
             <div>
               <p style={{ color: P.tx, fontSize: 12, fontWeight: 600, margin: 0 }}>{periodLabel(h.period)}</p>
-              <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>Saldo di partenza €{h.balanceBefore.toFixed(2)}</p>
+              <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>Saldo di partenza {fmtEuro(h.balanceBefore)}</p>
             </div>
             <div style={{ textAlign: "right" }}>
-              <p style={{ color: h.amount > 0 ? P.mint : P.tx3, fontSize: 13, fontWeight: 800, margin: 0 }}>+€{h.amount.toFixed(2)}</p>
-              <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>({pct(h.amount, h.balanceBefore)})</p>
+              <p style={{ color: h.amount > 0 ? P.mint : P.tx3, fontSize: 13, fontWeight: 800, margin: 0 }}>+{fmtEuro(h.amount)}</p>
+              <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>({pct(h.amount, h.balanceBefore)})</p>
             </div>
           </div>
         ))
       )}
 
-      <p style={{ color: P.tx2, fontSize: 10, margin: "10px 0 0", lineHeight: 1.5 }}>
+      <p style={{ color: P.tx2, fontSize: 12, margin: "10px 0 0", lineHeight: 1.5 }}>
         💡 Ogni mese, il {YIELD_YEAR * 100}% annuo viene calcolato sul tuo saldo e aggiunto automaticamente. Più lasci i soldi, più crescono — perché gli
         interessi generano altri interessi!
       </p>

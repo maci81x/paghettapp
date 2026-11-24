@@ -70,7 +70,7 @@ export default function Shell({
           </div>
           <div>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 700, letterSpacing: -0.3 }}>{title}</p>
-            {subtitle && <p style={{ margin: 0, fontSize: 9, color: P.tx3 }}>{subtitle}</p>}
+            {subtitle && <p style={{ margin: 0, fontSize: 11.5, color: P.tx3 }}>{subtitle}</p>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -100,7 +100,7 @@ export default function Shell({
           >
             ?
           </button>
-          <button onClick={onLogout} style={{ ...gls, padding: "4px 10px", color: P.tx3, borderRadius: 9, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>
+          <button onClick={onLogout} style={{ ...gls, padding: "4px 10px", color: P.tx3, borderRadius: 9, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
             Esci
           </button>
         </div>

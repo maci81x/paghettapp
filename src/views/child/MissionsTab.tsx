@@ -15,7 +15,7 @@ function Deadline({ iso }: { iso: string }) {
   const color = d < 0 ? P.red : urgent ? P.red : P.mint;
   const label = d < 0 ? `Scaduta da ${-d}gg` : d === 0 ? "Scade oggi!" : `Scade il ${fmtDay(iso)}`;
   return (
-    <span style={{ background: alpha(color, 9), color, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>⏰ {label}</span>
+    <span style={{ background: alpha(color, 9), color, padding: "2px 7px", borderRadius: 6, fontSize: 11.5, fontWeight: 700 }}>⏰ {label}</span>
   );
 }
 
@@ -59,40 +59,40 @@ function MissionCard({ m, uid, users, acts, grad, collapsed }: { m: Mission; uid
                 color: m.team ? P.blue : P.acc,
                 padding: "2px 7px",
                 borderRadius: 6,
-                fontSize: 9,
+                fontSize: 11.5,
                 fontWeight: 800,
               }}
             >
               {m.team ? "🤝 Squadra" : "👤 Individuale"}
             </span>
-            <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 800 }}>
+            <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "2px 7px", borderRadius: 6, fontSize: 11.5, fontWeight: 800 }}>
               🏆 {prizeLabel(m)}
             </span>
             {m.deadline && state !== "done" ? <Deadline iso={m.deadline} /> : null}
             {style.label && (
-              <span style={{ background: alpha(style.color, 12), color: style.color, padding: "2px 7px", borderRadius: 6, fontSize: 9, fontWeight: 800 }}>
+              <span style={{ background: alpha(style.color, 12), color: style.color, padding: "2px 7px", borderRadius: 6, fontSize: 11.5, fontWeight: 800 }}>
                 {style.label}
                 {state === "done" && m.completedBy?.[uid] ? ` ${fmtDay(m.completedBy[uid]!)}` : ""}
               </span>
             )}
           </div>
         </div>
-        {collapsed && <span style={{ color: P.tx3, fontSize: 11, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>}
+        {collapsed && <span style={{ color: P.tx3, fontSize: 12.5, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>}
       </div>
 
       {open && (
         <>
-          <p style={{ color: P.tx3, fontSize: 10, margin: "8px 0 0", fontWeight: 600 }}>
+          <p style={{ color: P.tx3, fontSize: 12, margin: "8px 0 0", fontWeight: 600 }}>
             {m.team ? "🤝 Collaborate per raggiungere l'obiettivo!" : "Solo per te"}
           </p>
 
           {desc && (
-            <p style={{ color: P.tx2, fontSize: 11, lineHeight: 1.5, margin: "6px 0 0" }}>
+            <p style={{ color: P.tx2, fontSize: 12.5, lineHeight: 1.5, margin: "6px 0 0" }}>
               {long && !readMore ? `${desc.slice(0, LONG_DESC)}… ` : `${desc} `}
               {long && (
                 <button
                   onClick={() => setReadMore(!readMore)}
-                  style={{ background: "none", border: "none", color: P.acc, fontSize: 10, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                  style={{ background: "none", border: "none", color: P.acc, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}
                 >
                   {readMore ? "meno" : "leggi tutto"}
                 </button>
@@ -101,24 +101,24 @@ function MissionCard({ m, uid, users, acts, grad, collapsed }: { m: Mission; uid
           )}
 
           {linked.length > 0 && (
-            <p style={{ color: P.tx2, fontSize: 10, margin: "8px 0 0", lineHeight: 1.5 }}>
+            <p style={{ color: P.tx2, fontSize: 12, margin: "8px 0 0", lineHeight: 1.5 }}>
               <b style={{ color: P.tx }}>📋 Regole:</b> completa {m.tgt} volte{" "}
               {linked.map((a) => `${CATS.find((c) => c.id === a.cat)?.i ?? ""} ${a.name}`).join(", ")}
             </p>
           )}
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "10px 0 4px" }}>
-            <span style={{ color: P.tx2, fontSize: 11, fontWeight: 700 }}>
+            <span style={{ color: P.tx2, fontSize: 12.5, fontWeight: 700 }}>
               {m.team ? "Insieme" : "Il tuo progresso"}: {prog.current}/{m.tgt}
             </span>
-            <span style={{ color: prog.done ? P.mint : P.tx3, fontSize: 11, fontWeight: 800 }}>{pct}% completata</span>
+            <span style={{ color: prog.done ? P.mint : P.tx3, fontSize: 12.5, fontWeight: 800 }}>{pct}% completata</span>
           </div>
           <div style={{ background: P.track, borderRadius: 6, height: 12, overflow: "hidden" }}>
             <div style={{ background: prog.done ? P.mintG : grad, borderRadius: 6, height: 12, width: `${prog.pct}%`, transition: "width .5s" }} />
           </div>
 
           {m.team && (
-            <p style={{ color: P.tx3, fontSize: 10, margin: "5px 0 0" }}>
+            <p style={{ color: P.tx3, fontSize: 12, margin: "5px 0 0" }}>
               {assignees(m)
                 .map((who) => `${userName(users[who])}: ${prog.byUser[who] ?? 0}`)
                 .join(" • ")}
@@ -126,12 +126,12 @@ function MissionCard({ m, uid, users, acts, grad, collapsed }: { m: Mission; uid
           )}
 
           {finishedOthers.length > 0 && (
-            <p style={{ color: P.gold, fontSize: 10, margin: "5px 0 0", fontWeight: 700 }}>
+            <p style={{ color: P.gold, fontSize: 12, margin: "5px 0 0", fontWeight: 700 }}>
               👏 {finishedOthers.map((x) => userName(users[x])).join(" e ")} ha già finito!
             </p>
           )}
 
-          {awarded && <p style={{ color: P.mint, fontSize: 10, margin: "5px 0 0", fontWeight: 700 }}>🏆 {prizeLabel(m)} già assegnati</p>}
+          {awarded && <p style={{ color: P.mint, fontSize: 12, margin: "5px 0 0", fontWeight: 700 }}>🏆 {prizeLabel(m)} già assegnati</p>}
         </>
       )}
     </GlassCard>
@@ -193,7 +193,7 @@ export default function MissionsTab({
 
           {closed.length > 0 && (
             <>
-              <p style={{ color: P.tx3, fontSize: 10, fontWeight: 800, letterSpacing: 0.4, margin: "14px 0 6px", textTransform: "uppercase" }}>
+              <p style={{ color: P.tx3, fontSize: 12, fontWeight: 800, letterSpacing: 0.4, margin: "14px 0 6px", textTransform: "uppercase" }}>
                 Concluse ({closed.length})
               </p>
               {closed.map(({ m }) => (
@@ -210,14 +210,14 @@ export default function MissionsTab({
           {visible.map((m) => (
             <GlassCard key={m.id} style={{ background: `linear-gradient(135deg,${alpha(P.mia, 2)},${alpha(P.sam, 2)})` }}>
               <p style={{ color: P.tx, fontSize: 14, fontWeight: 700, margin: "0 0 3px", textAlign: "center" }}>{m.name}</p>
-              {m.desc && <p style={{ color: P.tx2, fontSize: 10, margin: "0 0 3px", textAlign: "center", lineHeight: 1.4 }}>{m.desc}</p>}
-              {m.prize && <p style={{ color: P.gold, fontSize: 10, margin: "0 0 8px", textAlign: "center" }}>🏆 {m.prize}</p>}
+              {m.desc && <p style={{ color: P.tx2, fontSize: 12, margin: "0 0 3px", textAlign: "center", lineHeight: 1.4 }}>{m.desc}</p>}
+              {m.prize && <p style={{ color: P.gold, fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>🏆 {m.prize}</p>}
               <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
                 <Side uid="mia" users={users} pts={weekPts("mia")} />
                 <span style={{ fontSize: 20, color: P.tx3 }}>VS</span>
                 <Side uid="samira" users={users} pts={weekPts("samira")} />
               </div>
-              <p style={{ color: P.tx3, fontSize: 9, margin: "6px 0 0", textAlign: "center" }}>
+              <p style={{ color: P.tx3, fontSize: 11.5, margin: "6px 0 0", textAlign: "center" }}>
                 📋 {m.act} · ⏱ {m.durDays}gg
               </p>
             </GlassCard>

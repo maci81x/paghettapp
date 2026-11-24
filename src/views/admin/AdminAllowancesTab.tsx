@@ -6,6 +6,7 @@ import { WEEK_STATUS_LABEL, weekStatus } from "../../data/weekStatus";
 import { Btn, GlassCard, InfoTip } from "../../design/components";
 import { P } from "../../design/tokens";
 import { fmtDay } from "../../utils/dates";
+import { fmtEuro } from "../../utils/money";
 
 /**
  * Registro delle paghette: in cima le settimane da chiudere, sotto lo storico
@@ -25,7 +26,7 @@ export default function AdminAllowancesTab({ users, toClose, onUndo }: { users: 
               {u.av} {u.n} · paghette registrate
               <InfoTip text="✅ confermata = importo del tier · ✏️ modificata = importo cambiato da te · 💵 pagata fuori app = saldata in contanti, niente nei salvadanai. ↩️ annulla e riporta la settimana fra quelle da chiudere." />
             </p>
-            {pays.length === 0 && <p style={{ color: P.tx3, fontSize: 11, margin: 0 }}>Ancora nessuna paghetta registrata.</p>}
+            {pays.length === 0 && <p style={{ color: P.tx3, fontSize: 12.5, margin: 0 }}>Ancora nessuna paghetta registrata.</p>}
             {pays.map((p) => {
               const st = weekStatus(p.week, p);
               return (
@@ -34,9 +35,9 @@ export default function AdminAllowancesTab({ users, toClose, onUndo }: { users: 
                     <p style={{ color: P.tx, fontSize: 12, fontWeight: 600, margin: 0 }}>
                       {weekLabel(p.week)} · {p.pts} pt
                     </p>
-                    <p style={{ color: P.tx3, fontSize: 10, margin: "1px 0 0" }}>
+                    <p style={{ color: P.tx3, fontSize: 12, margin: "1px 0 0" }}>
                       {WEEK_STATUS_LABEL[st]}
-                      {(st === "modificata" || st === "fuori_app") && p.tier !== undefined && ` (tier €${p.tier.toFixed(2)})`} · registrata il{" "}
+                      {(st === "modificata" || st === "fuori_app") && p.tier !== undefined && ` (tier ${fmtEuro(p.tier)})`} · registrata il{" "}
                       {fmtDay(p.date)}
                       {st === "fuori_app" ? (
                         " · niente nei salvadanai"
@@ -49,7 +50,7 @@ export default function AdminAllowancesTab({ users, toClose, onUndo }: { users: 
                     </p>
                   </div>
                   <span style={{ color: st === "fuori_app" ? P.tx3 : st === "modificata" ? P.gold : P.mint, fontWeight: 800, fontSize: 13 }}>
-                    {st === "fuori_app" ? "💵" : `€${p.amount.toFixed(2)}`}
+                    {st === "fuori_app" ? "💵" : `${fmtEuro(p.amount)}`}
                   </span>
                   <Btn small outline color={P.tx3} onClick={() => onUndo(uid, p.week)}>
                     ↩️

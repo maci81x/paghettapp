@@ -4,6 +4,7 @@ import type { Fund, Payment, Period, UserId, Users } from "../../data/types";
 import { Btn, GlassCard, InfoTip, PeriodBar } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
 import MonthReportCard from "../MonthReportCard";
+import { fmtEuro } from "../../utils/money";
 
 const SPLIT_LABEL = FUNDS.map((k) => `${SPLIT[k] * 100}% ${FUND_LABEL[k].split(" ")[1]}`).join(" · ");
 
@@ -55,21 +56,21 @@ export default function AdminPiggyTab({
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ color: P.tx, fontWeight: 700, fontSize: 14, margin: 0 }}>{u.n}</p>
-                <p style={{ color: P.gold, fontWeight: 800, fontSize: 17, margin: 0 }}>€{total(uid).toFixed(2)}</p>
+                <p style={{ color: P.gold, fontWeight: 800, fontSize: 17, margin: 0 }}>{fmtEuro(total(uid))}</p>
               </div>
               <Btn small grad={P.mintG} onClick={() => onIncome(uid)}>
                 💝 Entrata
               </Btn>
             </div>
             {FUNDS.map((k) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${P.gb}`, fontSize: 11 }}>
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${P.gb}`, fontSize: 12.5 }}>
                 <div>
                   <span style={{ color: P.tx }}>{fundName(users[uid], k)}</span>
-                  <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>{u.wN[k]}</p>
+                  <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>{u.wN[k]}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <span style={{ color: P.mint, fontWeight: 700 }}>€{u.w[k].toFixed(2)}</span>
-                  {k === "risparmio" && <p style={{ fontSize: 9, color: P.gold, margin: 0 }}>+€{rend.toFixed(2)} rend.</p>}
+                  <span style={{ color: P.mint, fontWeight: 700 }}>{fmtEuro(u.w[k])}</span>
+                  {k === "risparmio" && <p style={{ fontSize: 11.5, color: P.gold, margin: 0 }}>+{fmtEuro(rend)} rend.</p>}
                 </div>
               </div>
             ))}
@@ -83,26 +84,26 @@ export default function AdminPiggyTab({
                       text={`Accredito diviso ${SPLIT_LABEL}. Si registra la settimana appena conclusa, una volta sola. Per gli arretrati apri la scheda della figlia.`}
                     />
                   </p>
-                  <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0" }}>
-                    {due.pts}pt → <b style={{ color: P.gold }}>€{due.amount.toFixed(2)}</b> · {FUNDS.map((k) => `€${due.split[k].toFixed(2)}`).join(" / ")}
+                  <p style={{ color: P.tx3, fontSize: 12, margin: "2px 0 0" }}>
+                    {due.pts}pt → <b style={{ color: P.gold }}>{fmtEuro(due.amount)}</b> · {FUNDS.map((k) => `${fmtEuro(due.split[k])}`).join(" / ")}
                   </p>
                 </div>
                 {paid ? (
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ color: P.mint, fontSize: 11, fontWeight: 700, margin: 0 }}>✓ Pagata €{paid.amount.toFixed(2)}</p>
+                    <p style={{ color: P.mint, fontSize: 12.5, fontWeight: 700, margin: 0 }}>✓ Pagata {fmtEuro(paid.amount)}</p>
                     <Btn small color={P.tx3} style={{ marginTop: 4 }} onClick={() => onUndo(uid, paid.week)}>
                       Annulla
                     </Btn>
                   </div>
                 ) : (
                   <Btn small grad={P.goldG} onClick={() => onPay(uid)}>
-                    Paga €{due.amount.toFixed(2)}
+                    Paga {fmtEuro(due.amount)}
                   </Btn>
                 )}
               </div>
               {(u.pays ?? []).length > 0 && (
-                <p style={{ color: P.tx3, fontSize: 9, margin: "6px 0 0" }}>
-                  Ultimi accrediti: {(u.pays ?? []).slice(0, 3).map((p) => `${p.week} ${p.outside ? "💵 fuori app" : `€${p.amount.toFixed(2)}`}`).join(" · ")}
+                <p style={{ color: P.tx3, fontSize: 11.5, margin: "6px 0 0" }}>
+                  Ultimi accrediti: {(u.pays ?? []).slice(0, 3).map((p) => `${p.week} ${p.outside ? "💵 fuori app" : `${fmtEuro(p.amount)}`}`).join(" · ")}
                 </p>
               )}
             </div>
@@ -112,7 +113,7 @@ export default function AdminPiggyTab({
       <GlassCard style={{ background: alpha(P.gold, 3), border: `1px solid ${alpha(P.gold, 10)}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>💰 Totale Famiglia</span>
-          <span style={{ color: P.gold, fontWeight: 800, fontSize: 20 }}>€{family.toFixed(2)}</span>
+          <span style={{ color: P.gold, fontWeight: 800, fontSize: 20 }}>{fmtEuro(family)}</span>
         </div>
       </GlassCard>
     </div>

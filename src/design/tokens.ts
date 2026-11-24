@@ -4,11 +4,11 @@ export type ThemeMode = "dark" | "light";
 
 /** Palette dark glassmorphism (default). */
 const DARK = {
-  bg: "#0a0a1a",
+  bg: "#0b0b14",
   bg2: "radial-gradient(ellipse at 50% 0%,rgba(124,92,252,.06),transparent 70%)",
   glass: "rgba(255,255,255,0.06)",
   glassH: "rgba(255,255,255,0.10)",
-  gb: "rgba(255,255,255,0.09)",
+  gb: "rgba(255,255,255,0.12)",
   /** Superficie opaca sopra il contenuto: modali, tooltip, bottom nav. */
   surf: "rgba(15,15,30,.96)",
   /** Velo dietro le modali. */
@@ -20,8 +20,8 @@ const DARK = {
    */
   track: "rgba(255,255,255,0.12)",
   tx: "#f0f0f8",
-  tx2: "#a0a0b8",
-  tx3: "#5c5c72",
+  tx2: "#c4c4d6",
+  tx3: "#9d9db4",
   mia: "#ff6b9d",
   miaG: "linear-gradient(135deg,#ff6b9d,#ff8fab)",
   sam: "#8b5cf6",
@@ -47,8 +47,8 @@ const LIGHT: typeof DARK = {
   overlay: "rgba(24,20,60,.45)",
   track: "rgba(24,20,60,0.12)",
   tx: "#15152a",
-  tx2: "#4c4c66",
-  tx3: "#7a7a95",
+  tx2: "#3f3f58",
+  tx3: "#5d5d78",
   mia: "#db2777",
   miaG: "linear-gradient(135deg,#db2777,#f472b6)",
   sam: "#7c3aed",

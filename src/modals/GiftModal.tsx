@@ -3,6 +3,7 @@ import { FUND_LABEL, giftNote } from "../data/constants";
 import type { GiftDraft } from "../data/types";
 import { Btn, Input, Label, Modal } from "../design/components";
 import { P, alpha } from "../design/tokens";
+import { fmtEuro } from "../utils/money";
 
 const num = (v: string) => {
   const n = parseFloat(v.replace(",", "."));
@@ -35,7 +36,7 @@ export default function GiftModal({
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>🎁 Regalo per {who}</h3>
-      <p style={{ fontSize: 11, color: P.tx3, margin: "0 0 12px" }}>Va tutto nel salvadanaio {personaleName || FUND_LABEL.personale}, senza divisione.</p>
+      <p style={{ fontSize: 12.5, color: P.tx3, margin: "0 0 12px" }}>Va tutto nel salvadanaio {personaleName || FUND_LABEL.personale}, senza divisione.</p>
 
       <div style={{ marginBottom: 10 }}>
         <Label>Da chi?</Label>
@@ -63,8 +64,8 @@ export default function GiftModal({
             lineHeight: 1.45,
           }}
         >
-          🎁 Regalo di <b>€{amount.toFixed(2)}</b> da <b>{d.from.trim()}</b> per {d.reason.trim()}
-          <span style={{ display: "block", color: P.tx3, fontSize: 10, marginTop: 3 }}>{giftNote(d.from, d.reason)}</span>
+          🎁 Regalo di <b>{fmtEuro(amount)}</b> da <b>{d.from.trim()}</b> per {d.reason.trim()}
+          <span style={{ display: "block", color: P.tx3, fontSize: 12, marginTop: 3 }}>{giftNote(d.from, d.reason)}</span>
         </p>
       )}
 

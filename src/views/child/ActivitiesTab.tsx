@@ -57,7 +57,7 @@ export default function ActivitiesTab({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <p style={{ color: P.tx, fontSize: 15, fontWeight: 700, margin: 0, letterSpacing: -0.3 }}>Attività</p>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 10, color: P.tx3 }}>
+          <span style={{ fontSize: 12, color: P.tx3 }}>
             Oggi: <b style={{ color: P.mint }}>+{tp}pt</b>
           </span>
           <InfoTip text="Segna le attività completate. Indica quante volte e quando. ⚡ = Sfida con punti doppi!" />
@@ -68,18 +68,22 @@ export default function ActivitiesTab({
 
       <PenaltyCard penalties={penalties} acts={acts} />
 
-      <div style={{ display: "flex", gap: 3, overflowX: "auto", marginBottom: 6, paddingBottom: 3 }}>
-        <Pill active={cat === "all"} onClick={() => setCat("all")} color={P.acc} s>
-          Tutte
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 8, paddingBottom: 4 }}>
+        <Pill active={cat === "all"} onClick={() => setCat("all")} color={P.acc}>
+          Tutte {acts.length}
         </Pill>
-        {CATS.map((c) => (
-          <Pill key={c.id} active={cat === c.id} onClick={() => setCat(c.id)} color={c.c} s>
-            {c.i}
-          </Pill>
-        ))}
+        {/* solo le categorie che hanno attività, dalla più piena; nome scritto, non solo l'emoji */}
+        {CATS.map((c) => ({ c, n: acts.filter((a) => a.cat === c.id).length }))
+          .filter((x) => x.n > 0)
+          .sort((x, y) => y.n - x.n)
+          .map(({ c, n }) => (
+            <Pill key={c.id} active={cat === c.id} onClick={() => setCat(c.id)} color={c.c}>
+              {c.n} {n}
+            </Pill>
+          ))}
       </div>
 
-      <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
         {PTS_FILTERS.map((f) => (
           <Pill key={f.k} active={pts === f.k} onClick={() => setPts(f.k)} color={P.mint} s>
             {f.l}
@@ -102,27 +106,27 @@ export default function ActivitiesTab({
                 <span style={{ background: P.glass, color: P.tx3, padding: "1px 6px", borderRadius: 5, fontSize: 8 }}>{FREQ_SHORT[a.freq]}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 10, color: P.mint }}>+{a.pts}pt</span>
-                {a.duration ? <span style={{ fontSize: 10, color: P.gold }}>⏱ {a.duration}min</span> : null}
+                <span style={{ fontSize: 12, color: P.mint }}>+{a.pts}pt</span>
+                {a.duration ? <span style={{ fontSize: 12, color: P.gold }}>⏱ {a.duration}min</span> : null}
                 {/* fatta oggi = penalità non addebitabile: non ha senso continuare a minacciarla */}
                 {a.pen < 0 &&
                   (done > 0 ? (
-                    <span style={{ fontSize: 10, color: P.mint, fontWeight: 700 }}>✅ nessun rischio</span>
+                    <span style={{ fontSize: 12, color: P.mint, fontWeight: 700 }}>✅ nessun rischio</span>
                   ) : (
-                    <span style={{ fontSize: 10, color: P.red }}>⚠️ {a.pen}pt se non la fai</span>
+                    <span style={{ fontSize: 12, color: P.red }}>⚠️ {a.pen}pt se non la fai</span>
                   ))}
-                <span style={{ fontSize: 10, color: P.tx3 }}>
+                <span style={{ fontSize: 12, color: P.tx3 }}>
                   ×{a.max}/{FREQ_UNIT[a.freq]}
                 </span>
               </div>
               {inPeriod > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
                   {TODS.filter((t) => byTod[t.k] > 0).map((t) => (
-                    <span key={t.k} style={{ background: alpha(P.gold, 9), color: P.gold, padding: "1px 6px", borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
+                    <span key={t.k} style={{ background: alpha(P.gold, 9), color: P.gold, padding: "1px 6px", borderRadius: 6, fontSize: 11.5, fontWeight: 700 }}>
                       {t.l.split(" ")[0]} ×{byTod[t.k]}
                     </span>
                   ))}
-                  <span style={{ fontSize: 9, color: P.tx3 }}>
+                  <span style={{ fontSize: 11.5, color: P.tx3 }}>
                     {inPeriod}/{a.max} {PERIOD_WORD[a.freq]}
                     {a.freq !== "daily" && done > 0 ? ` · ×${done} oggi` : ""}
                   </span>

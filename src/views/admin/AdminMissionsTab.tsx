@@ -117,23 +117,23 @@ export default function AdminMissionsTab({
                   color: m.team ? P.blue : P.acc,
                   padding: "1px 6px",
                   borderRadius: 5,
-                  fontSize: 9,
+                  fontSize: 11.5,
                   fontWeight: 800,
                 }}
               >
                 {m.team ? "🤝 Squadra" : "👤 Individuale"}
               </span>
-              <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
+              <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "1px 6px", borderRadius: 5, fontSize: 11.5, fontWeight: 800 }}>
                 🏆 {prizeLabel(m)}
               </span>
-              <span style={{ background: alpha(style.color, 12), color: style.color, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
+              <span style={{ background: alpha(style.color, 12), color: style.color, padding: "1px 6px", borderRadius: 5, fontSize: 11.5, fontWeight: 800 }}>
                 {style.label}
               </span>
               {off && (
-                <span style={{ background: alpha(P.tx3, 20), color: P.tx2, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>NASCOSTA</span>
+                <span style={{ background: alpha(P.tx3, 20), color: P.tx2, padding: "1px 6px", borderRadius: 5, fontSize: 11.5, fontWeight: 800 }}>NASCOSTA</span>
               )}
               {m.deadline && (
-                <span style={{ color: left !== null && left < 3 ? P.red : P.tx3, fontSize: 9, fontWeight: 600, padding: "1px 4px" }}>
+                <span style={{ color: left !== null && left < 3 ? P.red : P.tx3, fontSize: 11.5, fontWeight: 600, padding: "1px 4px" }}>
                   ⏰ {fmtDay(m.deadline)}
                 </span>
               )}
@@ -166,9 +166,9 @@ export default function AdminMissionsTab({
         </div>
 
         {linked.length > 0 ? (
-          <p style={{ color: P.tx3, fontSize: 9, margin: "5px 0 0" }}>🔗 {linked.join(", ")}</p>
+          <p style={{ color: P.tx3, fontSize: 11.5, margin: "5px 0 0" }}>🔗 {linked.join(", ")}</p>
         ) : (
-          <p style={{ color: P.tx3, fontSize: 9, margin: "5px 0 0" }}>✋ progresso manuale</p>
+          <p style={{ color: P.tx3, fontSize: 11.5, margin: "5px 0 0" }}>✋ progresso manuale</p>
         )}
 
         {assignees(m).map((uid) => {
@@ -176,11 +176,11 @@ export default function AdminMissionsTab({
           const awarded = m.completedBy?.[uid];
           return (
             <div key={uid} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0 0" }}>
-              <span style={{ color: users[uid].c, fontSize: 11, fontWeight: 700, minWidth: 54 }}>{users[uid].n}</span>
+              <span style={{ color: users[uid].c, fontSize: 12.5, fontWeight: 700, minWidth: 54 }}>{users[uid].n}</span>
               <div style={{ flex: 1, background: P.track, borderRadius: 4, height: 8, overflow: "hidden" }}>
                 <div style={{ background: prog.done ? P.mintG : users[uid].grad, height: 8, width: `${prog.pct}%`, transition: "width .5s" }} />
               </div>
-              <span style={{ color: P.tx2, fontSize: 10, fontWeight: 700, minWidth: 38, textAlign: "right" }}>
+              <span style={{ color: P.tx2, fontSize: 12, fontWeight: 700, minWidth: 38, textAlign: "right" }}>
                 {m.team ? prog.current : prog.own}/{m.tgt}
               </span>
               {manual && (
@@ -193,7 +193,7 @@ export default function AdminMissionsTab({
                   </Btn>
                 </span>
               )}
-              {awarded && <span style={{ color: P.mint, fontSize: 9, fontWeight: 700 }}>🏆 {fmtDay(awarded)}</span>}
+              {awarded && <span style={{ color: P.mint, fontSize: 11.5, fontWeight: 700 }}>🏆 {fmtDay(awarded)}</span>}
             </div>
           );
         })}
@@ -205,9 +205,9 @@ export default function AdminMissionsTab({
     <div>
       {!awardsSupported && (
         <GlassCard style={{ padding: 10, background: alpha(P.gold, 6), border: `1px solid ${alpha(P.gold, 18)}` }}>
-          <p style={{ color: P.gold, fontSize: 11, margin: 0, fontWeight: 600, lineHeight: 1.45 }}>
+          <p style={{ color: P.gold, fontSize: 12.5, margin: 0, fontWeight: 600, lineHeight: 1.45 }}>
             ⚠️ I premi delle missioni non vengono assegnati in automatico: manca la colonna <code>completed_by</code> su <code>missions</code>.
-            <span style={{ display: "block", color: P.tx3, fontWeight: 400, fontSize: 10, marginTop: 3 }}>
+            <span style={{ display: "block", color: P.tx3, fontWeight: 400, fontSize: 12, marginTop: 3 }}>
               Applica la migrazione <code>20260825_missions_completed_by.sql</code>. Senza, non c'è modo di ricordare chi è già stato premiato.
             </span>
           </p>
@@ -243,7 +243,7 @@ export default function AdminMissionsTab({
       </div>
 
       {active.length === 0 ? (
-        <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 12 }}>Nessuna missione in corso</p>
+        <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 12 }}>Nessuna missione in corso</p>
       ) : (
         active.map(({ m, state }) => <Card key={m.id} m={m} state={state} pickable />)
       )}
@@ -279,7 +279,7 @@ export default function AdminMissionsTab({
             ))}
           </div>
           {closedInRange.length === 0 ? (
-            <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 12 }}>Nessuna missione conclusa in questo periodo</p>
+            <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 12 }}>Nessuna missione conclusa in questo periodo</p>
           ) : (
             closedInRange.map(({ m, state }) => <Card key={m.id} m={m} state={state} />)
           )}

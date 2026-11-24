@@ -8,6 +8,7 @@ import type { UserId, Users } from "../../data/types";
 import { GlassCard, InfoTip, Pill } from "../../design/components";
 import { P } from "../../design/tokens";
 import { fmtDay } from "../../utils/dates";
+import { fmtEuro } from "../../utils/money";
 
 const STATUS: Record<string, { l: string; c: string } | undefined> = {
   previsto: { l: "⏳ Previsto", c: P.gold },
@@ -52,7 +53,7 @@ export default function AdminTransactionsTab({ users }: { users: Users }) {
           💳 Transazioni di {u.n} ({rows.length})
           <InfoTip text="Entrate (paghette, extra, regali) e spese. Le spese ⏳ previste non hanno ancora toccato il saldo: diventano effettive quando la ragazza indica quanto ha speso." />
         </p>
-        {rows.length === 0 && <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10, margin: 0 }}>Nessuna transazione nel periodo.</p>}
+        {rows.length === 0 && <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 10, margin: 0 }}>Nessuna transazione nel periodo.</p>}
         {rows.map((r) => {
           const st = STATUS[r.status];
           return (
@@ -61,7 +62,7 @@ export default function AdminTransactionsTab({ users }: { users: Users }) {
                 <p style={{ color: P.tx, fontSize: 12, margin: 0 }}>
                   {r.icon} {r.label}
                 </p>
-                <p style={{ color: P.tx3, fontSize: 9, margin: "1px 0 0" }}>
+                <p style={{ color: P.tx3, fontSize: 11.5, margin: "1px 0 0" }}>
                   {fmtDay(r.date)}
                   {r.fund && ` · ${fundName(u, r.fund)}`}
                   {st && <span style={{ color: st.c, fontWeight: 700 }}> · {st.l}</span>}
@@ -75,7 +76,7 @@ export default function AdminTransactionsTab({ users }: { users: Users }) {
                   whiteSpace: "nowrap",
                 }}
               >
-                {r.amount >= 0 ? "+" : "−"}€{Math.abs(r.amount).toFixed(2)}
+                {r.amount >= 0 ? "+" : "−"}{fmtEuro(Math.abs(r.amount))}
               </span>
             </div>
           );

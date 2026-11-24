@@ -56,8 +56,8 @@ export default function ActivityPenaltyModal({
           </b>
           ?
         </p>
-        {note.trim() && <p style={{ fontSize: 11, color: P.tx2, lineHeight: 1.5, margin: "0 0 4px" }}>Nota: {note.trim()}</p>}
-        <p style={{ fontSize: 9, color: P.tx3, margin: "0 0 14px" }}>
+        {note.trim() && <p style={{ fontSize: 12.5, color: P.tx2, lineHeight: 1.5, margin: "0 0 4px" }}>Nota: {note.trim()}</p>}
+        <p style={{ fontSize: 11.5, color: P.tx3, margin: "0 0 14px" }}>
           Entra subito nello storico come penalità approvata: riduce il totale e la paghetta della settimana.
         </p>
         <div style={{ display: "flex", gap: 8 }}>
@@ -75,13 +75,13 @@ export default function ActivityPenaltyModal({
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>⚠️ Addebita penalità · {who}</h3>
-      <p style={{ fontSize: 10, color: P.tx3, margin: "0 0 10px" }}>Scegli l'attività non fatta: i punti sono quelli della sua penalità.</p>
+      <p style={{ fontSize: 12, color: P.tx3, margin: "0 0 10px" }}>Scegli l'attività non fatta: i punti sono quelli della sua penalità.</p>
 
       <Label>Nota (facoltativa)</Label>
       <TextArea rows={2} placeholder="Non fatto lunedì…" value={note} onChange={(e) => setNote(e.target.value)} style={{ marginBottom: 10 }} />
 
       {addebitabili.length === 0 && (
-        <p style={{ fontSize: 11, color: P.mint, lineHeight: 1.5, margin: "0 0 10px" }}>
+        <p style={{ fontSize: 12.5, color: P.mint, lineHeight: 1.5, margin: "0 0 10px" }}>
           🎉 {who} ha già fatto oggi tutte le attività con penalità: non c'è niente da addebitare.
         </p>
       )}
@@ -109,10 +109,10 @@ export default function ActivityPenaltyModal({
             >
               <span style={{ color: P.tx, fontSize: 12, fontWeight: 600, textDecoration: done ? "line-through" : undefined }}>
                 {actIcon(a)} {a.name}
-                <span style={{ color: P.tx3, fontSize: 9, fontWeight: 500 }}> · {CATS.find((c) => c.id === a.cat)?.n ?? a.cat}</span>
+                <span style={{ color: P.tx3, fontSize: 11.5, fontWeight: 500 }}> · {CATS.find((c) => c.id === a.cat)?.n ?? a.cat}</span>
               </span>
               {done ? (
-                <span style={{ color: P.mint, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>già completata oggi</span>
+                <span style={{ color: P.mint, fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}>già completata oggi</span>
               ) : (
                 <span style={{ color: P.red, fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{a.pen}pt</span>
               )}

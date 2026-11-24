@@ -2,6 +2,7 @@
 import { FUNDS, isoDate, todayISO, weekStartOf } from "./constants.ts";
 import { allIncome } from "./report.ts";
 import type { Fund, IncomeEntry, Spesa, User } from "./types";
+import { fmtEuro } from "../utils/money.ts";
 
 /** Finestre temporali offerte dai filtri. */
 export type Range = "week" | "month" | "prevMonth" | "all";
@@ -149,7 +150,7 @@ export const rangeLabel = (range: Range) => RANGES.find((r) => r.k === range)?.l
 
 /** Riepilogo in testo semplice, pronto da incollare in un messaggio. */
 export const summaryText = (range: Range, rows: { name: string; summary: Summary }[]): string => {
-  const eur = (n: number) => `€${n.toFixed(2)}`;
+  const eur = (n: number) => `${fmtEuro(n)}`;
   const lines = [`📊 Riepilogo — ${rangeLabel(range)}`, ""];
   rows.forEach(({ name, summary }) => {
     lines.push(`${name}`);

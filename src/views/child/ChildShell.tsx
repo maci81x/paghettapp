@@ -16,7 +16,7 @@ import PinChangeModal from "../../modals/PinChangeModal";
 import SpesaModal from "../../modals/SpesaModal";
 import WishEditModal from "../../modals/WishEditModal";
 import { resizeImage } from "../../utils/imageResize";
-import { parseAmount } from "../../utils/money";
+import { parseAmount, fmtEuro } from "../../utils/money";
 import SettleSpesaModal from "../../modals/SettleSpesaModal";
 import Shell from "../Shell";
 import { useInterest } from "../../hooks/useInterest";
@@ -230,7 +230,7 @@ export default function ChildShell({
               if (confirm(`Togliere "${w.name}" dalla lista?`)) usersApi.delWish(au, w.id);
             }}
             onBuyWish={(w) => {
-              if (confirm(`Comprato "${w.name}"? Verranno tolti €${w.cost.toFixed(2)} da ${w.fund}.`)) usersApi.buyWish(au, w.id);
+              if (confirm(`Comprato "${w.name}"? Verranno tolti ${fmtEuro(w.cost)} da ${w.fund}.`)) usersApi.buyWish(au, w.id);
             }}
           />
         );

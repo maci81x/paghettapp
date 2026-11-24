@@ -60,7 +60,7 @@ export default function CompletionModal({
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>{draft.actName}</h3>
       {draft.duration ? (
-        <p style={{ fontSize: 11, color: P.gold, margin: "0 0 10px" }}>⏱ Durata prevista: {draft.duration} min</p>
+        <p style={{ fontSize: 12.5, color: P.gold, margin: "0 0 10px" }}>⏱ Durata prevista: {draft.duration} min</p>
       ) : (
         <div style={{ height: 8 }} />
       )}
@@ -73,7 +73,7 @@ export default function CompletionModal({
         <button onClick={() => step(1)} style={{ ...gls, width: 36, height: 36, borderRadius: 10, fontSize: 18, cursor: "pointer", color: P.tx }}>
           +
         </button>
-        <span style={{ fontSize: 10, color: P.tx3 }}>
+        <span style={{ fontSize: 12, color: P.tx3 }}>
           max {draft.maxCnt}/{draft.freq}
         </span>
       </div>
@@ -86,7 +86,7 @@ export default function CompletionModal({
         ))}
       </div>
       {days.some((d) => d.room < 1) && (
-        <p style={{ fontSize: 9, color: P.tx3, margin: "-4px 0 10px" }}>I giorni spenti li avevi già segnati tutte le volte che potevi.</p>
+        <p style={{ fontSize: 11.5, color: P.tx3, margin: "-4px 0 10px" }}>I giorni spenti li avevi già segnati tutte le volte che potevi.</p>
       )}
 
       <Label>Quando?</Label>
@@ -97,7 +97,7 @@ export default function CompletionModal({
           </Pill>
         ))}
       </div>
-      <p style={{ fontSize: 9, color: P.tx3, margin: "-4px 0 10px" }}>Ogni momento della giornata viene registrato a parte: puoi rifarla più tardi.</p>
+      <p style={{ fontSize: 11.5, color: P.tx3, margin: "-4px 0 10px" }}>Ogni momento della giornata viene registrato a parte: puoi rifarla più tardi.</p>
       <Label>Nota (facoltativa)</Label>
       <TextArea
         value={draft.note}
@@ -137,7 +137,7 @@ export default function CompletionModal({
               <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => void pickPhoto(e.target.files?.[0])} />
             </label>
           )}
-          {photoErr && <p style={{ fontSize: 10, color: P.red, margin: "-6px 0 10px" }}>{photoErr}</p>}
+          {photoErr && <p style={{ fontSize: 12, color: P.red, margin: "-6px 0 10px" }}>{photoErr}</p>}
         </>
       )}
       <div style={{ display: "flex", gap: 8 }}>

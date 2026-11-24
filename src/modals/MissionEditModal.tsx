@@ -98,7 +98,7 @@ export default function MissionEditModal({
           🤝 Squadra
         </Btn>
       </div>
-      <p style={{ fontSize: 9, color: P.tx3, margin: "-4px 0 8px", lineHeight: 1.4 }}>
+      <p style={{ fontSize: 11.5, color: P.tx3, margin: "-4px 0 8px", lineHeight: 1.4 }}>
         {team
           ? "I progressi delle due si sommano verso un obiettivo comune, e i punti vanno a entrambe."
           : teamPossible
@@ -154,7 +154,7 @@ export default function MissionEditModal({
           </div>
         )}
       </div>
-      <p style={{ fontSize: 9, color: P.tx3, margin: "-4px 0 8px", lineHeight: 1.45 }}>
+      <p style={{ fontSize: 11.5, color: P.tx3, margin: "-4px 0 8px", lineHeight: 1.45 }}>
         {euroSupported
           ? "Il premio in euro va nei salvadanai con lo split 30/60/10, come la paghetta: vale anche per chi ha già superato i 500 punti."
           : "Esegui la migrazione 20261014_missions_bonus_amount.sql per premiare in euro invece che in punti."}
@@ -173,7 +173,7 @@ export default function MissionEditModal({
           </Pill>
         ))}
       </div>
-      <p style={{ fontSize: 9, color: P.tx3, margin: "0 0 10px" }}>
+      <p style={{ fontSize: 11.5, color: P.tx3, margin: "0 0 10px" }}>
         {draft.actIds.length === 0
           ? "Nessuna attività: il progresso lo avanzi tu a mano, con i pulsanti + e −."
           : `${draft.actIds.length} collegate · ogni completamento approvato conta +1`}
@@ -181,7 +181,7 @@ export default function MissionEditModal({
 
       {/* Anteprima: la stessa lettura che ne daranno le figlie */}
       <div style={{ background: P.glass, border: `1px solid ${P.gb}`, borderRadius: 12, padding: 10, marginBottom: 12 }}>
-        <p style={{ color: P.tx3, fontSize: 9, fontWeight: 800, letterSpacing: 0.3, margin: "0 0 6px", textTransform: "uppercase" }}>Come la vedranno</p>
+        <p style={{ color: P.tx3, fontSize: 11.5, fontWeight: 800, letterSpacing: 0.3, margin: "0 0 6px", textTransform: "uppercase" }}>Come la vedranno</p>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span style={{ fontSize: 24, lineHeight: 1 }}>{draft.emoji || "🎯"}</span>
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -193,13 +193,13 @@ export default function MissionEditModal({
                   color: team ? P.blue : P.acc,
                   padding: "1px 6px",
                   borderRadius: 5,
-                  fontSize: 9,
+                  fontSize: 11.5,
                   fontWeight: 800,
                 }}
               >
                 {team ? "🤝 Squadra" : "👤 Individuale"}
               </span>
-              <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "1px 6px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
+              <span style={{ background: alpha(P.gold, 12), color: P.gold, padding: "1px 6px", borderRadius: 5, fontSize: 11.5, fontWeight: 800 }}>
                 🏆 {prizeLabel({ pts: draft.pts, euro: euro ?? undefined })}
               </span>
               {draft.deadline && (
@@ -209,7 +209,7 @@ export default function MissionEditModal({
                     color: left !== null && left < 3 ? P.red : P.mint,
                     padding: "1px 6px",
                     borderRadius: 5,
-                    fontSize: 9,
+                    fontSize: 11.5,
                     fontWeight: 800,
                   }}
                 >
@@ -217,15 +217,15 @@ export default function MissionEditModal({
                 </span>
               )}
             </div>
-            {draft.desc.trim() && <p style={{ color: P.tx2, fontSize: 10, margin: "5px 0 0", lineHeight: 1.45 }}>{draft.desc.trim()}</p>}
+            {draft.desc.trim() && <p style={{ color: P.tx2, fontSize: 12, margin: "5px 0 0", lineHeight: 1.45 }}>{draft.desc.trim()}</p>}
             {linked.length > 0 && (
-              <p style={{ color: P.tx2, fontSize: 10, margin: "5px 0 0", lineHeight: 1.45 }}>
+              <p style={{ color: P.tx2, fontSize: 12, margin: "5px 0 0", lineHeight: 1.45 }}>
                 <b style={{ color: P.tx }}>📋 Regole:</b> completa {draft.tgt} volte{" "}
                 {linked.map((a) => `${CATS.find((c) => c.id === a.cat)?.i ?? ""} ${a.name}`).join(", ")}
               </p>
             )}
             <div style={{ background: P.track, borderRadius: 6, height: 12, marginTop: 8 }} />
-            <p style={{ color: P.tx3, fontSize: 9, margin: "3px 0 0" }}>
+            <p style={{ color: P.tx3, fontSize: 11.5, margin: "3px 0 0" }}>
               {team ? "Insieme" : "Il tuo progresso"}: 0/{draft.tgt} · a {targets.map((t) => names[t]).join(" e ")}
             </p>
           </div>

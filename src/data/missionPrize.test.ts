@@ -6,9 +6,9 @@ import { allIncome } from "./report.ts";
 import type { Payment, User } from "./types";
 
 test("prizeLabel: euro per le nuove, punti per quelle di prima, entrambi se ci sono", () => {
-  assert.equal(prizeLabel({ pts: 0, euro: 2 }), "€2.00");
+  assert.equal(prizeLabel({ pts: 0, euro: 2 }), "€2,00");
   assert.equal(prizeLabel({ pts: 30 }), "+30 pt");
-  assert.equal(prizeLabel({ pts: 10, euro: 1.5 }), "€1.50 + +10 pt");
+  assert.equal(prizeLabel({ pts: 10, euro: 1.5 }), "€1,50 + +10 pt");
   assert.equal(prizeLabel({ pts: 0 }), "—");
 });
 

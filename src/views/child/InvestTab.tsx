@@ -9,6 +9,7 @@ import { calcCompoundInterest } from "../../utils/compoundInterest";
 import { useInterest } from "../../hooks/useInterest";
 import InterestCard from "./InterestCard";
 import SavingsTrendCard from "./SavingsTrendCard";
+import { fmtEuro } from "../../utils/money";
 
 const MIN_MONTHS = 12;
 const MAX_MONTHS = 120;
@@ -66,7 +67,7 @@ export default function InvestTab({
       </SectionTitle>
 
       <GlassCard style={{ background: `linear-gradient(135deg,${alpha(P.mint, 3)},transparent)`, border: `1px solid ${alpha(P.mint, 10)}` }}>
-        <p style={{ color: P.tx2, fontSize: 11, margin: 0, lineHeight: 1.5 }}>
+        <p style={{ color: P.tx2, fontSize: 12.5, margin: 0, lineHeight: 1.5 }}>
           👨‍👧 Babbo Roby investe i tuoi risparmi. Più li lasci, più crescono grazie all'interesse composto: i guadagni generano altri guadagni!
         </p>
       </GlassCard>
@@ -78,8 +79,8 @@ export default function InvestTab({
       <GlassCard>
         <Label>Quanto hai in {fundName(u, "risparmio")} adesso</Label>
         <div style={{ ...gls, padding: 9, borderRadius: 10, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: P.mint, fontSize: 16, fontWeight: 800 }}>€{principal.toFixed(2)}</span>
-          <span style={{ color: P.tx3, fontSize: 9 }}>gestito da Babbo Roby</span>
+          <span style={{ color: P.mint, fontSize: 16, fontWeight: 800 }}>{fmtEuro(principal)}</span>
+          <span style={{ color: P.tx3, fontSize: 11.5 }}>gestito da Babbo Roby</span>
         </div>
 
         <Label>🔒 Blocca per</Label>
@@ -93,7 +94,7 @@ export default function InvestTab({
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <Label>➕ Extra al mese</Label>
-          <span style={{ color: P.acc, fontSize: 13, fontWeight: 800 }}>€{monthlyAdd.toFixed(2)}</span>
+          <span style={{ color: P.acc, fontSize: 13, fontWeight: 800 }}>{fmtEuro(monthlyAdd)}</span>
         </div>
         <input
           type="range"
@@ -107,7 +108,7 @@ export default function InvestTab({
         />
         {suggested > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-            <span style={{ fontSize: 9, color: P.tx3 }}>Consigliato: €{suggested.toFixed(2)}/mese (30% della paghetta media)</span>
+            <span style={{ fontSize: 11.5, color: P.tx3 }}>Consigliato: {fmtEuro(suggested)}/mese (30% della paghetta media)</span>
             <Pill color={P.mint} active onClick={() => onChange("ex", suggested)} s>
               usa
             </Pill>
@@ -117,19 +118,19 @@ export default function InvestTab({
         <div style={{ borderTop: `1px solid ${P.gb}`, paddingTop: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: 0 }}>
-              💰 Tra {months % 12 === 0 ? `${months / 12} ann${months === 12 ? "o" : "i"}` : `${months} mesi`} avrai: <span style={{ color: P.gold, fontSize: 16 }}>€{res.finalValue.toFixed(2)}</span>
+              💰 Tra {months % 12 === 0 ? `${months / 12} ann${months === 12 ? "o" : "i"}` : `${months} mesi`} avrai: <span style={{ color: P.gold, fontSize: 16 }}>{fmtEuro(res.finalValue)}</span>
             </p>
-            <span style={{ background: alpha(P.gold, 13), color: P.gold, borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 800, flexShrink: 0, whiteSpace: "nowrap" }}>
+            <span style={{ background: alpha(P.gold, 13), color: P.gold, borderRadius: 8, padding: "2px 8px", fontSize: 12, fontWeight: 800, flexShrink: 0, whiteSpace: "nowrap" }}>
               tasso {YIELD_YEAR * 100}%/anno
             </span>
           </div>
-          <p style={{ color: P.tx2, fontSize: 11, margin: "0 0 3px" }}>
-            📦 Di cui versato da te: <b style={{ color: P.acc }}>€{res.totalContributed.toFixed(2)}</b>
+          <p style={{ color: P.tx2, fontSize: 12.5, margin: "0 0 3px" }}>
+            📦 Di cui versato da te: <b style={{ color: P.acc }}>{fmtEuro(res.totalContributed)}</b>
           </p>
-          <p style={{ color: P.tx2, fontSize: 11, margin: 0 }}>
-            📈 Di cui guadagnato con gli interessi: <b style={{ color: P.mint }}>€{res.totalGrowth.toFixed(2)}</b>
+          <p style={{ color: P.tx2, fontSize: 12.5, margin: 0 }}>
+            📈 Di cui guadagnato con gli interessi: <b style={{ color: P.mint }}>{fmtEuro(res.totalGrowth)}</b>
           </p>
-          <p style={{ color: P.tx3, fontSize: 10, margin: "5px 0 0", lineHeight: 1.45 }}>
+          <p style={{ color: P.tx3, fontSize: 12, margin: "5px 0 0", lineHeight: 1.45 }}>
             Sono <b style={{ color: P.mint }}>+{growthPct}%</b> su tutto quello che hai versato in {months} mesi — un altro numero rispetto al tasso.
             {monthlyAdd > 0 && " I soldi che aggiungi negli ultimi mesi lavorano poco tempo, quindi il totale cresce meno del 10% all'anno."}
           </p>
@@ -146,8 +147,8 @@ export default function InvestTab({
             <CartesianGrid strokeDasharray="3 3" stroke={P.gb} />
             <XAxis dataKey="m" tick={{ fill: P.tx3, fontSize: 8 }} interval="preserveStartEnd" />
             <YAxis tick={{ fill: P.tx3, fontSize: 8 }} />
-            <Tooltip contentStyle={{ ...gls, background: P.surf, fontSize: 10, borderRadius: 10 }} formatter={(v) => `€${Number(v).toFixed(2)}`} />
-            <Legend wrapperStyle={{ fontSize: 9 }} />
+            <Tooltip contentStyle={{ ...gls, background: P.surf, fontSize: 12, borderRadius: 10 }} formatter={(v) => `${fmtEuro(Number(v))}`} />
+            <Legend wrapperStyle={{ fontSize: 11.5 }} />
             <Area type="monotone" dataKey="guadagno" name="🟢 Guadagno" stroke={P.mint} fill="url(#gainFill)" strokeWidth={1.5} />
             <Line type="monotone" dataKey="investito" name="🔵 Investito" stroke={P.blue} strokeDasharray="5 4" strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey="totale" name="🟡 Totale" stroke={P.gold} strokeWidth={2.5} dot={false} />
@@ -160,8 +161,8 @@ export default function InvestTab({
             { l: "Totale", v: res.finalValue, c: P.gold },
           ].map((x) => (
             <div key={x.l} style={{ background: alpha(x.c, 12), borderRadius: 12, padding: "6px 4px", textAlign: "center" }}>
-              <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>{x.l}</p>
-              <p style={{ color: x.c, fontSize: 13, fontWeight: 800, margin: 0 }}>€{x.v.toFixed(2)}</p>
+              <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>{x.l}</p>
+              <p style={{ color: x.c, fontSize: 13, fontWeight: 800, margin: 0 }}>{fmtEuro(x.v)}</p>
             </div>
           ))}
         </div>

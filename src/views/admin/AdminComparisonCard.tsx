@@ -5,8 +5,9 @@ import { RANGES, summaryOf, summaryText } from "../../data/movements";
 import type { Users } from "../../data/types";
 import { Btn, GlassCard, Pill } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
+import { fmtEuro } from "../../utils/money";
 
-const eur = (n: number) => `€${n.toFixed(2)}`;
+const eur = (n: number) => `${fmtEuro(n)}`;
 
 /**
  * Entrate, uscite e saldo delle due figlie affiancati, sul periodo scelto
@@ -61,7 +62,7 @@ export default function AdminComparisonCard({ users }: { users: Users }) {
               <span style={{ color: u.c, fontSize: 12, fontWeight: 800 }}>{u.n}</span>
               <span style={{ color: positive ? P.mint : P.red, fontSize: 13, fontWeight: 800 }}>{eur(summary.balance)}</span>
             </div>
-            <div style={{ display: "flex", gap: 10, fontSize: 10 }}>
+            <div style={{ display: "flex", gap: 10, fontSize: 12 }}>
               <span style={{ color: P.tx3 }}>
                 entrate <b style={{ color: P.mint }}>{eur(summary.totalIn)}</b>
               </span>
@@ -75,7 +76,7 @@ export default function AdminComparisonCard({ users }: { users: Users }) {
       })}
 
       {copied === "err" && (
-        <p style={{ color: P.tx3, fontSize: 9, margin: "6px 0 0", lineHeight: 1.4, background: alpha(P.red, 6), borderRadius: 8, padding: 6 }}>
+        <p style={{ color: P.tx3, fontSize: 11.5, margin: "6px 0 0", lineHeight: 1.4, background: alpha(P.red, 6), borderRadius: 8, padding: 6 }}>
           Il browser ha negato l'accesso agli appunti. Succede fuori da HTTPS o se il permesso è bloccato.
         </p>
       )}

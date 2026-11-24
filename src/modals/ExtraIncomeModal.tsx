@@ -3,6 +3,7 @@ import { DEFAULT_PCT, FUNDS, FUND_LABEL, splitByPct, todayISO } from "../data/co
 import type { Fund, IncomeDraft, IncomeEntry } from "../data/types";
 import { Btn, Input, Label, Modal } from "../design/components";
 import { P } from "../design/tokens";
+import { fmtEuro } from "../utils/money";
 
 const initDraft = (): IncomeDraft => ({
   amount: "",
@@ -69,16 +70,16 @@ export default function ExtraIncomeModal({
               onChange={(e) => setD((x) => ({ ...x, split: { ...x.split, [k]: e.target.value } }))}
               style={{ textAlign: "center" }}
             />
-            <p style={{ fontSize: 9, color: P.tx3, margin: "3px 0 0", textAlign: "center" }}>{FUND_LABEL[k]}</p>
+            <p style={{ fontSize: 11.5, color: P.tx3, margin: "3px 0 0", textAlign: "center" }}>{FUND_LABEL[k]}</p>
           </div>
         ))}
       </div>
 
-      <p style={{ fontSize: 10, color: validSum ? P.tx3 : P.red, margin: "0 0 4px" }}>
+      <p style={{ fontSize: 12, color: validSum ? P.tx3 : P.red, margin: "0 0 4px" }}>
         Totale {sum}%{!validSum && " · la somma deve fare 100%"}
       </p>
-      <p style={{ fontSize: 11, color: P.mint, margin: "0 0 12px" }}>
-        🏦 €{quote.risparmio.toFixed(2)} · 🎒 €{quote.personale.toFixed(2)} · 🤝 €{quote.beneficenza.toFixed(2)}
+      <p style={{ fontSize: 12.5, color: P.mint, margin: "0 0 12px" }}>
+        🏦 {fmtEuro(quote.risparmio)} · 🎒 {fmtEuro(quote.personale)} · 🤝 {fmtEuro(quote.beneficenza)}
       </p>
 
       <div style={{ display: "flex", gap: 8 }}>

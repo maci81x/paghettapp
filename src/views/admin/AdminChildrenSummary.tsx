@@ -37,7 +37,7 @@ export default function AdminChildrenSummary({
                 <p style={{ color: P.tx, fontSize: 13, fontWeight: 800, margin: 0, letterSpacing: -0.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {u.n}
                 </p>
-                <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>🔥 {u.streak}gg di fila</p>
+                <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>🔥 {u.streak}gg di fila</p>
               </div>
             </div>
 
@@ -50,10 +50,10 @@ export default function AdminChildrenSummary({
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 7, borderTop: `1px solid ${P.gb}` }}>
-              <span style={{ fontSize: 10, color: lvl.c, fontWeight: 700 }}>
+              <span style={{ fontSize: 12, color: lvl.c, fontWeight: 700 }}>
                 {lvl.i} {lvl.n}
               </span>
-              <span style={{ fontSize: 10, color: P.tx2, fontWeight: 700 }}>{u.totalPts}pt tot</span>
+              <span style={{ fontSize: 12, color: P.tx2, fontWeight: 700 }}>{u.totalPts}pt tot</span>
             </div>
           </GlassCard>
         );

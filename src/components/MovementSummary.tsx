@@ -5,6 +5,7 @@ import { INCOME_KINDS } from "../data/movements";
 import type { User } from "../data/types";
 import { GlassCard } from "../design/components";
 import { P, alpha } from "../design/tokens";
+import { fmtEuro } from "../utils/money";
 
 const KEY = "paghettapp:summaryOpen";
 
@@ -17,7 +18,7 @@ const initialOpen = () => {
   }
 };
 
-const eur = (n: number) => `€${n.toFixed(2)}`;
+const eur = (n: number) => `${fmtEuro(n)}`;
 
 export default function MovementSummary({ u, summary }: { u: User; summary: Summary }) {
   const [open, setOpen] = useState(initialOpen);
@@ -38,7 +39,7 @@ export default function MovementSummary({ u, summary }: { u: User; summary: Summ
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: 0 }}>📊 Riepilogo periodo</p>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: positive ? P.mint : P.red, fontSize: 14, fontWeight: 800 }}>{eur(summary.balance)}</span>
-          <span style={{ color: P.tx3, fontSize: 11 }}>{open ? "▲" : "▼"}</span>
+          <span style={{ color: P.tx3, fontSize: 12.5 }}>{open ? "▲" : "▼"}</span>
         </div>
       </div>
 
@@ -50,7 +51,7 @@ export default function MovementSummary({ u, summary }: { u: User; summary: Summ
           {INCOME_KINDS.map(({ k, l, icon }) => {
             const slot = summary.byKind[k];
             return (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 10px", fontSize: 11 }}>
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 10px", fontSize: 12.5 }}>
                 <span style={{ color: slot.count > 0 ? P.tx2 : P.tx3 }}>
                   {icon} {l}
                 </span>
@@ -68,7 +69,7 @@ export default function MovementSummary({ u, summary }: { u: User; summary: Summ
             const slot = summary.byFund[f];
             if (slot.count === 0) return null;
             return (
-              <div key={f} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 10px", fontSize: 11 }}>
+              <div key={f} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 10px", fontSize: 12.5 }}>
                 <span style={{ color: P.tx2 }}>{fundName(u, f)}</span>
                 <span style={{ color: P.red, fontWeight: 600 }}>
                   {eur(slot.total)} <span style={{ color: P.tx3, fontWeight: 400 }}>({slot.count})</span>

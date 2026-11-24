@@ -22,7 +22,7 @@ export default function RejectModal({
   return (
     <Modal onClose={onClose}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>✗ Rifiuta {count > 1 ? `${count} attività` : "l'attività"}</h3>
-      <p style={{ color: P.tx3, fontSize: 11, margin: "0 0 12px" }}>{what}</p>
+      <p style={{ color: P.tx3, fontSize: 12.5, margin: "0 0 12px" }}>{what}</p>
       <Label>Perché? (la ragazza lo vedrà)</Label>
       <TextArea
         autoFocus
@@ -33,7 +33,7 @@ export default function RejectModal({
         onChange={(e) => setNote(e.target.value)}
         style={{ marginBottom: 6 }}
       />
-      <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 12px", lineHeight: 1.45 }}>
+      <p style={{ color: P.tx3, fontSize: 12, margin: "0 0 12px", lineHeight: 1.45 }}>
         Nessun punto. La voce resta nello storico con la nota{count > 1 ? "" : " e l'eventuale foto"}, così se ne può riparlare.
       </p>
       <div style={{ display: "flex", gap: 8 }}>

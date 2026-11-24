@@ -42,7 +42,7 @@ export default function NamePiggybanksModal({ u, grad, onSave }: { u?: User; gra
           <div key={f.k} style={{ marginBottom: 10 }}>
             <Label>{f.label}</Label>
             <Input value={v} placeholder={f.placeholder} maxLength={FUND_NAME_MAX} onChange={(e) => set(f.k, e.target.value)} />
-            <p style={{ fontSize: 9, color: tooShort ? P.red : P.tx3, margin: "3px 0 0" }}>
+            <p style={{ fontSize: 11.5, color: tooShort ? P.red : P.tx3, margin: "3px 0 0" }}>
               {tooShort ? `Almeno ${FUND_NAME_MIN} caratteri` : `${v.trim().length}/${FUND_NAME_MAX}`}
             </p>
           </div>
@@ -52,7 +52,7 @@ export default function NamePiggybanksModal({ u, grad, onSave }: { u?: User; gra
       <Btn full grad={grad} disabled={!allValid} style={{ marginTop: 4 }} onClick={() => allValid && onSave(names)}>
         ✅ Salva
       </Btn>
-      {!allValid && <p style={{ fontSize: 10, color: P.tx3, textAlign: "center", margin: "8px 0 0" }}>Servono tutti e tre i nomi per continuare</p>}
+      {!allValid && <p style={{ fontSize: 12, color: P.tx3, textAlign: "center", margin: "8px 0 0" }}>Servono tutti e tre i nomi per continuare</p>}
     </Modal>
   );
 }

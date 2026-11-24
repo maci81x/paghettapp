@@ -73,7 +73,7 @@ export default function ActivityEditModal({
           />
         </div>
       </div>
-      <p style={{ fontSize: 9, color: P.tx3, margin: "-4px 0 8px" }}>
+      <p style={{ fontSize: 11.5, color: P.tx3, margin: "-4px 0 8px" }}>
         Quante volte può essere completata per {FREQ_UNIT[draft.freq]} · ogni completamento vale +{draft.pts}pt
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
@@ -81,7 +81,7 @@ export default function ActivityEditModal({
           <Label>Sfida?</Label>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
             <input type="checkbox" checked={!!draft.ch} onChange={(e) => setDraft((d) => ({ ...d, ch: e.target.checked ? 1 : 0 }))} />
-            <span style={{ fontSize: 11, color: P.tx2 }}>⚡ Sfida</span>
+            <span style={{ fontSize: 12.5, color: P.tx2 }}>⚡ Sfida</span>
           </div>
         </div>
       </div>

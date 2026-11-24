@@ -11,6 +11,7 @@ import { emptyFilter, filterMovements, incomeIcon, isFiltered, summarize } from 
 import MonthReportCard from "../MonthReportCard";
 import AdminAllowanceCard from "./AdminAllowanceCard";
 import AdminLogHistory from "./AdminLogHistory";
+import { fmtEuro } from "../../utils/money";
 
 // recharts (~450KB) resta fuori dal bundle iniziale: arriva solo quando l'admin
 // apre la scheda di una figlia.
@@ -92,10 +93,10 @@ export default function AdminChildView({
             {u.n}
             {u.nickname?.trim() && <span style={{ color: P.tx3, fontSize: 12, fontWeight: 600 }}> ({u.nickname.trim()})</span>}
           </p>
-          <p style={{ color: P.tx2, fontSize: 11, margin: 0 }}>
+          <p style={{ color: P.tx2, fontSize: 12.5, margin: 0 }}>
             {lvl.i} {lvl.n} · {u.totalPts}pt totali
           </p>
-          <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>
+          <p style={{ color: P.tx3, fontSize: 12, margin: 0 }}>
             Oggi: <b style={{ color: P.mint }}>+{todayPts}pt</b> · Settimana: <b style={{ color: P.gold }}>+{weekPts}pt → €{tier.r}</b> · 🔥{u.streak}gg
           </p>
         </div>
@@ -142,11 +143,11 @@ export default function AdminChildView({
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
               <div style={{ minWidth: 0 }}>
                 <span style={{ fontSize: 12, color: P.tx }}>{fundName(u, k)}</span>
-                <p style={{ fontSize: 10, color: P.tx3, margin: 0 }}>{u.wN[k]}</p>
+                <p style={{ fontSize: 12, color: P.tx3, margin: 0 }}>{u.wN[k]}</p>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <span style={{ color: P.mint, fontWeight: 700, fontSize: 14 }}>€{u.w[k].toFixed(2)}</span>
-                {k === "risparmio" && <p style={{ fontSize: 9, color: P.gold, margin: 0 }}>📈 rend. +€{((u.w[k] * YIELD_YEAR * months) / 12).toFixed(2)}</p>}
+                <span style={{ color: P.mint, fontWeight: 700, fontSize: 14 }}>{fmtEuro(u.w[k])}</span>
+                {k === "risparmio" && <p style={{ fontSize: 11.5, color: P.gold, margin: 0 }}>📈 rend. +{fmtEuro(((u.w[k] * YIELD_YEAR * months) / 12))}</p>}
               </div>
             </div>
             <div style={{ display: "flex", gap: 5, marginTop: 5 }}>
@@ -161,7 +162,7 @@ export default function AdminChildView({
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
           <span style={{ color: P.tx, fontWeight: 700 }}>Totale</span>
-          <span style={{ color: P.gold, fontWeight: 800, fontSize: 16 }}>€{total.toFixed(2)}</span>
+          <span style={{ color: P.gold, fontWeight: 800, fontSize: 16 }}>{fmtEuro(total)}</span>
         </div>
       </GlassCard>
 
@@ -179,10 +180,10 @@ export default function AdminChildView({
                   <span style={{ fontSize: 12, color: P.tx }}>
                     {a.name} ×{l.cnt}
                   </span>
-                  <p style={{ color: P.tx3, fontSize: 10, margin: 0 }}>
+                  <p style={{ color: P.tx3, fontSize: 12, margin: 0 }}>
                     {TODS.find((t) => t.k === l.tod)?.l} {l.note && `· ${l.note}`}
                   </p>
-                  <span style={{ fontSize: 11, color: P.mint }}>+{l.pts}pt</span>
+                  <span style={{ fontSize: 12.5, color: P.mint }}>+{l.pts}pt</span>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <Btn small grad={P.mintG} onClick={() => onApprove(uid, l.id)}>
@@ -201,7 +202,7 @@ export default function AdminChildView({
       <Btn full color={P.red} style={{ marginTop: 4 }} onClick={onPenalty}>
         ⚠️ Addebita penalità a {u.n}
       </Btn>
-      <p style={{ color: P.tx3, fontSize: 9, textAlign: "center", margin: "4px 0 10px" }}>
+      <p style={{ color: P.tx3, fontSize: 11.5, textAlign: "center", margin: "4px 0 10px" }}>
         Scegli l'attività non fatta: toglie i suoi punti di penalità dal totale e dalla settimana.
       </p>
 
@@ -216,7 +217,7 @@ export default function AdminChildView({
               color: filtered ? P.acc : P.tx3,
               borderRadius: 8,
               padding: "2px 8px",
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: 800,
               whiteSpace: "nowrap",
             }}
@@ -232,19 +233,19 @@ export default function AdminChildView({
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>📥 Entrate</p>
         {moves.income.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10, margin: 0 }}>Nessuna entrata in questo periodo</p>
+          <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 10, margin: 0 }}>Nessuna entrata in questo periodo</p>
         ) : (
           moves.income.map((i) => (
             <div key={i.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: `1px solid ${P.gb}` }}>
               <div style={{ minWidth: 0 }}>
-                <span style={{ color: P.tx, fontSize: 11 }}>{i.type === "regalo" ? i.source : `${incomeIcon(i.type)} ${i.source}`}</span>
-                <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>
+                <span style={{ color: P.tx, fontSize: 12.5 }}>{i.type === "regalo" ? i.source : `${incomeIcon(i.type)} ${i.source}`}</span>
+                <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>
                   {i.date}
                   {i.type === "regalo" ? ` · 100% ${fundName(u, "personale")}` : i.type === "extra" ? " · extra" : " · paghetta"}
                   {i.type === "paghetta" && (i.confirmed ? " · ✅ confermata" : " · ⏳ non confermata")}
                 </p>
               </div>
-              <span style={{ color: i.type === "regalo" ? P.gold : P.mint, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>+€{i.amount.toFixed(2)}</span>
+              <span style={{ color: i.type === "regalo" ? P.gold : P.mint, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>+{fmtEuro(i.amount)}</span>
             </div>
           ))
         )}
@@ -253,15 +254,15 @@ export default function AdminChildView({
       <GlassCard>
         <p style={{ color: P.tx, fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>💸 Spese</p>
         {moves.spese.length === 0 ? (
-          <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 10, margin: 0 }}>Nessuna spesa in questo periodo</p>
+          <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 10, margin: 0 }}>Nessuna spesa in questo periodo</p>
         ) : (
           moves.spese.map((s) => (
-            <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${P.gb}` }}>
+            <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12.5, borderBottom: `1px solid ${P.gb}` }}>
               <span style={{ color: P.tx }}>
                 {s.d} · {s.ds}
               </span>
               <span style={{ color: P.red }}>
-                -€{s.a.toFixed(2)} <span style={{ color: P.tx3 }}>({fundName(u, s.f)})</span>
+                -{fmtEuro(s.a)} <span style={{ color: P.tx3 }}>({fundName(u, s.f)})</span>
               </span>
             </div>
           ))

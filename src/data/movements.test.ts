@@ -105,9 +105,9 @@ test("il testo da copiare elenca solo i tipi presenti", () => {
   const s = summarize(filterMovements(user(), { ...emptyFilter(), range: "month" }, TODAY));
   const txt = summaryText("month", [{ name: "Mia", summary: s }]);
   assert.ok(txt.includes("Questo mese"), txt);
-  assert.ok(txt.includes("🟢 Paghetta: €15.00 (1)"), txt);
-  assert.ok(txt.includes("💰 Totale entrate: €40.00"), txt);
-  assert.ok(txt.includes("📊 Saldo: €29.00"), txt);
+  assert.ok(txt.includes("🟢 Paghetta: €15,00 (1)"), txt);
+  assert.ok(txt.includes("💰 Totale entrate: €40,00"), txt);
+  assert.ok(txt.includes("📊 Saldo: €29,00"), txt);
 });
 
 test("txRows: entrate, spese e previste insieme, dalla più recente", () => {

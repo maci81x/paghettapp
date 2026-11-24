@@ -22,9 +22,9 @@ export default function AdminMatchTab({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
               <p style={{ color: P.tx, fontSize: 13, fontWeight: 700, margin: "0 0 2px" }}>⚔️ {m.name}</p>
-              {m.desc && <p style={{ color: P.tx2, fontSize: 11, margin: "0 0 2px", lineHeight: 1.4 }}>{m.desc}</p>}
-              {m.prize && <p style={{ color: P.gold, fontSize: 11, margin: 0 }}>🏆 {m.prize}</p>}
-              <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0" }}>
+              {m.desc && <p style={{ color: P.tx2, fontSize: 12.5, margin: "0 0 2px", lineHeight: 1.4 }}>{m.desc}</p>}
+              {m.prize && <p style={{ color: P.gold, fontSize: 12.5, margin: 0 }}>🏆 {m.prize}</p>}
+              <p style={{ color: P.tx3, fontSize: 12, margin: "2px 0 0" }}>
                 📋 {m.act} · ⏱ {m.durDays}gg
               </p>
             </div>
@@ -32,7 +32,7 @@ export default function AdminMatchTab({
               <button
                 onClick={() => onToggle(m.id)}
                 title={m.vis ? "Visibile alle figlie" : "Nascosto"}
-                style={{ ...gls, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, color: m.vis ? P.mint : P.tx3, borderColor: m.vis ? alpha(P.mint, 27) : P.gb }}
+                style={{ ...gls, padding: "3px 8px", fontSize: 12, cursor: "pointer", fontWeight: 600, color: m.vis ? P.mint : P.tx3, borderColor: m.vis ? alpha(P.mint, 27) : P.gb }}
               >
                 {m.vis ? "👁" : "🙈"}
               </button>

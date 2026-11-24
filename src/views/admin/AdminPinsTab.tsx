@@ -15,7 +15,7 @@ export default function AdminPinsTab({ onChange, onReset }: { onChange: (k: PinK
         <GlassCard key={x.k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <p style={{ color: P.tx, fontWeight: 700, fontSize: 12, margin: 0 }}>{x.l}</p>
-            <p style={{ color: P.tx3, fontSize: 11, margin: 0, letterSpacing: 5 }}>••••</p>
+            <p style={{ color: P.tx3, fontSize: 12.5, margin: 0, letterSpacing: 5 }}>••••</p>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             <Btn small color={P.blue} onClick={() => onChange(x.k)}>
@@ -27,7 +27,7 @@ export default function AdminPinsTab({ onChange, onReset }: { onChange: (k: PinK
           </div>
         </GlassCard>
       ))}
-      <p style={{ color: P.tx3, fontSize: 10, textAlign: "center", marginTop: 4 }}>Reset riporta il PIN a quello di fabbrica.</p>
+      <p style={{ color: P.tx3, fontSize: 12, textAlign: "center", marginTop: 4 }}>Reset riporta il PIN a quello di fabbrica.</p>
     </div>
   );
 }

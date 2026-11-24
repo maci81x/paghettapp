@@ -2,14 +2,14 @@ import { useState } from "react";
 import type { Fund, SpesaDraft } from "../data/types";
 import { Btn, Input, Label, Modal, Sel } from "../design/components";
 import { P } from "../design/tokens";
-import { parseAmount } from "../utils/money";
+import { parseAmount, fmtEuro } from "../utils/money";
 
 /** Salvadanai che meritano una domanda in più prima del prelievo. */
 const WARN: Partial<Record<Fund, { icon: string; text: (a: number) => string }>> = {
   risparmio: {
     icon: "⚠️",
     text: (a) =>
-      `I tuoi risparmi stanno crescendo grazie agli investimenti di Babbo Roby. Se li prelevi ora perdi il rendimento futuro. Sei sicura di voler prelevare €${a.toFixed(2)} dal Risparmio?`,
+      `I tuoi risparmi stanno crescendo grazie agli investimenti di Babbo Roby. Se li prelevi ora perdi il rendimento futuro. Sei sicura di voler prelevare ${fmtEuro(a)} dal Risparmio?`,
   },
   beneficenza: {
     icon: "💛",
@@ -46,8 +46,8 @@ export default function SpesaModal({
       <Modal onClose={() => setConfirming(false)}>
         <p style={{ fontSize: 34, textAlign: "center", margin: "4px 0 8px" }}>{warn.icon}</p>
         <p style={{ color: P.tx, fontSize: 13, lineHeight: 1.6, textAlign: "center", margin: "0 0 8px" }}>{warn.text(amount)}</p>
-        <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", margin: "0 0 16px" }}>
-          {draft.ds.trim()} · €{amount.toFixed(2)}
+        <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", margin: "0 0 16px" }}>
+          {draft.ds.trim()} · {fmtEuro(amount)}
         </p>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn style={{ flex: 1 }} color={P.red} onClick={onSave}>
@@ -90,12 +90,12 @@ export default function SpesaModal({
           </Sel>
         </div>
       </div>
-      <p style={{ fontSize: 10, color: overBalance ? P.red : P.tx3, margin: "0 0 10px" }}>
-        Disponibile: €{balance.toFixed(2)}
+      <p style={{ fontSize: 12, color: overBalance ? P.red : P.tx3, margin: "0 0 10px" }}>
+        Disponibile: {fmtEuro(balance)}
         {overBalance && " · importo superiore al saldo"}
       </p>
       {planned && (
-        <p style={{ fontSize: 10, color: P.tx3, margin: "-4px 0 10px", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 12, color: P.tx3, margin: "-4px 0 10px", lineHeight: 1.5 }}>
           Il saldo non cambia adesso: quando avrai speso davvero, tocca la spesa e scrivi quanto è costata.
         </p>
       )}

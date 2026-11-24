@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getTier } from "../../data/constants";
 import type { UserId, Users } from "../../data/types";
 import { weekLabel } from "../../data/weekBounds";
-import { parseAmount } from "../../utils/money";
+import { parseAmount, fmtEuro } from "../../utils/money";
 import { Btn, GlassCard, InfoTip, Input, Label } from "../../design/components";
 import { P, alpha } from "../../design/tokens";
 
@@ -66,7 +66,7 @@ export default function AdminWeeksToClose({
     const due = dueFor(r.uid, r.week);
     if (
       !confirm(
-        `Segnare la settimana ${weekLabel(r.week)} di ${users[r.uid].n} come già pagata fuori app? Non entra niente nei salvadanai (il tier sarebbe stato €${due.amount.toFixed(2)}).`,
+        `Segnare la settimana ${weekLabel(r.week)} di ${users[r.uid].n} come già pagata fuori app? Non entra niente nei salvadanai (il tier sarebbe stato ${fmtEuro(due.amount)}).`,
       )
     )
       return;
@@ -79,7 +79,7 @@ export default function AdminWeeksToClose({
 
   const confirmAll = async () => {
     const total = ready.reduce((s, r) => s + dueFor(r.uid, r.week).amount, 0);
-    if (!confirm(`Confermare ${ready.length} settimane per un totale di €${total.toFixed(2)}? Gli importi sono quelli del tier.`)) return;
+    if (!confirm(`Confermare ${ready.length} settimane per un totale di ${fmtEuro(total)}? Gli importi sono quelli del tier.`)) return;
     setBusy("all");
     setErr(null);
     // una alla volta: ogni accredito ricontrolla sul database che la settimana sia ancora libera
@@ -97,7 +97,7 @@ export default function AdminWeeksToClose({
     return (
       <GlassCard style={{ padding: 12 }}>
         <p style={{ color: P.mint, fontSize: 12, fontWeight: 700, margin: 0 }}>✅ Nessuna settimana da chiudere</p>
-        <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0" }}>Il lunedì la settimana appena finita compare qui, con l'importo già calcolato.</p>
+        <p style={{ color: P.tx3, fontSize: 12, margin: "2px 0 0" }}>Il lunedì la settimana appena finita compare qui, con l'importo già calcolato.</p>
       </GlassCard>
     );
   }
@@ -108,7 +108,7 @@ export default function AdminWeeksToClose({
         🟠 Settimane da chiudere ({rows.length})
         <InfoTip text="Ogni lunedì la settimana appena finita viene calcolata dai punti delle attività fatte in quei giorni. Resta qui finché non la confermi: niente si chiude da solo. Confermando, i soldi vanno nei salvadanai con lo split 30/60/10." />
       </p>
-      <p style={{ color: P.tx3, fontSize: 10, margin: "0 0 10px" }}>Importo calcolato dal tier · puoi modificarlo prima di confermare.</p>
+      <p style={{ color: P.tx3, fontSize: 12, margin: "0 0 10px" }}>Importo calcolato dal tier · puoi modificarlo prima di confermare.</p>
 
       {rows.map((r) => {
         const u = users[r.uid];
@@ -124,18 +124,18 @@ export default function AdminWeeksToClose({
                 <p style={{ color: u.c, fontSize: 13, fontWeight: 700, margin: 0 }}>
                   {u.av} {u.n}
                 </p>
-                <p style={{ color: P.tx2, fontSize: 11, margin: "1px 0 0" }}>
+                <p style={{ color: P.tx2, fontSize: 12.5, margin: "1px 0 0" }}>
                   {weekLabel(r.week)} · <b style={{ color: P.tx }}>{due.pts} pt</b>
                 </p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p style={{ color: P.gold, fontSize: 17, fontWeight: 800, margin: 0 }}>€{due.amount.toFixed(2)}</p>
-                <p style={{ color: P.tx3, fontSize: 9, margin: 0 }}>tier {tierRange(due.pts)}</p>
+                <p style={{ color: P.gold, fontSize: 17, fontWeight: 800, margin: 0 }}>{fmtEuro(due.amount)}</p>
+                <p style={{ color: P.tx3, fontSize: 11.5, margin: 0 }}>tier {tierRange(due.pts)}</p>
               </div>
             </div>
 
             {blocked ? (
-              <p style={{ color: P.gold, fontSize: 10, margin: "6px 0 0" }}>⚠️ {blocked}</p>
+              <p style={{ color: P.gold, fontSize: 12, margin: "6px 0 0" }}>⚠️ {blocked}</p>
             ) : editing ? (
               <div style={{ marginTop: 8 }}>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -161,7 +161,7 @@ export default function AdminWeeksToClose({
                     disabled={parsed === null || busy !== null}
                     onClick={() => parsed !== null && void confirmOne(r, { amount: parsed, note: edit.note })}
                   >
-                    ✓ Conferma €{(parsed ?? 0).toFixed(2)}
+                    ✓ Conferma {fmtEuro((parsed ?? 0))}
                   </Btn>
                   <Btn small outline color={P.tx3} style={{ minHeight: 44 }} onClick={() => setEdit(null)}>
                     Annulla
@@ -196,7 +196,7 @@ export default function AdminWeeksToClose({
                   background: "transparent",
                   border: "none",
                   color: P.tx3,
-                  fontSize: 11,
+                  fontSize: 12.5,
                   fontWeight: 600,
                   textDecoration: "underline",
                   cursor: busy !== null ? "default" : "pointer",
@@ -209,7 +209,7 @@ export default function AdminWeeksToClose({
         );
       })}
 
-      {err && <p style={{ color: P.red, fontSize: 11, margin: "8px 0 0", fontWeight: 600 }}>{err}</p>}
+      {err && <p style={{ color: P.red, fontSize: 12.5, margin: "8px 0 0", fontWeight: 600 }}>{err}</p>}
 
       {ready.length > 1 && (
         <Btn full grad={P.goldG} style={{ marginTop: 10, minHeight: 48 }} disabled={busy !== null} onClick={() => void confirmAll()}>

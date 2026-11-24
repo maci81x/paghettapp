@@ -153,7 +153,7 @@ export default function AdminActivitiesTab({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 10 }}>
         <span style={{ color: P.tx, fontWeight: 700, fontSize: 14 }}>
           {shown.length} attività
-          {penCount > 0 && filter !== "penalty" && <span style={{ color: P.gold, fontSize: 11, fontWeight: 600 }}> · ⚠️ {penCount} con penalità</span>}
+          {penCount > 0 && filter !== "penalty" && <span style={{ color: P.gold, fontSize: 12.5, fontWeight: 600 }}> · ⚠️ {penCount} con penalità</span>}
         </span>
         {!s.selecting && (
           <div style={{ display: "flex", gap: 6 }}>
@@ -181,7 +181,7 @@ export default function AdminActivitiesTab({
       </div>
 
       {!canHide && (
-        <p style={{ color: P.gold, fontSize: 10, margin: "-4px 0 10px", lineHeight: 1.4 }}>
+        <p style={{ color: P.gold, fontSize: 12, margin: "-4px 0 10px", lineHeight: 1.4 }}>
           ⚠️ Per nascondere le attività serve la migrazione <code>activities_hidden</code>: finché non la esegui il toggle resta spento.
         </p>
       )}
@@ -221,7 +221,7 @@ export default function AdminActivitiesTab({
                 <span style={{ fontSize: 13 }}>{actIcon(a)}</span>
                 <span style={{ color: P.tx, fontSize: 12, fontWeight: 600, textDecoration: off ? "line-through" : undefined }}>{a.name}</span>
                 {pen && (
-                  <span style={{ background: alpha(P.red, 14), color: P.red, padding: "1px 5px", borderRadius: 5, fontSize: 9, fontWeight: 800 }}>
+                  <span style={{ background: alpha(P.red, 14), color: P.red, padding: "1px 5px", borderRadius: 5, fontSize: 11.5, fontWeight: 800 }}>
                     {a.pen}pt
                   </span>
                 )}
@@ -230,7 +230,7 @@ export default function AdminActivitiesTab({
                   <span style={{ background: alpha(P.tx3, 20), color: P.tx2, padding: "1px 5px", borderRadius: 5, fontSize: 8, fontWeight: 700 }}>NASCOSTA</span>
                 )}
               </div>
-              <span style={{ fontSize: 10, color: P.tx3 }}>
+              <span style={{ fontSize: 12, color: P.tx3 }}>
                 +{a.pts}pt · max ×{a.max}/{FREQ_UNIT[a.freq]}
                 {a.duration ? ` · ⏱ ${a.duration}min` : ""}
               </span>
@@ -250,7 +250,7 @@ export default function AdminActivitiesTab({
         );
       })}
 
-      {shown.length === 0 && <p style={{ color: P.tx3, fontSize: 11, textAlign: "center", padding: 16 }}>Nessuna attività con questo filtro</p>}
+      {shown.length === 0 && <p style={{ color: P.tx3, fontSize: 12.5, textAlign: "center", padding: 16 }}>Nessuna attività con questo filtro</p>}
     </div>
   );
 }

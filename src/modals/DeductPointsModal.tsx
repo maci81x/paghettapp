@@ -32,7 +32,7 @@ export default function DeductPointsModal({
         <p style={{ fontSize: 13, color: P.tx, lineHeight: 1.5, margin: "0 0 4px" }}>
           Togliere <b style={{ color: P.red }}>{n} punti</b> a {who}?
         </p>
-        <p style={{ fontSize: 11, color: P.tx2, lineHeight: 1.5, margin: "0 0 16px" }}>Motivo: {motivo}</p>
+        <p style={{ fontSize: 12.5, color: P.tx2, lineHeight: 1.5, margin: "0 0 16px" }}>Motivo: {motivo}</p>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn style={{ flex: 1 }} color={P.red} onClick={() => onSave(n, motivo)}>
             ➖ Togli {n}pt
@@ -67,7 +67,7 @@ export default function DeductPointsModal({
         onChange={(e) => setReason(e.target.value)}
         style={{ marginBottom: 6 }}
       />
-      <p style={{ fontSize: 9, color: P.tx3, margin: "0 0 12px" }}>
+      <p style={{ fontSize: 11.5, color: P.tx3, margin: "0 0 12px" }}>
         La voce entra subito nello storico con punti negativi e riduce il totale e la paghetta della settimana.
       </p>
 

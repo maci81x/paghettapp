@@ -112,7 +112,7 @@ export default function ApproveTab({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 11,
+                    fontSize: 12.5,
                     flexShrink: 0,
                   }}
                 >
@@ -122,10 +122,10 @@ export default function ApproveTab({
                   {p.a.name} ×{p.l.cnt}
                 </span>
               </div>
-              <p style={{ color: P.tx3, fontSize: 10, margin: "2px 0 0 28px" }}>
+              <p style={{ color: P.tx3, fontSize: 12, margin: "2px 0 0 28px" }}>
                 {fmtDay(p.l.date)} · {TODS.find((t) => t.k === p.l.tod)?.l} {p.l.note && `· ${p.l.note}`}
               </p>
-              <span style={{ fontSize: 10, color: P.mint, marginLeft: 28 }}>+{p.l.pts}pt</span>
+              <span style={{ fontSize: 12, color: P.mint, marginLeft: 28 }}>+{p.l.pts}pt</span>
             </div>
             {p.l.photo && <LogPhotoThumb logId={p.l.id} size={44} onClick={s.selecting ? undefined : () => setViewing(p)} />}
             {!s.selecting && (
