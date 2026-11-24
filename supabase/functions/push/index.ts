@@ -4,6 +4,7 @@
 //   key        → chiave pubblica VAPID (la crea al primo avvio, la privata resta nel database)
 //   subscribe  → registra questo telefono per { user_id, subscription }
 //   nudge      → "Mia ti ricorda la paghetta": avvisa papà (una volta ogni 7 giorni per ragazza)
+//   test       → notifica di prova al telefono appena iscritto (entro 2 minuti dall'iscrizione)
 //   weekly     → promemoria del lunedì alle 19 (ora italiana) a papà e alle ragazze
 //
 // Le tabelle push_config e push_subscriptions non sono leggibili dall'app:
@@ -79,8 +80,17 @@ Deno.serve(async (req) => {
       const uid = String(p.user_id ?? "");
       const sub = p.subscription as { endpoint?: string; keys?: { p256dh?: string; auth?: string } } | undefined;
       if (!["mia", "samira", "admin"].includes(uid) || !sub?.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) return json({ error: "iscrizione non valida" }, 400);
-      const { error } = await db.from("push_subscriptions").upsert({ endpoint: sub.endpoint, user_id: uid, p256dh: sub.keys.p256dh, auth: sub.keys.auth });
+      const { error } = await db.from("push_subscriptions").upsert({ endpoint: sub.endpoint, user_id: uid, p256dh: sub.keys.p256dh, auth: sub.keys.auth, created_at: new Date().toISOString() });
       return error ? json({ error: error.message }, 500) : json({ ok: true });
+    }
+
+    case "test": {
+      const uid = String(p.user_id ?? "");
+      const since = new Date(Date.now() - 120_000).toISOString();
+      const { data: fresh } = await db.from("push_subscriptions").select("endpoint").eq("user_id", uid).gte("created_at", since);
+      if (!fresh?.length) return json({ ok: false, reason: "nessuna iscrizione recente" });
+      const who = uid === "admin" ? "Babbo Roby" : NAMES[uid] ?? uid;
+      return json({ sent: await sendTo([uid], "Notifiche attive", `Ciao ${who}, da ora PaghettApp ti avvisa qui.`) });
     }
 
     case "nudge": {

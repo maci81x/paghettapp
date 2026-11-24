@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { enablePush, pushState } from "../data/push";
+import { enablePush, pushRegistered, pushState } from "../data/push";
 import { P } from "../design/tokens";
 
 /**
@@ -10,7 +10,8 @@ export default function PushToggle({ userId, text }: { userId: string; text: str
   const [state, setState] = useState(pushState);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  if (state === "granted" && !msg) return null;
+  // nascosto solo se QUESTA persona è già iscritta su questo telefono
+  if (state === "granted" && pushRegistered(userId) && !msg) return null;
 
   const on = async () => {
     setBusy(true);
@@ -23,7 +24,7 @@ export default function PushToggle({ userId, text }: { userId: string; text: str
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", marginBottom: 12, borderTop: `1px solid ${P.gb}`, borderBottom: `1px solid ${P.gb}` }}>
       <p style={{ flex: 1, margin: 0, fontSize: 14, color: P.tx2, lineHeight: 1.4 }}>{msg ?? text}</p>
-      {state !== "granted" && state !== "unsupported" && state !== "denied" && (
+      {state !== "unsupported" && state !== "denied" && !(state === "granted" && pushRegistered(userId)) && (
         <button
           onClick={on}
           disabled={busy}
