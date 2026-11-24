@@ -34,6 +34,7 @@ import {
 } from "../data/constants";
 import { fromISO, getWeekPts, isWeekOver, pastWeeks, weekLogs } from "../data/weekBounds";
 import { arrearsOf, canNudge, weeksWithActivityToClose } from "../data/arrears";
+import { pushNudge } from "../data/push";
 import { fmtDay } from "../utils/dates";
 import { clearPending, loadCache, loadPending, queuePending, savePending, saveCache } from "../data/storage";
 import type { PendingOp } from "../data/storage";
@@ -1423,6 +1424,7 @@ export function useSupabase() {
     const at = new Date().toISOString();
     patch(uid, (u) => ({ ...u, nudgedAt: at }));
     await send("nudgeAllowance", [uid, at]);
+    void pushNudge(uid);
   };
 
   /**

@@ -43,7 +43,7 @@ export default function OwedCard({
         border: `1.5px solid ${P.mint}`,
       }}
     >
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: P.mint, letterSpacing: 0.4, textTransform: "uppercase" }}>Papà ti deve</p>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: P.mint, letterSpacing: 0.4, textTransform: "uppercase" }}>Babbo Roby ti deve</p>
       <p style={{ margin: "2px 0 0", fontFamily: "'Outfit',sans-serif", fontSize: 42, fontWeight: 900, letterSpacing: -0.5, lineHeight: 1.1, color: P.tx }}>
         {fmtEuro(owed.amount)}
       </p>
@@ -52,7 +52,7 @@ export default function OwedCard({
       </p>
       {owed.waiting > 0 && (
         <p style={{ margin: "4px 0 0", fontSize: 13, color: P.tx2 }}>
-          {owed.waiting === 1 ? "1 attività aspetta ancora papà" : `${owed.waiting} attività aspettano ancora papà`}
+          {owed.waiting === 1 ? "1 attività aspetta ancora Babbo Roby" : `${owed.waiting} attività aspettano ancora Babbo Roby`}
         </p>
       )}
 
@@ -83,7 +83,7 @@ export default function OwedCard({
               cursor: canNudge ? "pointer" : "default",
             }}
           >
-            {canNudge ? "Ricordalo a papà" : "Promemoria mandato"}
+            {canNudge ? "Ricordalo a Babbo Roby" : "Promemoria mandato"}
           </button>
           {nudgedAt && (
             <p style={{ margin: "8px 0 0", fontSize: 12.5, color: P.tx2, textAlign: "center" }}>

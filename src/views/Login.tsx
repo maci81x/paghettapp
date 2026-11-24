@@ -7,7 +7,7 @@ export default function Login({ users, onPick }: { users: Users; onPick: (k: Pin
   const profiles: { k: PinKey; l: string; c: string; av: string; grad: string; photo?: string }[] = [
     { k: "mia", l: userName(users.mia), c: userColor(users.mia), av: users.mia.av, grad: userGrad(users.mia), photo: users.mia.profilePhoto },
     { k: "samira", l: userName(users.samira), c: userColor(users.samira), av: users.samira.av, grad: userGrad(users.samira), photo: users.samira.profilePhoto },
-    { k: "admin", l: "Admin", c: P.acc, av: "🔒", grad: P.accG },
+    { k: "admin", l: "Babbo Roby", c: P.acc, av: "🔒", grad: P.accG },
   ];
   return (
     <div style={{ ...screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, paddingTop: SAFE_TOP }}>

@@ -5,7 +5,7 @@ import { P } from "../../design/tokens";
 const ROWS: { k: PinKey; l: string }[] = [
   { k: "mia", l: "Mia" },
   { k: "samira", l: "Samira" },
-  { k: "admin", l: "Admin" },
+  { k: "admin", l: "Babbo Roby" },
 ];
 
 export default function AdminPinsTab({ onChange, onReset }: { onChange: (k: PinKey) => void; onReset: (k: PinKey) => void }) {

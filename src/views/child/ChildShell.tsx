@@ -23,6 +23,7 @@ import { useInterest } from "../../hooks/useInterest";
 import ActivitiesTab from "./ActivitiesTab";
 import HomeTab from "./HomeTab";
 import OwedCard from "./OwedCard";
+import PushToggle from "../../components/PushToggle";
 import MissionsTab from "./MissionsTab";
 import ProfileTab from "./ProfileTab";
 
@@ -152,6 +153,7 @@ export default function ChildShell({
             nudgeSupported={usersApi.nudgeSupported}
             onNudge={() => void usersApi.nudge(au)}
           />
+          {usersApi.owed(au).weeks.length > 0 && <PushToggle userId={au} text="Attiva le notifiche per sapere quando arriva la paghetta." />}
           <HomeTab
             pending={pendingProps}
             u={u}

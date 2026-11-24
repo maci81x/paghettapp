@@ -27,6 +27,7 @@ import AdminAllowancesTab from "./AdminAllowancesTab";
 import AdminPhotosTab from "./AdminPhotosTab";
 import AdminTransactionsTab from "./AdminTransactionsTab";
 import AdminOwedBanner from "./AdminOwedBanner";
+import PushToggle from "../../components/PushToggle";
 import AdminWeeksToClose from "./AdminWeeksToClose";
 import AdminChildView from "./AdminChildView";
 import AdminChildrenSummary from "./AdminChildrenSummary";
@@ -222,6 +223,7 @@ export default function AdminShell({
           return (
             <>
               <AdminOwedBanner users={users} owedOf={usersApi.owed} />
+              <PushToggle userId="admin" text="Attiva le notifiche: il lunedì alle 19 ti ricordo le paghette da pagare." />
               {weeksToClose}
               <AdminComparisonCard users={users} />
             </>
@@ -401,14 +403,14 @@ export default function AdminShell({
     <>
       <Shell
         avatar={view ? <Avatar photo={users[view].profilePhoto} emoji={users[view].av} size={30} radius={10} grad="transparent" /> : "🔒"}
-        title={view ? `Admin › ${users[view].n}` : "Admin"}
+        title={view ? `Babbo Roby › ${users[view].n}` : "Babbo Roby"}
         subtitle={view ? undefined : `${usersApi.allPending} in attesa${toClose.length ? ` · ${toClose.length} settimane da chiudere` : ""}`}
         tint={view ? users[view].c : P.acc}
         onBack={view ? () => setView(null) : undefined}
         onLogout={onLogout}
         nav={
           <>
-            <NavItem icon="🔒" label="Admin" active={!view} onClick={() => setView(null)} color={P.acc} badge={usersApi.allPending} />
+            <NavItem icon="🔒" label="Babbo Roby" active={!view} onClick={() => setView(null)} color={P.acc} badge={usersApi.allPending} />
             <NavItem icon={users.mia.av} label={users.mia.n} active={view === "mia"} onClick={() => setView("mia")} color={P.mia} badge={usersApi.pendingCnt("mia")} />
             <NavItem icon={users.samira.av} label={users.samira.n} active={view === "samira"} onClick={() => setView("samira")} color={P.sam} badge={usersApi.pendingCnt("samira")} />
           </>

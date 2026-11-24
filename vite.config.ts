@@ -10,6 +10,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+      // gestore delle notifiche push (public/push-sw.js), dentro il service worker di Workbox
+      workbox: { importScripts: ['push-sw.js'] },
       manifest: {
         name: 'PaghettApp',
         short_name: 'PaghettApp',

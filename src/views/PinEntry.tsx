@@ -24,7 +24,7 @@ export default function PinEntry({
 }) {
   const tgt =
     target === "admin"
-      ? { n: "Admin", c: P.acc, av: "🔒", grad: P.accG, photo: undefined as string | undefined }
+      ? { n: "Babbo Roby", c: P.acc, av: "🔒", grad: P.accG, photo: undefined as string | undefined }
       : {
           n: userName(users[target]),
           c: userColor(users[target]),
